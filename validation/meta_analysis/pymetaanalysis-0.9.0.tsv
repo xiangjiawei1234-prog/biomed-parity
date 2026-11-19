@@ -1,0 +1,26 @@
+# PyMetaAnalysis distribution 0.9.0
+id	field	metafor	PyMetaAnalysis	reference
+heterogeneous_knha	mean_effect	0.52722213811862684	0.52722213811862473	REML
+heterogeneous_knha	tau2	0.29264061053822099	0.29264061053819052	REML
+heterogeneous_knha	lower	-0.19891698007098757	-0.19891698007098768	Knapp-Hartung
+heterogeneous_knha	upper	1.2533612563082412	1.2533612563082372	Knapp-Hartung
+heterogeneous_knha	tau2_lower	0.061892978766418402	0.080025908210851968	PL vs q_profile
+heterogeneous_knha	tau2_upper	2.0125260992924923	2.9221298495277512	PL vs q_profile
+heterogeneous_knha_riley	prediction_lower	-1.3850056380348503	-1.3850056380347699	Riley
+heterogeneous_knha_riley	prediction_upper	2.439449914272104	2.4394499142720196	Riley
+boundary_knha	mean_effect	0.01368697568002712	0.013686975680027115	REML
+boundary_knha	tau2	0	0	REML
+boundary_knha	lower	-0.013246242439498191	-0.013246242439498183	Knapp-Hartung
+boundary_knha	upper	0.04062019379955243	0.040620193799552409	Knapp-Hartung
+boundary_knha	tau2_lower	0	0	PL vs q_profile
+boundary_knha	tau2_upper	0.073996732128563669	0	PL vs q_profile
+boundary_knha_riley	prediction_lower	-0.022726611022288797	-0.02272661102228879	Riley
+boundary_knha_riley	prediction_upper	0.05010056238234304	0.05010056238234302	Riley
+two_small	mean_effect	0.17500000000000002	0.17500000000866142	REML
+two_small	tau2	0.0050000000000000114	0.0050000000069291405	REML
+two_small	lower	-1.0552729834176608	-1.0552729834374144	Knapp-Hartung
+two_small	upper	1.4052729834176609	1.4052729834547371	Knapp-Hartung
+two_small	tau2_lower	0	0	PL vs q_profile
+two_small	tau2_upper	2.4979998518191602	20.350165394393343	PL vs q_profile
+two_small	prediction_lower	-1.3484204303853009	NA	Riley
+two_small	prediction_upper	1.698420430385301	NA	Riley

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "default_three_looks",
+    "information_fractions": [0.3333333333333333, 0.6666666666666666, 1.0]
+  },
+  {
+    "id": "ldof_unequal_timing",
+    "information_fractions": [0.2, 0.51, 0.8, 1.0],
+    "spending": "ldof"
+  },
+  {
+    "id": "ldof_small_first_spending",
+    "information_fractions": [0.1, 0.4, 0.8, 1.0],
+    "spending": "ldof"
+  },
+  {
+    "id": "generalized_ldof",
+    "information_fractions": [0.25, 0.55, 0.8, 1.0],
+    "spending": "ldof",
+    "parameter": 0.75
+  },
+  {
+    "id": "linear_hsd",
+    "information_fractions": [0.22, 0.45, 0.6, 0.76, 1.0],
+    "spending": "hsd",
+    "parameter": 0
+  },
+  {
+    "id": "aggressive_hsd",
+    "information_fractions": [0.4, 0.77, 1.0],
+    "alpha": 0.05,
+    "spending": "hsd",
+    "parameter": 3
+  },
+  {
+    "id": "late_two_look",
+    "information_fractions": [0.92, 1.0],
+    "alpha": 0.01,
+    "spending": "ldof"
+  },
+  {
+    "id": "close_looks",
+    "information_fractions": [0.1, 0.1001, 0.5, 0.99, 0.999, 1.0],
+    "spending": "hsd",
+    "parameter": 1
+  }
+]

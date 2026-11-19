@@ -1,0 +1,13 @@
+[
+  {"id":"small-sample","q":[-1.5457,-1.428],"u":[0.94536829,1.083681],"n":25,"k":2},
+  {"id":"given-null-and-level","q":[1,2,2.5,1.7],"u":[0.1,0.12,0.09,0.2],"n":13,"k":3,"null":0.8,"confidence_level":0.9},
+  {"id":"infinite-complete-df","q":[1,2,3],"u":[0.4,0.4,0.4]},
+  {"id":"no-between-variance","q":[2,2,2],"u":[0.2,0.2,0.2],"n":12},
+  {"id":"normal-limit","q":[2,2,2],"u":[0.4,0.4,0.4]},
+  {"id":"very-small-between-variance","q":[1,1.00001,1.00002],"u":[0.4,0.4,0.4],"n":12},
+  {"id":"no-within-variance","q":[1,2,3],"u":[0,0,0],"n":12},
+  {"id":"zero-variance","q":[2,2,2],"u":[0,0,0]},
+  {"id":"reiter","q":[1,2,3],"u":[0.4,0.4,0.4],"n":12,"rule":"reiter2003"},
+  {"id":"reiter-no-between-variance","q":[2,2,2],"u":[0.4,0.4,0.4],"rule":"reiter2003"},
+  {"id":"reiter-zero-variance","q":[2,2,2],"u":[0,0,0],"rule":"reiter2003"}
+]

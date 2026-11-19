@@ -1,0 +1,174 @@
+{
+  "pydeseq2": "0.6.0",
+  "python": "3.12.7",
+  "numpy": "2.5.5",
+  "scipy": "1.18.1",
+  "pandas": "3.1.1",
+  "samples": 12,
+  "synthetic_features": 240,
+  "seed": 906,
+  "profiles": {
+    "parametric": {
+      "r_fit_type": "parametric",
+      "py_fit_type": "parametric",
+      "size_factor": {
+        "matched_finite": 12,
+        "finite_mask_disagreements": 0,
+        "median_absolute_difference": 8.881784197001252e-16,
+        "p95_absolute_difference": 4.418687638008123e-15,
+        "max_absolute_difference": 4.6629367034256575e-15
+      },
+      "wald": {
+        "baseMean": {
+          "matched_finite": 240,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 4.263256414560601e-14,
+          "p95_absolute_difference": 4.845901457883878e-13,
+          "max_absolute_difference": 5.002220859751105e-12
+        },
+        "dispersion": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 1.1092925634725859e-05,
+          "p95_absolute_difference": 9.81466112017215e-05,
+          "max_absolute_difference": 0.00024389343588671064
+        },
+        "log2FoldChange": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 3.42678345255365e-07,
+          "p95_absolute_difference": 4.7748700105987295e-06,
+          "max_absolute_difference": 1.7699806665660844e-05
+        },
+        "lfcSE": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 1.8554223581046525e-05,
+          "p95_absolute_difference": 5.652313644405325e-05,
+          "max_absolute_difference": 9.372701285903506e-05
+        },
+        "stat": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 5.339193608766557e-05,
+          "p95_absolute_difference": 0.0005325944755149691,
+          "max_absolute_difference": 0.0017512794418461652
+        },
+        "pvalue": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 1.2596244970519699e-05,
+          "p95_absolute_difference": 6.201036974890217e-05,
+          "max_absolute_difference": 9.770898209149337e-05
+        },
+        "padj": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 3.940883111286375e-05,
+          "p95_absolute_difference": 0.00010117592238876315,
+          "max_absolute_difference": 0.00020019230632239982
+        }
+      },
+      "bh_fdr_0.05": {
+        "r_discoveries": 46,
+        "python_discoveries": 46,
+        "disagreement_features": []
+      }
+    },
+    "mean": {
+      "r_fit_type": "mean",
+      "py_fit_type": "mean",
+      "size_factor": {
+        "matched_finite": 12,
+        "finite_mask_disagreements": 0,
+        "median_absolute_difference": 8.881784197001252e-16,
+        "p95_absolute_difference": 4.418687638008123e-15,
+        "max_absolute_difference": 4.6629367034256575e-15
+      },
+      "wald": {
+        "baseMean": {
+          "matched_finite": 240,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 4.263256414560601e-14,
+          "p95_absolute_difference": 4.845901457883878e-13,
+          "max_absolute_difference": 5.002220859751105e-12
+        },
+        "dispersion": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 0.00013235715612169158,
+          "p95_absolute_difference": 0.0008472039472272983,
+          "max_absolute_difference": 0.0030400847684332044
+        },
+        "log2FoldChange": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 3.951760717185726e-06,
+          "p95_absolute_difference": 4.583963661106065e-05,
+          "max_absolute_difference": 0.0002510530154384294
+        },
+        "lfcSE": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 0.0002055908168251963,
+          "p95_absolute_difference": 0.0005183223087820043,
+          "max_absolute_difference": 0.0012787782739259734
+        },
+        "stat": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 0.0006303585512510423,
+          "p95_absolute_difference": 0.005710837945361467,
+          "max_absolute_difference": 0.021669011748151945
+        },
+        "pvalue": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 0.00016475544021432587,
+          "p95_absolute_difference": 0.0008399451748261065,
+          "max_absolute_difference": 0.0014280687724830265
+        },
+        "padj": {
+          "matched_finite": 239,
+          "finite_mask_disagreements": 0,
+          "median_absolute_difference": 0.0003459343860495734,
+          "p95_absolute_difference": 0.0013846173812960935,
+          "max_absolute_difference": 0.003612557455686699
+        }
+      },
+      "bh_fdr_0.05": {
+        "r_discoveries": 47,
+        "python_discoveries": 47,
+        "disagreement_features": []
+      }
+    }
+  },
+  "input_sha256": {
+    "counts.tsv": "a3cef2c43f005753a624ef4556e79c2204131def264174994d0ee8c1d9b2603b",
+    "metadata.tsv": "9e02b9903d31970c604431a5876543c9c653bfe5da8b0201bb1351e449d919cb"
+  },
+  "r": "4.5.3",
+  "deseq2": "1.50.2",
+  "vst": {
+    "parametric": {
+      "matched_finite": 2880,
+      "finite_mask_disagreements": 0,
+      "median_absolute_difference": 0.0005508555709416996,
+      "p95_absolute_difference": 0.0017308013090838478,
+      "max_absolute_difference": 0.002494036607780803
+    },
+    "python_parametric_fit_type": "parametric",
+    "r_local_shape": [
+      12,
+      240
+    ],
+    "python_local": "NotImplementedError: Found fit_type 'local'. Expected 'parametric' or 'mean'."
+  },
+  "lrt": {
+    "r_finite_p_values": 239,
+    "python": "TypeError: DeseqDataSet.deseq2() got an unexpected keyword argument 'test'"
+  },
+  "python_warnings": [
+    "The 'future.infer_string' option is deprecated and will be removed in pandas 4.0. Inferring str dtype for string data has been the default since pandas 3.0, and it will no longer be possible to disable it."
+  ]
+}
