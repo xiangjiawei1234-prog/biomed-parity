@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 
-> **项目状态：Alpha（v0.1.0，迁移进行中）。** 方法目录中的 16 个 R 入口均已建立至少一组数值对照，其中竞争风险评分的非默认目标原因 AUC 推断为部分一致。各入口仍存在未覆盖的接口与统计路径，公开 API 可能随验收进展调整。已验证范围与剩余任务见[迁移进展](catalog/progress.json)。
+> **项目状态：Alpha（v0.1.1，迁移进行中）。** 方法目录中的 16 个 R 入口均已建立至少一组数值对照，其中竞争风险评分的非默认目标原因 AUC 推断为部分一致。各入口仍存在未覆盖的接口与统计路径，公开 API 可能随验收进展调整。已验证范围与剩余任务见[迁移进展](catalog/progress.json)。
 
 **biomed-parity** provides independent Python implementations of selected biomedical statistical methods, accompanied by reproducible R reference cases and numerical comparisons. The implementations depend only on NumPy and SciPy and do not require an R runtime. The project is an early-stage research prototype: public APIs may change as validation continues. Documentation is written in Chinese; docstrings and code comments are in English.
 
