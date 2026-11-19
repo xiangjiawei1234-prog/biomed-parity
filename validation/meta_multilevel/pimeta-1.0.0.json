@@ -1,0 +1,46 @@
+{
+  "pimeta_version": "1.0.0",
+  "numpy_version": "2.1.3",
+  "scipy_version": "1.18.0",
+  "metafor_version": "5.0.1",
+  "rma_mv_fixed_variance_argument": false,
+  "rma_mv_known_correlation_argument": false,
+  "cases": {
+    "nested-reml-profile-and-crve": {
+      "coefficient_max_abs_difference": 2.2094892582202874e-09,
+      "variance_max_abs_difference": 2.4173813159555912e-09,
+      "coefficient_covariance_max_abs_difference": 6.512746696107907e-10,
+      "log_likelihood_abs_difference": 1.9539925233402755e-14,
+      "confint_keys": [
+        "intrcpt",
+        "V1",
+        "V2"
+      ],
+      "cr2_standard_error_max_abs_difference": 1.985655952163601e-09,
+      "cr2_df_max_abs_difference": 1.4304178641566523e-07,
+      "cr2_result_fields": [
+        "beta",
+        "ci_lb",
+        "ci_ub",
+        "dfs",
+        "n",
+        "pval",
+        "se",
+        "vb",
+        "vbest",
+        "zval"
+      ],
+      "profile_rma_failure": "TypeError: argument 'result' must be an RmaResult"
+    },
+    "crossed-reml": {
+      "coefficient_max_abs_difference": 2.467918847059991e-08,
+      "variance_max_abs_difference": 7.766775900197587e-07,
+      "coefficient_covariance_max_abs_difference": 2.548527656895394e-07,
+      "log_likelihood_abs_difference": 4.047429058573471e-11,
+      "confint_keys": [
+        "intrcpt",
+        "V1"
+      ]
+    }
+  }
+}
