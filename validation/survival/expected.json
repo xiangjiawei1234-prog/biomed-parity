@@ -1,0 +1,350 @@
+{
+  "versions": {
+    "R": "4.5.3",
+    "survival": "3.8.6"
+  },
+  "cases": [
+    {
+      "id": "two_group_logrank",
+      "groups": [
+        "A",
+        "B"
+      ],
+      "counts": [
+        5,
+        5
+      ],
+      "observed": [
+        4,
+        3
+      ],
+      "expected": [
+        2.63492063492063,
+        4.36507936507936
+      ],
+      "variance": [
+        [1.37729906777526, -1.37729906777526],
+        [-1.37729906777526, 1.37729906777526]
+      ],
+      "statistic": 1.35296807829507,
+      "df": 1,
+      "pvalue": 0.244759902865661,
+      "strata": null,
+      "strata_counts": null
+    },
+    {
+      "id": "weighted_peto",
+      "groups": [
+        "A",
+        "B"
+      ],
+      "counts": [
+        5,
+        5
+      ],
+      "observed": [
+        2.9,
+        1.88571428571429
+      ],
+      "expected": [
+        2.01428571428571,
+        2.77142857142857
+      ],
+      "variance": [
+        [0.833673469387755, -0.833673469387755],
+        [-0.833673469387755, 0.833673469387755]
+      ],
+      "statistic": 0.941003671970624,
+      "df": 1,
+      "pvalue": 0.33201985651825,
+      "strata": null,
+      "strata_counts": null
+    },
+    {
+      "id": "stratified_three_group_fractional_weight",
+      "groups": [
+        "c",
+        "b",
+        "a"
+      ],
+      "counts": [
+        6,
+        5,
+        4
+      ],
+      "observed": [
+        [1.36028303398483, 0, 0.784052681683116],
+        [0, 1, 0.896378130777142],
+        [1.73602192281783, 0, 1]
+      ],
+      "expected": [
+        [2.10962158060509, 0.25, 1.21458637343293],
+        [0, 0.75, 0.953235479538562],
+        [0.986683376197572, 0, 0.512608959488762]
+      ],
+      "variance": [
+        [1.25805424518714, -0.563778691123569, -0.694275554063574],
+        [-0.563778691123569, 0.739169302501522, -0.175390611377953],
+        [-0.694275554063574, -0.175390611377953, 0.869666165441527]
+      ],
+      "statistic": 2.03701170646318,
+      "df": 2,
+      "pvalue": 0.361134124647703,
+      "strata": [
+        "y",
+        "z",
+        "x"
+      ],
+      "strata_counts": [
+        5,
+        4,
+        6
+      ]
+    },
+    {
+      "id": "single_explicit_stratum",
+      "groups": [
+        2,
+        11
+      ],
+      "counts": [
+        5,
+        5
+      ],
+      "observed": [
+        5.42881956556374,
+        3.39045721866879
+      ],
+      "expected": [
+        4.71217410776392,
+        4.10710267646861
+      ],
+      "variance": [
+        [2.68803889868705, -2.68803889868705],
+        [-2.68803889868705, 2.68803889868705]
+      ],
+      "statistic": 0.191061488148839,
+      "df": 1,
+      "pvalue": 0.66203461476797,
+      "strata": [
+        8
+      ],
+      "strata_counts": [
+        10
+      ]
+    },
+    {
+      "id": "near_ties_fixed",
+      "groups": [
+        "A",
+        "B"
+      ],
+      "counts": [
+        3,
+        3
+      ],
+      "observed": [
+        1.87219594949342,
+        1.46679950699478
+      ],
+      "expected": [
+        1.49505853834542,
+        1.84393691814279
+      ],
+      "variance": [
+        [0.612249626400901, -0.612249626400901],
+        [-0.612249626400901, 0.612249626400902]
+      ],
+      "statistic": 0.232311496412878,
+      "df": 1,
+      "pvalue": 0.629815160442374,
+      "strata": null,
+      "strata_counts": null
+    },
+    {
+      "id": "near_ties_as_supplied",
+      "groups": [
+        "A",
+        "B"
+      ],
+      "counts": [
+        3,
+        3
+      ],
+      "observed": [
+        1.87219594949342,
+        1.221537470895
+      ],
+      "expected": [
+        1.42971226744622,
+        1.6640211529422
+      ],
+      "variance": [
+        [0.617222045427908, -0.617222045427908],
+        [-0.617222045427908, 0.617222045427908]
+      ],
+      "statistic": 0.317214542689103,
+      "df": 1,
+      "pvalue": 0.573286430934955,
+      "strata": null,
+      "strata_counts": null
+    },
+    {
+      "id": "all_censored",
+      "groups": [
+        "a",
+        "b"
+      ],
+      "counts": [
+        2,
+        2
+      ],
+      "observed": [
+        0,
+        0
+      ],
+      "expected": [
+        0,
+        0
+      ],
+      "variance": [
+        [0, 0],
+        [0, 0]
+      ],
+      "statistic": 0,
+      "df": -1,
+      "pvalue": "NaN",
+      "strata": null,
+      "strata_counts": null
+    },
+    {
+      "id": "one_contributing_group",
+      "groups": [
+        "a",
+        "b"
+      ],
+      "counts": [
+        2,
+        2
+      ],
+      "observed": [
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        2
+      ],
+      "variance": [
+        [0, 0],
+        [0, 0]
+      ],
+      "statistic": 0,
+      "df": 0,
+      "pvalue": 1,
+      "strata": null,
+      "strata_counts": null
+    },
+    {
+      "id": "fewer_contributing_than_observed",
+      "groups": [
+        "a",
+        "b",
+        "c"
+      ],
+      "counts": [
+        2,
+        2,
+        2
+      ],
+      "observed": [
+        0,
+        2,
+        1
+      ],
+      "expected": [
+        0,
+        1.83333333333333,
+        1.16666666666667
+      ],
+      "variance": [
+        [0, 0, 0],
+        [0, 0.472222222222222, -0.472222222222222],
+        [0, -0.472222222222222, 0.472222222222222]
+      ],
+      "statistic": 0.0588235294117646,
+      "df": 1,
+      "pvalue": 0.808365155914511,
+      "strata": null,
+      "strata_counts": null
+    },
+    {
+      "id": "disconnected_stratum_covariance",
+      "error": "singular covariance"
+    },
+    {
+      "id": "all_failures_at_same_time",
+      "error": "singular covariance"
+    },
+    {
+      "id": "one_sample_logrank",
+      "n": 6,
+      "observed": 3,
+      "expected": 4.41016564731625,
+      "variance": 4.41016564731625,
+      "statistic": 0.450905320094037,
+      "df": 1,
+      "pvalue": 0.501905345558862
+    },
+    {
+      "id": "one_sample_weighted",
+      "n": 6,
+      "observed": 3,
+      "expected": 4.41016564731625,
+      "variance": 2.0470055501887,
+      "statistic": 0.390449083141943,
+      "df": 1,
+      "pvalue": 0.532063439036361
+    },
+    {
+      "id": "one_sample_zero_probability_logrank",
+      "n": 4,
+      "observed": 2,
+      "expected": "Inf",
+      "variance": "Inf",
+      "statistic": "NaN",
+      "df": 1,
+      "pvalue": "NaN"
+    },
+    {
+      "id": "one_sample_zero_probability_weighted",
+      "n": 4,
+      "observed": 2,
+      "expected": "Inf",
+      "variance": 1.05055,
+      "statistic": 0.201418304697539,
+      "df": 1,
+      "pvalue": 0.653578458741765
+    },
+    {
+      "id": "one_sample_certain_survival_logrank",
+      "n": 3,
+      "observed": 2,
+      "expected": 0,
+      "variance": 0,
+      "statistic": "Inf",
+      "df": 1,
+      "pvalue": 0
+    },
+    {
+      "id": "one_sample_certain_survival",
+      "n": 3,
+      "observed": 2,
+      "expected": 0,
+      "variance": -0,
+      "statistic": "-Inf",
+      "df": 1,
+      "pvalue": 1
+    }
+  ]
+}
