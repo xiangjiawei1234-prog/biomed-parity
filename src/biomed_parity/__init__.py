@@ -1,3 +1,3 @@
 """Native Python methods with reference checks against biomedical R packages."""
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
