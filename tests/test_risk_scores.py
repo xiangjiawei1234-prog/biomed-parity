@@ -25,19 +25,23 @@ def _compare(actual, target, field):
 def _check_case(case, expected):
     arguments = {key: value for key, value in case.items() if key != "id"}
     actual = score_competing_risks(**arguments)
-    divergence = case["id"] == "tied-times-and-risks"
-    auc_fields = ("estimate",) if divergence else FIELDS
+    divergence = case.get("cause", 1) != 1
+    _check_output(actual, expected, ("estimate",) if divergence else FIELDS)
+    _check_output(score_competing_risks(**arguments, auc_inference="riskregression"), expected)
+    if divergence:
+        # For a nondefault cause the default estimates a different variance.
+        assert np.max(np.abs(
+            actual.auc.standard_error - [row["standard_error"] for row in expected["auc"]]
+        )) > 0.05
+
+
+def _check_output(actual, expected, auc_fields=FIELDS):
     _compare(actual.horizons, expected["horizons"], "horizons")
     for metric, fields in (("auc", auc_fields), ("brier", FIELDS)):
         summary = getattr(actual, metric)
         for field in fields:
             _compare(getattr(summary, field), [row[field] for row in expected[metric]], field)
-    if divergence:
-        # The released R reference has a reproducible AUC IF difference for cause 2.
-        assert np.max(np.abs(
-            actual.auc.standard_error - [row["standard_error"] for row in expected["auc"]]
-        )) > 0.2
-
+    _compare(actual.integrated_brier, expected["integrated_brier"], "integrated_brier")
     for contrast, reference in zip(actual.contrasts, expected["contrasts"], strict=True):
         assert contrast.reference == reference["reference"]
         assert contrast.model == reference["model"]
@@ -45,29 +49,8 @@ def _check_case(case, expected):
             summary = getattr(contrast, metric)
             for field in fields:
                 _compare(getattr(summary, field), reference[metric][field], field)
-            if metric == "brier" or not divergence:
+            if metric == "brier" or auc_fields == FIELDS:
                 _compare(getattr(contrast, f"{metric}_pvalues"), reference[f"{metric}_pvalues"], metric)
-
-
-def _check_cox_case(case, expected):
-    arguments = {key: value for key, value in case.items() if key != "id"}
-    actual = score_competing_risks(**arguments)
-    _compare(actual.horizons, expected["horizons"], "horizons")
-    for metric in ("auc", "brier"):
-        summary = getattr(actual, metric)
-        for field in FIELDS:
-            _compare(getattr(summary, field), [row[field] for row in expected[metric]], field)
-    _compare(actual.integrated_brier, expected["integrated_brier"], "integrated_brier")
-    for contrast, reference in zip(actual.contrasts, expected["contrasts"], strict=True):
-        assert contrast.reference == reference["reference"]
-        assert contrast.model == reference["model"]
-        for metric in ("auc", "brier"):
-            summary = getattr(contrast, metric)
-            for field in FIELDS:
-                _compare(getattr(summary, field), reference[metric][field], field)
-            _compare(
-                getattr(contrast, f"{metric}_pvalues"), reference[f"{metric}_pvalues"], metric,
-            )
 
 
 @pytest.mark.parametrize("case", CASES, ids=[case["id"] for case in CASES])
@@ -77,7 +60,7 @@ def test_matches_recorded_r(case):
 
 @pytest.mark.parametrize("case", COX_CASES, ids=[case["id"] for case in COX_CASES])
 def test_cox_censoring_matches_recorded_r(case):
-    _check_cox_case(case, COX_EXPECTED[case["id"]])
+    _check_case(case, COX_EXPECTED[case["id"]])
 
 
 @pytest.mark.skipif(os.environ.get("BIOMED_R_PARITY") != "1", reason="live R parity is opt-in")
@@ -105,7 +88,7 @@ def test_cox_censoring_matches_live_r():
     )
     references = json.loads(process.stdout)["results"]
     for case in COX_CASES:
-        _check_cox_case(case, references[case["id"]])
+        _check_case(case, references[case["id"]])
 
 
 def test_status_labels_and_row_order_do_not_change_the_estimand():

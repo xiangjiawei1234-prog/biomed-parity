@@ -1,12 +1,16 @@
 """Bootstrap internal validation of a binary logistic prediction model."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from numbers import Integral, Real
+from typing import Literal
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy.special import expit, logit, ndtri
 from scipy.stats import rankdata
+
+from ._lowess import _lowess
 
 _METRICS = ("Dxy", "R2", "Intercept", "Slope", "Emax", "D", "U", "Q", "B", "g", "gp")
 
@@ -139,7 +143,7 @@ def _intervals(training, test, corrected, confidence):
     values = training - 1.25 * test
     critical = ndtri((1 + confidence) / 2)
     if len(values) < 2:
-        missing = np.full(len(_METRICS), np.nan)
+        missing = np.full_like(corrected, np.nan)
         return missing.copy(), missing
     if len(values) < 10:
         top = bottom = np.std(values, axis=0, ddof=1)
@@ -147,11 +151,15 @@ def _intervals(training, test, corrected, confidence):
         centered = values - values.mean(axis=0)
         top_mask = centered >= 0
         bottom_mask = centered <= 0
-        with np.errstate(invalid="ignore", divide="ignore"):
-            top = np.sqrt(np.sum(centered**2 * top_mask, axis=0) / (top_mask.sum(axis=0) - 1))
-            bottom = np.sqrt(
-                np.sum(centered**2 * bottom_mask, axis=0) / (bottom_mask.sum(axis=0) - 1)
+        def semideviation(side):
+            count = side.sum(axis=0)
+            squares = np.where(side, centered**2, 0).sum(axis=0)
+            variance = np.divide(
+                squares, count - 1, out=np.full_like(corrected, np.nan), where=count > 1,
             )
+            return np.sqrt(variance)
+        top = semideviation(top_mask)
+        bottom = semideviation(bottom_mask)
     return corrected - critical * top, corrected + critical * bottom
 
 
@@ -224,4 +232,198 @@ def validate_logistic(
         upper=upper,
         counts=np.full(len(_METRICS), len(training), dtype=np.int64),
         failed_replicates=tuple(failures),
+    )
+
+
+@dataclass(frozen=True)
+class LogisticCalibrationResult:
+    """Pointwise estimates on the prediction grid for a binary model."""
+
+    predy: NDArray[np.float64]
+    fitted_probabilities: NDArray[np.float64]
+    apparent: NDArray[np.float64]
+    corrected: NDArray[np.float64]
+    training_error: NDArray[np.float64]
+    test_error: NDArray[np.float64]
+    optimism: NDArray[np.float64]
+    lower: NDArray[np.float64] | None
+    upper: NDArray[np.float64] | None
+    counts: NDArray[np.int64]
+    failed_replicates: tuple[int, ...]
+
+
+def _curve_at(probability, outcome, grid, smoother, span, iterations, delta, digits):
+    if digits is not None:
+        probability = np.round(probability, digits)
+    if smoother is not None:
+        bp, by = smoother(probability.copy(), outcome.copy())
+        bp = _finite_array(bp, "smoother x")
+        by = _finite_array(by, "smoother y")
+        if bp.ndim != 1 or bp.shape != by.shape:
+            raise ValueError("smoother must return two aligned one-dimensional arrays")
+        bp, first = np.unique(bp, return_index=True)
+        by = by[first]
+    else:
+        bp, by = _lowess(probability, outcome, span, iterations, delta)
+    if len(bp) < 2:
+        return np.full(len(grid), np.nan)
+    return np.interp(grid, bp, by, left=np.nan, right=np.nan)
+
+
+def _curve_resampling(n, method, bootstrap_indices, fold_order, permutation_indices, n_resamples, seed):
+    all_rows = np.arange(n)
+    if method != "randomization" and permutation_indices is not None:
+        raise ValueError("permutation_indices apply only to randomization")
+    if method == "crossvalidation":
+        if bootstrap_indices is not None:
+            raise ValueError("bootstrap_indices apply to bootstrap methods")
+        if not isinstance(n_resamples, Integral) or not 2 <= n_resamples <= n // 2:
+            raise ValueError("crossvalidation requires between 2 and n // 2 folds in n_resamples")
+        if fold_order is None:
+            order = np.random.default_rng(seed).permutation(n)
+        else:
+            if seed is not None:
+                raise ValueError("seed applies when fold_order is omitted")
+            order = np.asarray(fold_order)
+            if order.dtype.kind not in "iu" or not np.array_equal(np.sort(order), all_rows):
+                raise ValueError("fold_order must be a permutation of all zero-based row indices")
+        width = n / n_resamples
+        validation = [
+            order[start:min(n, round(start + width))]
+            for start in (round(i * width) for i in range(n_resamples))
+        ]
+        training = [np.setdiff1d(all_rows, test) for test in validation]
+        return zip(training, validation, np.ones(n_resamples), strict=True)
+    if fold_order is not None:
+        raise ValueError("fold_order applies only to crossvalidation")
+    if method == "randomization":
+        if bootstrap_indices is not None:
+            raise ValueError("bootstrap_indices apply to bootstrap methods")
+        if permutation_indices is None:
+            count = 40 if n_resamples is None else n_resamples
+            if not isinstance(count, Integral) or count < 1:
+                raise ValueError("n_resamples must be a positive integer")
+            rng = np.random.default_rng(seed)
+            permutations = (rng.permutation(n) for _ in range(count))
+        else:
+            permutations = _resamples(n, permutation_indices, n_resamples, seed)
+            if np.any(np.sort(permutations, axis=1) != all_rows):
+                raise ValueError("permutation_indices must permute all zero-based row indices")
+        return ((outcomes, all_rows, 1.0) for outcomes in permutations)
+    bootstrap = _resamples(n, bootstrap_indices, n_resamples, seed)
+    if method == "boot":
+        return ((training, all_rows, 1.0) for training in bootstrap)
+    omitted = np.ones(bootstrap.shape, dtype=bool)
+    omitted[np.arange(len(bootstrap))[:, None], bootstrap] = False
+    counts = omitted.sum(axis=0)
+    if np.any(counts == 0):
+        raise ValueError(".632 requires every observation to be omitted at least once")
+    weights = (omitted / counts).sum(axis=1) / n
+    return zip(bootstrap, map(np.flatnonzero, omitted), weights, strict=True)
+
+
+def calibrate_logistic(
+    x: ArrayLike,
+    y: ArrayLike,
+    *,
+    predy: ArrayLike | None = None,
+    method: Literal["boot", ".632", "crossvalidation", "randomization"] = "boot",
+    bootstrap_indices: ArrayLike | None = None,
+    fold_order: ArrayLike | None = None,
+    permutation_indices: ArrayLike | None = None,
+    n_resamples: int | None = None,
+    seed: int | np.random.Generator | None = None,
+    span: float = 2 / 3,
+    iterations: int = 0,
+    delta: float | None = None,
+    digits: int | None = None,
+    smoother: Callable | None = None,
+    confidence: float | None = 0.95,
+) -> LogisticCalibrationResult:
+    """Calibrate binary logistic probabilities on a common prediction grid.
+
+    Supply numeric design columns without an intercept and an outcome
+    encoded 0/1. The default LOWESS uses a span of 2/3 and no robust passes.
+    Optionally pass a smoother that returns paired probabilities and
+    fitted outcome values. Areas outside its support are not extrapolated.
+    The bootstrap uses the original observations for testing, while .632
+    uses held-out observations from each draw. For cross-validation,
+    n_resamples gives the fold count and fold_order fixes the row order.
+    Randomization permutes the training labels and tests on the original
+    observations. Pass permutation_indices to supply fixed permutations.
+    """
+    x = _finite_array(x, "x")
+    y = _finite_array(y, "y")
+    if x.ndim != 2 or x.shape[1] < 1 or y.ndim != 1 or x.shape[0] != len(y) or not len(y):
+        raise ValueError("x must be a nonempty design matrix with one row per y value")
+    if not np.array_equal(np.unique(y), [0, 1]):
+        raise ValueError("y must contain both binary outcome classes encoded as 0 and 1")
+    if method not in ("boot", ".632", "crossvalidation", "randomization"):
+        raise ValueError("method must be 'boot', '.632', 'crossvalidation' or 'randomization'")
+    if not isinstance(span, Real) or not 0 < span <= 1:
+        raise ValueError("span must be in (0, 1]")
+    if not isinstance(iterations, Integral) or iterations < 0:
+        raise ValueError("iterations must be a nonnegative integer")
+    if delta is not None and (not isinstance(delta, Real) or not np.isfinite(delta) or delta < 0):
+        raise ValueError("delta must be None or finite and nonnegative")
+    if digits is not None and (not isinstance(digits, Integral) or not 0 <= digits <= 15):
+        raise ValueError("digits must be None or an integer between 0 and 15")
+    if smoother is not None and not callable(smoother):
+        raise ValueError("smoother must be None or callable")
+    if confidence is not None and (not isinstance(confidence, Real) or not 0 < confidence < 1):
+        raise ValueError("confidence must be None or in (0, 1)")
+
+    original = _logistic_fit(x, y)
+    predicted = expit(original[0] + x @ original[1:])
+    if predy is None:
+        if len(y) < 11:
+            raise ValueError("supply predy when there are fewer than 11 observations")
+        ordered = np.sort(predicted)
+        grid = np.linspace(ordered[4], ordered[-5], 50)
+    else:
+        grid = np.atleast_1d(_finite_array(predy, "predy"))
+        if grid.ndim != 1 or not len(grid) or np.any((grid < 0) | (grid > 1)):
+            raise ValueError("predy must contain probabilities in [0, 1]")
+
+    def curve(probabilities, outcomes):
+        return _curve_at(probabilities, outcomes, grid, smoother, span, iterations, delta, digits)
+
+    apparent = curve(predicted, y)
+    samples = _curve_resampling(
+        len(y), method, bootstrap_indices, fold_order, permutation_indices, n_resamples, seed,
+    )
+    training, testing, weights, failures = [], [], [], []
+    all_rows = np.arange(len(y))
+    for i, (train, test, weight) in enumerate(samples):
+        train_design = all_rows if method == "randomization" else train
+        try:
+            coefficients = _logistic_fit(x[train_design], y[train])
+        except np.linalg.LinAlgError:
+            failures.append(i)
+            continue
+        fitted = expit(coefficients[0] + x @ coefficients[1:])
+        training.append(curve(fitted[train_design], y[train]) - grid)
+        testing.append(curve(fitted[test], y[test]) - grid)
+        weights.append(weight)
+    if not training:
+        raise ValueError("no successful resampled logistic fits")
+
+    train_stats = np.asarray(training)
+    test_stats = np.asarray(testing)
+    valid = np.isfinite(train_stats) & np.isfinite(test_stats)
+    counts = valid.sum(axis=0)
+    train_sum = np.where(valid, train_stats, 0).sum(axis=0)
+    test_sum = np.asarray(weights) @ np.where(valid, test_stats, 0)
+    training_error = np.divide(train_sum, counts, out=np.full_like(train_sum, np.nan), where=counts > 0)
+    if method == ".632":
+        test_error = test_sum
+        optimism = 0.632 * (apparent - grid - test_error)
+    else:
+        test_error = np.divide(test_sum, counts, out=np.full_like(test_sum, np.nan), where=counts > 0)
+        optimism = training_error - test_error
+    corrected = apparent - optimism
+    lower, upper = _intervals(train_stats, test_stats, corrected, confidence)
+    return LogisticCalibrationResult(
+        grid, predicted, apparent, corrected, training_error, test_error,
+        optimism, lower, upper, counts, tuple(failures),
     )
