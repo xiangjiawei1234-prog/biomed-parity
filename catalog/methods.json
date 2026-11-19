@@ -1,0 +1,788 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-11-19",
+  "categories": [
+    {
+      "id": "survival",
+      "label": "生存与竞争风险"
+    },
+    {
+      "id": "diagnostics",
+      "label": "诊断准确性"
+    },
+    {
+      "id": "trial-design",
+      "label": "临床试验设计"
+    },
+    {
+      "id": "clinical-modeling",
+      "label": "临床预测与回归"
+    },
+    {
+      "id": "epidemiology",
+      "label": "流行病学与证据综合"
+    },
+    {
+      "id": "human-expression",
+      "label": "人体表达统计"
+    }
+  ],
+  "assessments": {
+    "compatibility_gap": "存在同类 Python 工具，列出的 R 输出或数值行为仍需要单独满足。",
+    "verify_existing": "已有 Python 候选覆盖核心公开接口，优先对照验证，按实测残差补齐。",
+    "workflow_gap": "调研所列候选未展示目标组合流程，按独立子功能建立对照。"
+  },
+  "methods": [
+    {
+      "id": "survival-survdiff",
+      "category": "survival",
+      "priority": "P0",
+      "r_package": "survival",
+      "r_entry_points": [
+        "survdiff"
+      ],
+      "license": "LGPL-2.0-or-later",
+      "assessment": "compatibility_gap",
+      "python_candidates": [
+        "statsmodels.duration.survfunc.survdiff",
+        "lifelines.statistics.multivariate_logrank_test",
+        "sksurv.compare.compare_survival"
+      ],
+      "gap": "statsmodels 已提供分层和 Fleming–Harrington 加权检验，scikit-survival 可返回普通 log-rank 的分组统计和协方差。R 工作流仍需统一复现任意 rho 的分层加权矩阵、timefix 及单样本 offset。",
+      "validation_targets": [
+        "分层和未分层的 n、obs、exp、var、卡方统计量和 p 值",
+        "并列和近并列时点与无期望事件组",
+        "给定个体参考生存概率的单样本检验"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/survival/index.html"
+        },
+        {
+          "label": "survdiff 手册",
+          "url": "https://stat.ethz.ch/R-manual/R-devel/library/survival/html/survdiff.html"
+        },
+        {
+          "label": "statsmodels 分层和加权检验",
+          "url": "https://www.statsmodels.org/stable/generated/statsmodels.duration.survfunc.survdiff.html"
+        },
+        {
+          "label": "lifelines 加权检验",
+          "url": "https://lifelines.readthedocs.io/en/latest/lifelines.statistics.html"
+        },
+        {
+          "label": "scikit-survival 分组统计",
+          "url": "https://scikit-survival.readthedocs.io/en/stable/api/generated/sksurv.compare.compare_survival.html"
+        }
+      ]
+    },
+    {
+      "id": "proc-delong",
+      "category": "diagnostics",
+      "priority": "P0",
+      "r_package": "pROC",
+      "r_entry_points": [
+        "roc",
+        "ci.auc",
+        "roc.test",
+        "var",
+        "cov"
+      ],
+      "license": "GPL-3.0-or-later",
+      "assessment": "compatibility_gap",
+      "python_candidates": [
+        "pauc",
+        "sklearn.metrics.roc_auc_score",
+        "MLstatkit.Delong_test"
+      ],
+      "gap": "pauc 提供配对和不配对 DeLong 及区间，是功能最接近的候选。pauc 0.2.1 的本地并列分数案例在方差、区间和比较 p 值上与 pROC 不同。MLstatkit 提供配对比较和可选单曲线区间。迁移时需复现方向与标签、配对差值区间、不配对 Welch 型检验和零方差行为。",
+      "validation_targets": [
+        "AUC、方差、协方差和区间",
+        "配对和不配对样本的估计、检验统计量、自由度与 p 值",
+        "不同方向、分数并列、完全分离、零方差与非默认备择"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/pROC/index.html"
+        },
+        {
+          "label": "ROC 曲线比较",
+          "url": "https://search.r-project.org/CRAN/refmans/pROC/html/roc.test.html"
+        },
+        {
+          "label": "AUC 区间",
+          "url": "https://search.r-project.org/CRAN/refmans/pROC/html/ci.auc.html"
+        },
+        {
+          "label": "scikit-learn ROC AUC",
+          "url": "https://scikit-learn.org/stable/modules/generated/sklearn.metrics.roc_auc_score.html"
+        },
+        {
+          "label": "MLstatkit 使用说明",
+          "url": "https://github.com/Brritany/MLstatkit"
+        },
+        {
+          "label": "pauc 0.2.1 功能说明",
+          "url": "https://pypi.org/project/pauc/0.2.1/"
+        }
+      ]
+    },
+    {
+      "id": "survrm2-rmst2",
+      "category": "survival",
+      "priority": "P0",
+      "r_package": "survRM2",
+      "r_entry_points": [
+        "rmst2"
+      ],
+      "license": "GPL-2.0-only",
+      "assessment": "compatibility_gap",
+      "python_candidates": [
+        "lifelines.utils.restricted_mean_survival_time",
+        "coxrmstsimpson"
+      ],
+      "gap": "lifelines 提供单曲线截断面积和可选截断生存时间的方差。对该方差和 RMST 估计量的抽样方差须分别验证。coxrmstsimpson 以 Cox 预测曲线做积分。现有候选文档未覆盖 rmst2 未调整和协变量调整的同一组 RMST/RMTL 对比、标准误与检验。",
+      "validation_targets": [
+        "截断时间及默认截断选择",
+        "两组 RMST/RMTL 及 RMST 差值、RMST 比值和 RMTL 比值",
+        "基线协变量调整与边界删失"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/survRM2/index.html"
+        },
+        {
+          "label": "rmst2 手册",
+          "url": "https://search.r-project.org/CRAN/refmans/survRM2/html/rmst2.html"
+        },
+        {
+          "label": "lifelines RMST",
+          "url": "https://lifelines.readthedocs.io/en/latest/lifelines.utils.html#lifelines.utils.restricted_mean_survival_time"
+        },
+        {
+          "label": "CoxRMSTSimpson Python",
+          "url": "https://pypi.org/project/coxrmstsimpson/"
+        }
+      ]
+    },
+    {
+      "id": "cmprsk-competing-risks",
+      "category": "survival",
+      "priority": "P1",
+      "r_package": "cmprsk",
+      "r_entry_points": [
+        "cuminc",
+        "crr",
+        "predict.crr",
+        "timepoints"
+      ],
+      "license": "GPL-2.0-or-later",
+      "assessment": "compatibility_gap",
+      "python_candidates": [
+        "pycmprsk",
+        "comprisk",
+        "cmprsk（R 桥接）"
+      ],
+      "gap": "pycmprsk 1.0.0（Python ≥3.13）与 R 的累积发生率曲线、分层 Gray 检验和 Fine–Gray 拟合在本地案例一致。其 timepoints 跃点取值和并列目标事件残差不同。仓库提供两处适配，验证 82 个字段均在容差内。comprisk 也提供 Gray 检验、Aalen–Johansen 和 Fine–Gray。",
+      "validation_targets": [
+        "累积发生率与方差、分层 Gray 检验",
+        "Fine–Gray 系数、方差矩阵、残差和预测",
+        "非默认事件/删失编码、cengroup、时变协变量和并列时点"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/cmprsk/index.html"
+        },
+        {
+          "label": "R 手册",
+          "url": "https://cran.r-project.org/web/packages/cmprsk/refman/cmprsk.html"
+        },
+        {
+          "label": "pycmprsk 移植说明",
+          "url": "https://github.com/covertcast/pycmprsk"
+        },
+        {
+          "label": "comprisk 项目文档",
+          "url": "https://sunnyadn.github.io/comprisk/reference/"
+        },
+        {
+          "label": "comprisk 作者预印本",
+          "url": "https://arxiv.org/abs/2607.09431"
+        },
+        {
+          "label": "cmprsk 的 R 接口",
+          "url": "https://pypi.org/project/cmprsk/"
+        }
+      ]
+    },
+    {
+      "id": "riskregression-competing-score",
+      "category": "survival",
+      "priority": "P1",
+      "r_package": "riskRegression",
+      "r_entry_points": [
+        "Score"
+      ],
+      "license": "GPL-2.0-or-later",
+      "assessment": "compatibility_gap",
+      "python_candidates": [
+        "comprisk.score_cr",
+        "sksurv.metrics.cumulative_dynamic_auc",
+        "sksurv.metrics.brier_score"
+      ],
+      "gap": "comprisk 已提供竞争风险 IPCW AUC、Brier 和 bootstrap 区间。需逐项复现或比较 R 的影响函数标准误、删失模型可选 Cox 回归以及多预测模型的成对比较。",
+      "validation_targets": [
+        "多事件类型下不同预测时点的 AUC 和 Brier",
+        "影响函数标准误和置信区间",
+        "对比行、评价时间范围及删失模型"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/riskRegression/index.html"
+        },
+        {
+          "label": "Score 方法",
+          "url": "https://search.r-project.org/CRAN/refmans/riskRegression/html/Score.html"
+        },
+        {
+          "label": "comprisk 评分工作流",
+          "url": "https://sunnyadn.github.io/comprisk/quickstart/"
+        },
+        {
+          "label": "scikit-survival 指标",
+          "url": "https://scikit-survival.readthedocs.io/en/stable/api/metrics.html"
+        }
+      ]
+    },
+    {
+      "id": "gsdesign-group-sequential",
+      "category": "trial-design",
+      "priority": "P1",
+      "r_package": "gsDesign",
+      "r_entry_points": [
+        "gsDesign",
+        "gsProbability",
+        "gsCP",
+        "gsSurv",
+        "gsSurvPower"
+      ],
+      "license": "GPL-3.0-or-later",
+      "assessment": "workflow_gap",
+      "python_candidates": [
+        "sequential-analysis",
+        "gsdesign",
+        "peekproof",
+        "scipy.stats"
+      ],
+      "gap": "sequential-analysis 已提供多终点设计、分层 log-rank 监测和非绑定无效界值，peekproof 提供 Lan–DeMets 花费。审阅的 Python 文档没有展示 R 的效能和信息时间与分层入组、脱落和事件驱动日历的组合输出。",
+      "validation_targets": [
+        "标准正态模型中单侧和双侧边界、累计花费与效能",
+        "绑定和非绑定无效界值、条件效能",
+        "分层入组、事件进度及实际分析时间"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/gsDesign/index.html"
+        },
+        {
+          "label": "边界设计参考",
+          "url": "https://keaven.github.io/gsDesign/reference/gsDesign.html"
+        },
+        {
+          "label": "生存试验效能参考",
+          "url": "https://keaven.github.io/gsDesign/reference/gsSurvPower.html"
+        },
+        {
+          "label": "Python gsdesign",
+          "url": "https://pypi.org/project/gsdesign/"
+        },
+        {
+          "label": "sequential-analysis 功能说明",
+          "url": "https://pypi.org/project/sequential-analysis/"
+        },
+        {
+          "label": "peekproof 花费函数",
+          "url": "https://pypi.org/project/peekproof/"
+        }
+      ]
+    },
+    {
+      "id": "rms-clinical-modeling",
+      "category": "clinical-modeling",
+      "priority": "P1",
+      "r_package": "rms",
+      "r_entry_points": [
+        "lrm",
+        "cph",
+        "calibrate",
+        "validate",
+        "datadist",
+        "Predict",
+        "nomogram"
+      ],
+      "license": "GPL-2.0-or-later",
+      "assessment": "workflow_gap",
+      "python_candidates": [
+        "statsmodels",
+        "lifelines.calibration.survival_probability_calibration",
+        "sklearn.calibration"
+      ],
+      "gap": "候选工具提供基础拟合和针对分类或删失数据的校准。R 的拟合后设计元数据、模型重拟合的乐观偏差校正、预测与列线图贯穿同一工作流。",
+      "validation_targets": [
+        "限制性立方样条结点与线性预测值",
+        "固定重采样索引下校准点与校准斜率及表格",
+        "生存预测时点、参考水平与交互"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/rms/index.html"
+        },
+        {
+          "label": "校准手册",
+          "url": "https://search.r-project.org/CRAN/refmans/rms/html/calibrate.html"
+        },
+        {
+          "label": "工作流说明",
+          "url": "https://search.r-project.org/CRAN/refmans/rms/html/zzzrmsOverview.html"
+        },
+        {
+          "label": "lifelines 生存概率校准",
+          "url": "https://lifelines.readthedocs.io/en/stable/lifelines.calibration.html"
+        },
+        {
+          "label": "scikit-learn 概率校准",
+          "url": "https://scikit-learn.org/stable/modules/calibration.html"
+        }
+      ]
+    },
+    {
+      "id": "metafor-meta-analysis",
+      "category": "epidemiology",
+      "priority": "P1",
+      "r_package": "metafor",
+      "r_entry_points": [
+        "rma.uni",
+        "rma.mv",
+        "confint",
+        "vcalc",
+        "robust",
+        "predict"
+      ],
+      "license": "GPL-2.0-or-later",
+      "assessment": "verify_existing",
+      "python_candidates": [
+        "pimeta",
+        "PyMetaAnalysis",
+        "PyMARE",
+        "statsmodels.stats.meta_analysis"
+      ],
+      "gap": "pimeta 声称覆盖 rma.mv、诊断、CR2/CR3 与剖面似然区间。PyMetaAnalysis 文档提供 Q-profile 区间。仓库已迁移 rma.uni 截距型 REML 及其剖面似然区间。独立核对已有候选的多层拟合时，应覆盖相关效应、结构化随机项、协方差与稳健推断。",
+      "validation_targets": [
+        "给定非对角 V 的多层 REML",
+        "结构化和嵌套随机效应、方差分量和预测区间",
+        "集群稳健 CR2 的协方差与 Satterthwaite 自由度"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/metafor/index.html"
+        },
+        {
+          "label": "多层模型",
+          "url": "https://wviechtb.github.io/metafor/reference/rma.mv.html"
+        },
+        {
+          "label": "稳健推断",
+          "url": "https://wviechtb.github.io/metafor/reference/robust.html"
+        },
+        {
+          "label": "pimeta 功能说明",
+          "url": "https://pypi.org/project/pimeta/"
+        },
+        {
+          "label": "PyMARE API",
+          "url": "https://pymare.readthedocs.io/en/latest/api.html"
+        },
+        {
+          "label": "statsmodels Meta 分析示例",
+          "url": "https://www.statsmodels.org/stable/examples/notebooks/generated/metaanalysis1.html"
+        },
+        {
+          "label": "PyMetaAnalysis 统计方法",
+          "url": "https://zhaoboding.github.io/PyMetaAnalysis/methods/statistical-methods/"
+        },
+        {
+          "label": "metafor 区间说明",
+          "url": "https://wviechtb.github.io/metafor/reference/confint.rma.html"
+        }
+      ]
+    },
+    {
+      "id": "survey-complex-design",
+      "category": "epidemiology",
+      "priority": "P1",
+      "r_package": "survey",
+      "r_entry_points": [
+        "svydesign",
+        "svrepdesign",
+        "calibrate",
+        "svyglm",
+        "twophase",
+        "svycoxph"
+      ],
+      "license": "GPL-2.0-only OR GPL-3.0-only",
+      "assessment": "compatibility_gap",
+      "python_candidates": [
+        "svy",
+        "samplics",
+        "survey-kit"
+      ],
+      "gap": "svy 已公开提供线性化、复制权重、校准、分类表和设计校正 GLM，并记录部分与 R 不同的约定。审阅的候选工作流未展示 `twophase` 两阶段抽样和调查设计校正 Cox 的整套行为。",
+      "validation_targets": [
+        "同设计的 Taylor 与 BRR/Fay、Jackknife 估计和方差",
+        "域估计及孤立 PSU 约定",
+        "两阶段设计和调查加权 Cox 回归"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/survey/index.html"
+        },
+        {
+          "label": "两阶段设计",
+          "url": "https://search.r-project.org/CRAN/refmans/survey/html/twophase.html"
+        },
+        {
+          "label": "调查加权 Cox",
+          "url": "https://search.r-project.org/CRAN/refmans/survey/html/svycoxph.html"
+        },
+        {
+          "label": "svy 功能与对照说明",
+          "url": "https://github.com/samplics-org/svy"
+        },
+        {
+          "label": "samplics",
+          "url": "https://pypi.org/project/samplics/"
+        },
+        {
+          "label": "survey-kit",
+          "url": "https://pypi.org/project/survey-kit/"
+        }
+      ]
+    },
+    {
+      "id": "mice-multiple-imputation",
+      "category": "epidemiology",
+      "priority": "P1",
+      "r_package": "mice",
+      "r_entry_points": [
+        "mice",
+        "mice.impute.2l.pan",
+        "pool",
+        "D1",
+        "D2",
+        "D3"
+      ],
+      "license": "GPL-2.0-or-later",
+      "assessment": "compatibility_gap",
+      "python_candidates": [
+        "statsmodels.imputation.mice",
+        "miceforest.ImputationKernel"
+      ],
+      "gap": "statsmodels 已提供链式插补、预测均值匹配与合并，miceforest 提供基于 LightGBM 的插补。需核对分层条件模型、插补块和被动变量规则，以及 mice 的小样本自由度和嵌套模型合并检验。",
+      "validation_targets": [
+        "固定插补结果上的 Rubin 方差、Barnard–Rubin 自由度与区间",
+        "多层随机效应、预测矩阵、被动派生变量",
+        "多分类变量和多个插补数据集上的模型比较"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/mice/index.html"
+        },
+        {
+          "label": "多层正态插补",
+          "url": "https://amices.org/mice/reference/mice.impute.2l.pan.html"
+        },
+        {
+          "label": "合并及自由度",
+          "url": "https://amices.org/mice/reference/pool.html"
+        },
+        {
+          "label": "statsmodels 插补",
+          "url": "https://www.statsmodels.org/stable/imputation.html"
+        },
+        {
+          "label": "miceforest API",
+          "url": "https://miceforest.readthedocs.io/en/latest/ImputationKernel.html"
+        }
+      ]
+    },
+    {
+      "id": "mstate-transition-models",
+      "category": "survival",
+      "priority": "P2",
+      "r_package": "mstate",
+      "r_entry_points": [
+        "msprep",
+        "msfit",
+        "probtrans",
+        "MarkovTest"
+      ],
+      "license": "GPL-2.0-or-later",
+      "assessment": "compatibility_gap",
+      "python_candidates": [
+        "pymsm",
+        "scikit-survival"
+      ],
+      "gap": "PyMSM 提供事件别拟合、轨迹模拟和状态风险。需区分模拟估计与 mstate 提供的转移概率、关联方差和指定时点预测。",
+      "validation_targets": [
+        "三状态疾病—死亡路径的数据转换",
+        "累积转移风险、状态概率及 Aalen/Greenwood 方差",
+        "地标时间和左截断"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/mstate/index.html"
+        },
+        {
+          "label": "mstate 函数索引",
+          "url": "https://search.r-project.org/CRAN/refmans/mstate/html/00Index.html"
+        },
+        {
+          "label": "PyMSM 多状态模型",
+          "url": "https://hrossman.github.io/pymsm/api/multistate_model/"
+        }
+      ]
+    },
+    {
+      "id": "glmmtmb-zero-inflated-mixed",
+      "category": "clinical-modeling",
+      "priority": "P2",
+      "r_package": "glmmTMB",
+      "r_entry_points": [
+        "glmmTMB",
+        "predict",
+        "simulate"
+      ],
+      "license": "AGPL-3.0-only",
+      "assessment": "workflow_gap",
+      "python_candidates": [
+        "statsmodels.genmod.bayes_mixed_glm",
+        "Bambi"
+      ],
+      "gap": "Python 候选可拟合广义混合模型或构建零膨胀模型。目标缺口是复现 R 联合条件、零膨胀和离散度子模型的 Laplace 边际似然、参数化和推断。",
+      "validation_targets": [
+        "含随机截距的负二项零膨胀模型",
+        "条件均值和响应均值、离散度与优化诊断",
+        "分别检查固定效应、随机效应方差和近边界推断"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/glmmTMB/index.html"
+        },
+        {
+          "label": "glmmTMB 参数说明",
+          "url": "https://search.r-project.org/CRAN/refmans/glmmTMB/html/glmmTMB.html"
+        },
+        {
+          "label": "statsmodels 广义混合模型",
+          "url": "https://www.statsmodels.org/stable/mixed_glm.html"
+        },
+        {
+          "label": "Bambi 家族与混合模型",
+          "url": "https://bambinos.github.io/bambi/notebooks/getting_started.html"
+        }
+      ]
+    },
+    {
+      "id": "limma-linear-models",
+      "category": "human-expression",
+      "priority": "P2",
+      "r_package": "limma",
+      "r_entry_points": [
+        "lmFit",
+        "eBayes",
+        "voom",
+        "voomWithQualityWeights",
+        "duplicateCorrelation"
+      ],
+      "license": "GPL-2.0-or-later",
+      "assessment": "verify_existing",
+      "python_candidates": [
+        "pylimma",
+        "inmoose.limma",
+        "edgePython",
+        "statsmodels.WLS"
+      ],
+      "gap": "pylimma 0.3.0 本地复现普通及分块经验贝叶斯流程和矩形输入的 voom 质量权重。正方形输入权重存在已记录的广播差异，显式按特征广播可复现 R 3.66.0。InMoose 0.9.1 复现普通流程，在分块 GLS 上抛出 NotImplementedError。",
+      "validation_targets": [
+        "设计与对比矩阵、观测和样本权重",
+        "重复受试者块相关和经验贝叶斯方差",
+        "moderated t、自由度、p 值与基因排行"
+      ],
+      "sources": [
+        {
+          "label": "Bioconductor 上游",
+          "url": "https://bioconductor.org/packages/release/bioc/html/limma.html"
+        },
+        {
+          "label": "limma 上游手册",
+          "url": "https://bioconductor.org/packages/release/bioc/manuals/limma/man/limma.pdf"
+        },
+        {
+          "label": "InMoose limma API",
+          "url": "https://inmoose.readthedocs.io/en/stable/limma.html"
+        },
+        {
+          "label": "pylimma API",
+          "url": "https://pylimma.readthedocs.io/en/latest/api.html"
+        },
+        {
+          "label": "pylimma 已知差异",
+          "url": "https://pylimma.readthedocs.io/en/latest/validation/known_differences.html"
+        },
+        {
+          "label": "edgePython 0.5.1",
+          "url": "https://pypi.org/project/edgepython/0.5.1/"
+        }
+      ]
+    },
+    {
+      "id": "edger-count-models",
+      "category": "human-expression",
+      "priority": "P2",
+      "r_package": "edgeR",
+      "r_entry_points": [
+        "filterByExpr",
+        "normLibSizes",
+        "glmQLFit",
+        "glmQLFTest"
+      ],
+      "license": "GPL-2.0-or-later",
+      "assessment": "verify_existing",
+      "python_candidates": [
+        "edgePython",
+        "inmoose.edgepy",
+        "statsmodels.genmod.GLM"
+      ],
+      "gap": "本地 edgePython 0.5.1 在两套整数和低分数计数场景中复现 edgeR 4.8.2 的 legacy、v4 固定及自动离散度工作流，4,032 个数值均通过容差。InMoose 0.9.1 复现 legacy，v4 小计数 p 值最大差 0.16948。其他归一化、阈值、稳健估计和全零样本需逐项对照。",
+      "validation_targets": [
+        "小计数和全零特征",
+        "v4 与 legacy 两套参考及非整数计数",
+        "归一化因子、偏差、自由度、准似然检验及 FDR"
+      ],
+      "sources": [
+        {
+          "label": "Bioconductor 上游",
+          "url": "https://bioconductor.org/packages/release/bioc/html/edgeR.html"
+        },
+        {
+          "label": "edgeR v4 方法论文",
+          "url": "https://doi.org/10.1093/nar/gkaf018"
+        },
+        {
+          "label": "InMoose edgepy API",
+          "url": "https://inmoose.readthedocs.io/en/stable/edgepy.html"
+        },
+        {
+          "label": "edgePython 0.5.1",
+          "url": "https://pypi.org/project/edgepython/0.5.1/"
+        }
+      ]
+    },
+    {
+      "id": "deseq2-count-models",
+      "category": "human-expression",
+      "priority": "P2",
+      "r_package": "DESeq2",
+      "r_entry_points": [
+        "DESeq",
+        "results",
+        "lfcShrink",
+        "vst",
+        "rlog"
+      ],
+      "license": "LGPL-3.0-or-later",
+      "assessment": "compatibility_gap",
+      "python_candidates": [
+        "PyDESeq2",
+        "inmoose.deseq2"
+      ],
+      "gap": "PyDESeq2 0.6.0 的本地两类 Wald 拟合在 5% BH 阈值给出相同发现，系数、校正 p 值和盲 VST 有可测差异。测试的 PyDESeq2 入口拒绝 LRT 和 local VST。其余兼容工作包括其他系数收缩和复杂变换流程。",
+      "validation_targets": [
+        "多因素 Wald、对比编码与离群值处理",
+        "同一设计矩阵的全模型和约简模型 LRT",
+        "normal/ashr 收缩、独立过滤和 VST/rlog 逐项核对"
+      ],
+      "sources": [
+        {
+          "label": "Bioconductor 上游",
+          "url": "https://bioconductor.org/packages/release/bioc/html/DESeq2.html"
+        },
+        {
+          "label": "DESeq2 使用手册",
+          "url": "https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html"
+        },
+        {
+          "label": "PyDESeq2 当前文档",
+          "url": "https://pydeseq2.readthedocs.io/en/stable/"
+        },
+        {
+          "label": "InMoose 差异表达",
+          "url": "https://inmoose.readthedocs.io/en/stable/diffexp.html"
+        }
+      ]
+    },
+    {
+      "id": "variancepartition-dream",
+      "category": "human-expression",
+      "priority": "P2",
+      "r_package": "variancePartition",
+      "r_entry_points": [
+        "voomWithDreamWeights",
+        "dream",
+        "eBayes"
+      ],
+      "license": "GPL-2.0-only",
+      "assessment": "workflow_gap",
+      "python_candidates": [
+        "statsmodels.MixedLM",
+        "inmoose.limma"
+      ],
+      "gap": "候选分别提供混合模型或线性模型经验贝叶斯。dream 把观测精度权重、逐基因混合模型、近似自由度和经验贝叶斯推断组合为重复受试者表达工作流。",
+      "validation_targets": [
+        "多个组织或重复时间点的方差分解",
+        "随机项及权重后的基因水平效应",
+        "Satterthwaite/Kenward–Roger 自由度、跨基因方差收缩与 FDR"
+      ],
+      "sources": [
+        {
+          "label": "Bioconductor 上游",
+          "url": "https://bioconductor.org/packages/release/bioc/html/variancePartition.html"
+        },
+        {
+          "label": "dream 上游示例",
+          "url": "https://diseaseneurogenomics.github.io/variancePartition/articles/dream.html"
+        },
+        {
+          "label": "statsmodels 混合模型",
+          "url": "https://www.statsmodels.org/stable/mixed_linear.html"
+        },
+        {
+          "label": "InMoose limma API",
+          "url": "https://inmoose.readthedocs.io/en/stable/limma.html"
+        }
+      ]
+    }
+  ]
+}
