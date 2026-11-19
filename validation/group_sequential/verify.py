@@ -7,12 +7,21 @@ import subprocess
 
 import numpy as np
 
-from biomed_parity.group_sequential import efficacy_boundaries
+from biomed_parity.group_sequential import (
+    conditional_power,
+    crossing_probabilities,
+    efficacy_boundaries,
+    efficacy_futility_boundaries,
+    symmetric_boundaries,
+)
 
 HERE = Path(__file__).resolve().parent
 
 
 def assert_case(case, expected):
+    if "design" in case:
+        _assert_two_boundary_case(case, expected)
+        return
     inputs = {key: value for key, value in case.items() if key != "id"}
     result = efficacy_boundaries(**inputs)
     tolerances = {
@@ -37,6 +46,44 @@ def assert_case(case, expected):
         np.testing.assert_allclose(
             actual, reference, rtol=0, atol=tolerance, err_msg=f"{case['id']} {field}"
         )
+
+
+def _assert_two_boundary_case(case, expected):
+    inputs = {key: value for key, value in case.items() if key not in {"id", "design", "interim_z"}}
+    design = symmetric_boundaries if case["design"] == "symmetric" else efficacy_futility_boundaries
+    result = design(**inputs)
+    for field in ("upper_boundaries", "lower_boundaries", "alternative_effect"):
+        if expected[field] is None:
+            assert getattr(result, field) is None
+        else:
+            np.testing.assert_allclose(
+                getattr(result, field), expected[field], rtol=0, atol=2e-6, err_msg=f"{case['id']} {field}"
+            )
+    for field in ("information_fractions", "cumulative_alpha", "cumulative_beta"):
+        if expected[field] is None:
+            assert getattr(result, field) is None
+        else:
+            np.testing.assert_allclose(
+                getattr(result, field), expected[field], rtol=0, atol=1e-14, err_msg=f"{case['id']} {field}"
+            )
+
+    # Use the same thresholds as R to isolate the probability algorithms.
+    args = (
+        expected["information_fractions"],
+        expected["lower_boundaries"],
+        expected["upper_boundaries"],
+    )
+    for comparison in expected["evaluations"]:
+        kwargs = {"effect": comparison["effect"], "respect_lower": comparison["respect_lower"]}
+        if comparison["look"] is None:
+            observed = crossing_probabilities(*args, **kwargs)
+        else:
+            observed = conditional_power(*args, look=comparison["look"], z=comparison["z"], **kwargs)
+        for field in ("lower", "upper"):
+            np.testing.assert_allclose(
+                getattr(observed, field), comparison[field], rtol=0, atol=5e-10,
+                err_msg=f"{case['id']} {field} {comparison}",
+            )
 
 
 def verify(rscript="Rscript"):

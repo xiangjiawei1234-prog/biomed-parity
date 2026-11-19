@@ -18,6 +18,24 @@ summary_result <- function(table, target, influence) {
 
 results <- lapply(cases, function(case) {
     data <- data.frame(time = unlist(case$time), status = unlist(case$status))
+    terms <- character(0)
+    if (!is.null(case$censoring_covariates)) {
+        covariates <- case$censoring_covariates
+        design <- if (is.list(covariates[[1L]])) {
+            do.call(rbind, lapply(covariates, unlist))
+        } else {
+            as.matrix(unlist(covariates))
+        }
+        terms <- paste0("x", seq_len(ncol(design)))
+        colnames(design) <- terms
+        data <- cbind(data, as.data.frame(design))
+    }
+    if (!is.null(case$censoring_strata)) {
+        data$censoring_group <- factor(unlist(case$censoring_strata))
+        terms <- c(terms, "strat(censoring_group)")
+    }
+    strat <- rms::strat
+    formula <- reformulate(if (length(terms)) terms else "1", response = "Hist(time, status)")
     order_for_reference <- order(data$time, data$status == 0, method = "radix")
     original_order <- order(order_for_reference)
     data <- data[order_for_reference, ]
@@ -26,8 +44,9 @@ results <- lapply(cases, function(case) {
     risks <- lapply(risks, function(model) model[order_for_reference, , drop = FALSE])
     names(risks) <- paste0("m", seq_along(risks) - 1L)
     output <- Score(
-        risks, Hist(time, status) ~ 1, data = data, times = horizons,
-        cause = default(case$cause, 1L), null.model = FALSE, cens.model = "km",
+        risks, formula, data = data, times = horizons,
+        cause = default(case$cause, 1L), null.model = FALSE,
+        cens.model = if (length(terms)) "cox" else "km", summary = "ibs",
         keep = "iid", conf.int = default(case$confidence_level, .95),
         conservative = default(case$conservative, FALSE)
     )
@@ -43,7 +62,7 @@ results <- lapply(cases, function(case) {
     }
     auc <- lapply(names(risks), function(model) model_result(output$AUC, "AUC", model))
     brier <- lapply(names(risks), function(model) model_result(output$Brier, "Brier", model))
-    pairs <- combn(seq_along(risks), 2L, simplify = FALSE)
+    pairs <- if (length(risks) > 1L) combn(seq_along(risks), 2L, simplify = FALSE) else list()
     contrasts <- lapply(pairs, function(pair) {
         reference <- names(risks)[pair[1]]
         model <- names(risks)[pair[2]]
@@ -64,7 +83,11 @@ results <- lapply(cases, function(case) {
             brier_pvalues = b$p
         )
     })
-    list(horizons = horizons, auc = auc, brier = brier, contrasts = contrasts)
+    ibs <- lapply(names(risks), function(model) {
+        use <- output$Brier$score$model == model
+        output$Brier$score$IBS[use]
+    })
+    list(horizons = horizons, auc = auc, brier = brier, contrasts = contrasts, integrated_brier = ibs)
 })
 names(results) <- vapply(cases, function(case) case$id, character(1))
 cat(jsonlite::toJSON(list(r_version = as.character(getRversion()),

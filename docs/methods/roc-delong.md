@@ -34,7 +34,7 @@ print(comparison.difference, comparison.p_value, comparison.confidence_interval)
 
 单 AUC 区间使用正态近似，截断至 [0, 1]。配对差值使用正态参考分布，区间保留原始边界。独立样本的标准误为两个 AUC 方差之和的平方根，以 Satterthwaite 自由度计算 t 分布尾概率。配对且差值方差为零时，统计量根据差值取 0 或带符号的无穷大。独立检验的方差和为零时，自由度及 p 值按 pROC 实测返回 `NaN`。配对差值方差为零且区间水平为 1 时，两侧端点均为 `NaN`。[pROC 参考手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html)
 
-已覆盖的工作流是完整、未平滑二分类 AUC 的数字推断。pROC 的自动方向、因子等级推断、自动配对和缺失行删除、百分比输出、公式接口、诊断阈值、部分 AUC、bootstrap、Venkatraman 检验、多分类和绘图属于后续范围。警告文字和 R 对象结构使用各自语言的约定。
+本页接口覆盖完整、未平滑二分类 AUC 的 DeLong 推断。自动方向、百分比、部分 AUC 及 Bootstrap 对照见另一个方法页。因子等级推断、自动配对和缺失行删除、公式接口、诊断阈值、Venkatraman 检验、多分类和绘图属于后续范围。[部分 AUC 与 Bootstrap](roc-bootstrap.md)
 
 ## Python 候选的差异
 

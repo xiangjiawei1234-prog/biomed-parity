@@ -84,9 +84,7 @@ def _covariance_of_aucs(first: _Placements, second: _Placements) -> float:
     )
 
 
-def _placements(labels: ArrayLike, scores: ArrayLike, direction: Direction) -> _Placements:
-    if direction not in ("<", ">"):
-        raise ValueError("direction must be '<' or '>'")
+def _binary_inputs(labels: ArrayLike, scores: ArrayLike):
     labels = np.asarray(labels)
     scores = np.asarray(scores)
     if labels.ndim != 1 or scores.ndim != 1 or labels.shape != scores.shape:
@@ -95,7 +93,13 @@ def _placements(labels: ArrayLike, scores: ArrayLike, direction: Direction) -> _
         raise ValueError("labels must be 0 for controls and 1 for cases")
     if scores.dtype.kind not in "iuf" or not np.isfinite(scores).all():
         raise ValueError("scores must be finite real numbers")
+    return labels, scores
 
+
+def _placements(labels: ArrayLike, scores: ArrayLike, direction: Direction) -> _Placements:
+    if direction not in ("<", ">"):
+        raise ValueError("direction must be '<' or '>'")
+    labels, scores = _binary_inputs(labels, scores)
     cases = scores[labels == 1]
     controls = scores[labels == 0]
     if cases.size < 2 or controls.size < 2:

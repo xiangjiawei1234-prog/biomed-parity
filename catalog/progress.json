@@ -20,13 +20,15 @@
       "covered": [
         "delong_auc",
         "delong_paired_test",
-        "delong_unpaired_test"
+        "delong_unpaired_test",
+        "部分 AUC、分层 Bootstrap 区间与配对检验"
       ],
       "evidence": [
-        "docs/methods/roc-delong.md"
+        "docs/methods/roc-delong.md",
+        "docs/methods/roc-bootstrap.md"
       ],
       "remaining": [
-        "部分 AUC、平滑 ROC、阈值置信区间和重采样"
+        "平滑 ROC、阈值置信区间和绘图"
       ]
     },
     "survrm2-rmst2": {
@@ -59,26 +61,28 @@
     "riskregression-competing-score": {
       "status": "native_partial_parity",
       "covered": [
-        "score_competing_risks 的边际 IPCW AUC/Brier、影响函数、配对比较"
+        "score_competing_risks 的边际 IPCW AUC/Brier、影响函数、配对比较",
+        "反向 Cox 删失权重与分层、积分 Brier、旧版 AUC 影响函数复现"
       ],
       "evidence": [
         "docs/methods/competing-risk-scores.md"
       ],
       "remaining": [
         "AUC 影响函数针对非默认目标原因的 R 差异",
-        "Cox 删失、重拟合交叉验证、积分 Brier 和校准"
+        "重拟合交叉验证与校准图"
       ]
     },
     "gsdesign-group-sequential": {
       "status": "native_validated",
       "covered": [
-        "单侧有效性 O’Brien–Fleming 与 Hwang–Shih–DeCani 花费边界"
+        "单侧有效性 O’Brien–Fleming 与 Hwang–Shih–DeCani 花费边界",
+        "对称双侧、约束性与非约束性无效边界、越界概率和条件把握度"
       ],
       "evidence": [
         "docs/methods/group-sequential.md"
       ],
       "remaining": [
-        "无效边界、双侧设计、条件效能、事件驱动的样本量与日历时间"
+        "伤害界、端点特异样本量与日历时间、非恒定疗效、预测把握度与重复置信区间"
       ]
     },
     "rms-clinical-modeling": {
@@ -108,13 +112,15 @@
     "survey-complex-design": {
       "status": "native_validated",
       "covered": [
-        "svycoxph 首阶段 Taylor 方差，Efron/Breslow"
+        "svycoxph 首阶段 Taylor 方差，Efron/Breslow",
+        "twophase 两阶段均值与总量估计"
       ],
       "evidence": [
-        "docs/methods/survey-cox.md"
+        "docs/methods/survey-cox.md",
+        "docs/methods/survey-twophase.md"
       ],
       "remaining": [
-        "抽样两阶段设计、复制权重、复杂抽样预测曲线"
+        "复制权重、校准、调查域与复杂抽样预测曲线"
       ]
     },
     "mice-multiple-imputation": {

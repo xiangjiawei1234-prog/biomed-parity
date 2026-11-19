@@ -11,6 +11,8 @@ from biomed_parity.risk_scores import score_competing_risks
 FIXTURES = Path(__file__).resolve().parents[1] / "validation" / "risk_scores"
 CASES = json.loads((FIXTURES / "cases.json").read_text(encoding="utf-8"))
 EXPECTED = json.loads((FIXTURES / "expected.json").read_text(encoding="utf-8"))["results"]
+COX_CASES = json.loads((FIXTURES / "cox_cases.json").read_text(encoding="utf-8"))
+COX_EXPECTED = json.loads((FIXTURES / "cox_expected.json").read_text(encoding="utf-8"))["results"]
 FIELDS = ("estimate", "standard_error", "lower", "upper", "influence")
 
 
@@ -47,9 +49,35 @@ def _check_case(case, expected):
                 _compare(getattr(contrast, f"{metric}_pvalues"), reference[f"{metric}_pvalues"], metric)
 
 
+def _check_cox_case(case, expected):
+    arguments = {key: value for key, value in case.items() if key != "id"}
+    actual = score_competing_risks(**arguments)
+    _compare(actual.horizons, expected["horizons"], "horizons")
+    for metric in ("auc", "brier"):
+        summary = getattr(actual, metric)
+        for field in FIELDS:
+            _compare(getattr(summary, field), [row[field] for row in expected[metric]], field)
+    _compare(actual.integrated_brier, expected["integrated_brier"], "integrated_brier")
+    for contrast, reference in zip(actual.contrasts, expected["contrasts"], strict=True):
+        assert contrast.reference == reference["reference"]
+        assert contrast.model == reference["model"]
+        for metric in ("auc", "brier"):
+            summary = getattr(contrast, metric)
+            for field in FIELDS:
+                _compare(getattr(summary, field), reference[metric][field], field)
+            _compare(
+                getattr(contrast, f"{metric}_pvalues"), reference[f"{metric}_pvalues"], metric,
+            )
+
+
 @pytest.mark.parametrize("case", CASES, ids=[case["id"] for case in CASES])
 def test_matches_recorded_r(case):
     _check_case(case, EXPECTED[case["id"]])
+
+
+@pytest.mark.parametrize("case", COX_CASES, ids=[case["id"] for case in COX_CASES])
+def test_cox_censoring_matches_recorded_r(case):
+    _check_cox_case(case, COX_EXPECTED[case["id"]])
 
 
 @pytest.mark.skipif(os.environ.get("BIOMED_R_PARITY") != "1", reason="live R parity is opt-in")
@@ -64,6 +92,20 @@ def test_matches_live_r():
     references = json.loads(process.stdout)["results"]
     for case in CASES:
         _check_case(case, references[case["id"]])
+
+
+@pytest.mark.skipif(os.environ.get("BIOMED_R_PARITY") != "1", reason="live R parity is opt-in")
+def test_cox_censoring_matches_live_r():
+    process = subprocess.run(
+        ["Rscript", "--vanilla", str(FIXTURES / "oracle.R"), str(FIXTURES / "cox_cases.json")],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    references = json.loads(process.stdout)["results"]
+    for case in COX_CASES:
+        _check_cox_case(case, references[case["id"]])
 
 
 def test_status_labels_and_row_order_do_not_change_the_estimand():
@@ -104,3 +146,12 @@ def test_invalid_inputs(options, message):
                  "risks": [[0.2], [0.1], [0.2]]}
     with pytest.raises(ValueError, match=message):
         score_competing_risks(**(arguments | options))
+
+
+def test_censoring_inputs_must_describe_the_sample():
+    arguments = {"time": [2, 3, 4], "status": [0, 1, 2], "horizons": [2],
+                 "risks": [[0.2], [0.1], [0.2]]}
+    with pytest.raises(ValueError, match="sample-aligned"):
+        score_competing_risks(**arguments, censoring_covariates=[1.0, 2.0])
+    with pytest.raises(ValueError, match="nonconstant"):
+        score_competing_risks(**arguments, censoring_covariates=[1.0, 1.0, 1.0])

@@ -3,12 +3,14 @@
 from dataclasses import dataclass
 from itertools import combinations
 from numbers import Real
+from typing import Literal
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy.stats import norm
 
-from ._survival_inputs import _numeric_vector
+from ._censoring import _CensoringCox
+from ._survival_inputs import _encode_labels, _numeric_vector
 
 
 @dataclass(frozen=True)
@@ -36,6 +38,7 @@ class CompetingRiskScores:
     auc: ScoreSummary
     brier: ScoreSummary
     contrasts: tuple[ScoreContrast, ...]
+    integrated_brier: NDArray[np.float64] | None = None
 
 
 @dataclass(frozen=True)
@@ -67,8 +70,57 @@ class _CensoringKM:
         drift = np.cumsum(jump * self.failure / self.at_risk)
         return (self.censored * jump[self.indices]) - drift[self.indices]
 
+    def weights_at(self, observed_event, after_horizon, horizon):
+        known = observed_event | after_horizon
+        as_of = np.searchsorted(self.knots, horizon, side="right") - 1
+        included = np.where(observed_event, self.indices - 1, np.where(after_horizon, as_of, -1))
+        weight = np.divide(
+            known, self.survival[included + 1], where=known, out=np.zeros(len(known)),
+        )
+        return weight, included
 
-def _weighted_auc(prediction, case_weight, control_weight):
+    def hazard_influence_at(self, horizon):
+        """Influence of the marginal censoring cumulative hazard at one horizon."""
+        at_horizon = np.searchsorted(self.knots, horizon, side="right") - 1
+        if at_horizon < 0:
+            return np.zeros(len(self.indices))
+        prefix = np.cumsum(self.failure / self.at_risk**2)
+        event = self.censored * (self.indices <= at_horizon) / self.at_risk[self.indices]
+        drift = prefix[np.minimum(self.indices, at_horizon)]
+        return len(self.indices) * (event - drift)
+
+
+def _fit_censoring(times, events, covariates, strata):
+    if covariates is None and strata is None:
+        return _CensoringKM.fit(times, events == 0)
+
+    size = len(times)
+    if covariates is None:
+        design = np.empty((size, 0))
+    else:
+        design = np.asarray(covariates)
+        if design.ndim == 1:
+            design = design[:, None]
+        if (
+            design.ndim != 2 or len(design) != size or not design.shape[1]
+            or design.dtype.kind not in "buif" or not np.isfinite(design).all()
+        ):
+            raise ValueError("censoring_covariates must contain finite sample-aligned columns")
+        design = design.astype(float)
+    codes = np.zeros(size, dtype=int) if strata is None else _encode_labels(
+        strata, None, size, "censoring_strata",
+    )[1]
+    return _CensoringCox.fit(times, events == 0, design, codes)
+
+
+def _integrate_brier(horizons, scores):
+    interval_widths = np.diff(np.r_[0.0, horizons])
+    left_scores = np.column_stack((np.zeros(len(scores)), scores[:, :-1]))
+    areas = np.cumsum(left_scores * interval_widths, axis=1)
+    return np.divide(areas, horizons, out=np.zeros_like(areas), where=horizons > 0)
+
+
+def _weighted_auc(prediction, case_weight, control_weight, *, reported_auc=None):
     cases = case_weight.sum()
     controls = control_weight.sum()
     if cases == 0 or controls == 0:
@@ -85,11 +137,33 @@ def _weighted_auc(prediction, case_weight, control_weight):
     auc = float(np.clip(case_numerator.sum() / pair_total, 0, 1))
     relative_cases = case_weight / cases
     relative_controls = control_weight / controls
+    reference = auc if reported_auc is None else reported_auc
     sensitivity = (
         (case_numerator + control_numerator) / pair_total
-        - auc * (relative_cases + relative_controls)
+        - reference * (relative_cases + relative_controls)
     )
     return auc, sensitivity
+
+
+def _riskregression_auc_influence(
+    prediction, weight, observed_event, after_horizon, event_order, reported_auc,
+    censoring, included, horizon, last_horizon, conservative,
+):
+    # The legacy reference estimates the point AUC for the requested cause.
+    # Its influence routine uses the first cause as cases and the second as
+    # observed competing controls, even when the point estimate used another cause.
+    first = observed_event & (event_order == 1)
+    control = after_horizon | (observed_event & (event_order == 2))
+    first_auc, sensitivity = _weighted_auc(
+        prediction, weight * first, weight * control, reported_auc=reported_auc,
+    )
+    influence = len(weight) * sensitivity
+    if not conservative and horizon < last_horizon:
+        influence += censoring.sampling_influence(influence, included)
+        if isinstance(censoring, _CensoringKM):
+            # The KM path initializes both numerator tails with the reported AUC.
+            influence += 2 * (reported_auc - first_auc) * censoring.hazard_influence_at(horizon)
+    return influence
 
 
 def _summary(estimate, influence, critical, *, clipped):
@@ -118,6 +192,9 @@ def score_competing_risks(
     cause: int = 1,
     confidence_level: float = 0.95,
     conservative: bool = False,
+    censoring_covariates: ArrayLike | None = None,
+    censoring_strata: ArrayLike | None = None,
+    auc_inference: Literal["cause", "riskregression"] = "cause",
 ) -> CompetingRiskScores:
     """Score out-of-sample cumulative-incidence probabilities by horizon.
 
@@ -125,6 +202,12 @@ def score_competing_risks(
     the horizon. Controls include observed competing events and subjects
     still event free at the horizon. Each risk matrix is subjects × horizons.
     Pass models × subjects × horizons for paired model contrasts.
+
+    Optional censoring covariates or strata select a reverse Cox model with
+    Efron ties. Otherwise use marginal reverse Kaplan–Meier. Integrated Brier
+    scores use the riskRegression left-step convention starting at zero.
+    Select `auc_inference="riskregression"` to reproduce the historical
+    influence calculation from riskRegression 2026.03.11.
     """
     times = _numeric_vector(time, "time")
     events = _numeric_vector(status, "status")
@@ -141,6 +224,8 @@ def score_competing_risks(
         raise ValueError("confidence_level must be between 0 and 1")
     if not isinstance(conservative, (bool, np.bool_)):
         raise ValueError("conservative must be a boolean")
+    if auc_inference not in ("cause", "riskregression"):
+        raise ValueError("auc_inference must be 'cause' or 'riskregression'")
 
     predictions = np.asarray(risks)
     if predictions.ndim == 2:
@@ -153,7 +238,10 @@ def score_competing_risks(
     ):
         raise ValueError("risks must contain one probability per model, subject and horizon")
 
-    censoring = _CensoringKM.fit(times, events == 0)
+    censoring = _fit_censoring(times, events, censoring_covariates, censoring_strata)
+    causes = np.unique(events[events > 0])
+    event_order = np.where(events > 0, np.searchsorted(causes, events) + 1, 0)
+    last_horizon = times.max()
     n_models, n_subjects, n_horizons = predictions.shape
     auc = np.empty((n_models, n_horizons))
     brier = np.empty_like(auc)
@@ -163,12 +251,7 @@ def score_competing_risks(
         case = (times <= horizon) & (events == cause)
         observed_event = (times <= horizon) & (events != 0)
         after_horizon = times > horizon
-        known = observed_event | after_horizon
-        before = censoring.indices - 1
-        as_of = np.searchsorted(censoring.knots, horizon, side="right") - 1
-        included = np.where(observed_event, before, np.where(after_horizon, as_of, -1))
-        weight = np.divide(known, censoring.survival[included + 1],
-                           where=known, out=np.zeros(n_subjects))
+        weight, included = censoring.weights_at(observed_event, after_horizon, horizon)
         for model, prediction in enumerate(predictions[:, :, horizon_index]):
             brier_rows = weight * (prediction - case) ** 2
             brier[model, horizon_index] = brier_rows.mean()
@@ -178,6 +261,12 @@ def score_competing_risks(
             area_if = n_subjects * sensitivity
             if not conservative:
                 error_if += censoring.sampling_influence(brier_rows, included)
+            if auc_inference == "riskregression":
+                area_if = _riskregression_auc_influence(
+                    prediction, weight, observed_event, after_horizon, event_order, area,
+                    censoring, included, horizon, last_horizon, conservative,
+                )
+            elif not conservative:
                 area_if += censoring.sampling_influence(area_if, included)
             auc_influence[model, horizon_index] = area_if
             brier_influence[model, horizon_index] = error_if
@@ -201,4 +290,5 @@ def score_competing_risks(
         _summary(auc, auc_influence, critical, clipped=True),
         _summary(brier, brier_influence, critical, clipped=True),
         tuple(contrasts),
+        _integrate_brier(evaluation, brier),
     )

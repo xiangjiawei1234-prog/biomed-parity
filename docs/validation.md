@@ -1,18 +1,20 @@
 # 本地验证记录
 
-2026-11-19 在 macOS arm64 本机运行。主要环境为 Python 3.12.7、NumPy 2.1.3、SciPy 1.14.1、pytest 9.2.0 和 R 4.5.3。实时 R 套件以警告为错误模式运行了 **285 项测试，全部通过**。默认 Python 套件有 272 项通过，13 个实时 R 测试按配置跳过。Python 3.11.15、NumPy 1.26.4 和 SciPy 1.12.0 也通过了同一套默认测试。参考输入使用人工构造数据。不同统计方法的容差、字段和已知差异见相应文档。
+2026-11-19 在 macOS arm64 本机运行。主要环境为 Python 3.12.7、NumPy 2.1.3、SciPy 1.14.1、pytest 9.2.0 和 R 4.5.3。实时 R 套件以警告为错误模式运行了 **382 项测试，全部通过**。默认 Python 套件有 366 项通过，16 个实时 R 测试按配置跳过。Python 3.11.15、NumPy 1.26.4 和 SciPy 1.12.0 也通过了同一套默认测试。参考输入使用人工构造数据。不同统计方法的容差、字段和已知差异见相应文档。
 
 | 统计入口 | R 参考 | 覆盖 |
 | --- | --- | --- |
 | [生存曲线比较](methods/survdiff.md) | survival 3.8-6 | 17 份固定输入及 100 组有种子的随机输入。含分层、近并列事件和单样本参照 |
 | [ROC DeLong](methods/roc-delong.md) | pROC 1.19.1 | 28 个 AUC、区间、配对及不配对场景 |
+| [部分 AUC 与 Bootstrap](methods/roc-bootstrap.md) | pROC 1.19.1 | 41 个完整/部分面积场景，61 次指定分层重抽样，含配对 Bootstrap 检验 |
 | [两臂 RMST](methods/rmst2.md) | survRM2 1.0-4 | 14 组未调整和协变量调整输入 |
-| [组序贯设计](methods/group-sequential.md) | gsDesign 3.11.0 | 8 个单侧效应边界案例。极端花费及密集期中分析另核对积分误差 |
+| [组序贯设计](methods/group-sequential.md) | gsDesign 3.11.0 | 13 个边界案例，含对称双侧、约束性和非约束性无效边界、越界概率与条件把握度。极端花费及密集期中分析另核对积分误差 |
 | [逻辑回归验证](methods/logistic-validation.md) | rms 8.2-1 | 3 份数据及 R 选出的 53 次固定抽样。核对 11 个性能指标 |
 | [标量合并](methods/mi-pooling.md) | mice 3.19.0 | 11 组 Rubin、Reiter 和退化方差方案 |
 | [抽样加权 Cox](methods/survey-cox.md) | survey 4.5 | 5 个方案，核对似然、协方差、区间与设计自由度 |
+| [两阶段调查](methods/survey-twophase.md) | survey 4.5 | 10 种设计的均值和总量，含交叉分层、两级整群与普查 |
 | [REML Meta 分析](methods/meta-reml.md) | metafor 5.0-1 | 19 个区间和假设检验场景，含 Knapp–Hartung 和异质性剖面似然 |
-| [竞争风险评分](methods/competing-risk-scores.md) | riskRegression 2026.03.11 | 4 个方案。AUC 点估计和 Brier 全部匹配。AUC 推断在一组非默认目标事件场景有显式差距 |
+| [竞争风险评分](methods/competing-risk-scores.md) | riskRegression 2026.03.11 | 4 个边际 KM 方案和 4 个反向 Cox 删失方案，含分层与积分 Brier。Cox 方案全部指标匹配至约 `1e-14`；AUC 推断在一组非默认目标事件的 KM 场景有显式差距 |
 | [多状态占用概率](methods/multistate.md) | mstate 0.3.3 | 6 个前向和固定终点场景，含方差及对齐的协方差 |
 | [零膨胀随机截距](methods/zip-random-intercept.md) | glmmTMB 1.1.14 | 3 组拟合与给定参数的 Laplace 似然对照。记录本机 TMB 构建版本警告 |
 | [带权 Gaussian 随机截距](methods/dream.md) | variancePartition 1.40.2，lmerTest 3.2-1 | 3 组逐特征 REML 和 Satterthwaite 对照 |
