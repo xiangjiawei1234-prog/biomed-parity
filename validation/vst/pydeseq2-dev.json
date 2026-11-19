@@ -1,0 +1,12 @@
+{
+  "pydeseq2_version": "0.6.1.dev6+g81bb3ca72",
+  "commit": "81bb3ca7205d601dea21543d4c9adab160dbeb2e",
+  "shape_feature_by_sample": [
+    96,
+    6
+  ],
+  "size_factor_max_abs_difference_vs_r": 3.552713678800501e-15,
+  "transform_max_abs_difference_vs_r": 0.012346433366376308,
+  "transform_median_abs_difference_vs_r": 0.011682093771446134,
+  "transform_max_abs_difference_with_same_python_fitted_curve": 2.6645352591003757e-14
+}
