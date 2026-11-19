@@ -21,14 +21,16 @@
         "delong_auc",
         "delong_paired_test",
         "delong_unpaired_test",
-        "部分 AUC、分层 Bootstrap 区间与配对检验"
+        "部分 AUC、分层 Bootstrap 区间与配对检验",
+        "pROC coords 操作点、阈值选择与 Bootstrap 坐标区间"
       ],
       "evidence": [
         "docs/methods/roc-delong.md",
-        "docs/methods/roc-bootstrap.md"
+        "docs/methods/roc-bootstrap.md",
+        "docs/methods/roc-thresholds.md"
       ],
       "remaining": [
-        "平滑 ROC、阈值置信区间和绘图"
+        "平滑 ROC、多分类 ROC 与绘图"
       ]
     },
     "survrm2-rmst2": {
@@ -138,14 +140,16 @@
       "covered": [
         "pool_scalar 的 Rubin 和 Reiter 规则",
         "mice 数值及二元全条件插补链、预测矩阵、访问顺序、被动变量与重插补",
-        "向量 Rubin 协方差合并、D1 联合 Wald、D2 重复统计量合并"
+        "向量 Rubin 协方差合并、D1 联合 Wald、D2 重复统计量合并",
+        "mice 2l.pan/2l.norm 两层高斯条件插补的设计对照与分布矩验收"
       ],
       "evidence": [
         "docs/methods/mi-pooling.md",
-        "docs/methods/chained-imputation.md"
+        "docs/methods/chained-imputation.md",
+        "docs/methods/multilevel-imputation.md"
       ],
       "remaining": [
-        "多层、多分类、插补块、非随机缺失与诊断",
+        "两层模型的链式集成、多分类、插补块、非随机缺失与诊断",
         "D3、D4 及自动模型对象适配"
       ]
     },

@@ -1,0 +1,61 @@
+id	kind	score	direction	x	input	ret	best_method	best_weights	partial_auc	focus	percent	best_policy	draws	stratified	confidence_level
+all_main_lt	coords	score_main	<	all	threshold	all	youden	1,0.5		specificity	FALSE				
+all_main_gt	coords	score_main	>	all	threshold	all	youden	1,0.5		specificity	FALSE				
+all_ties_lt	coords	score_ties	<	all	threshold	all	youden	1,0.5		specificity	FALSE				
+all_ties_gt	coords	score_ties	>	all	threshold	all	youden	1,0.5		specificity	FALSE				
+all_percent_lt	coords	score_main	<	all	threshold	all	youden	1,0.5		specificity	TRUE				
+all_percent_gt	coords	score_main	>	all	threshold	all	youden	1,0.5		specificity	TRUE				
+all_constant	coords	score_constant	<	all	threshold	all	youden	1,0.5		specificity	FALSE				
+all_perfect	coords	score_perfect	<	all	threshold	all	youden	1,0.5		specificity	FALSE				
+all_partial_spec	coords	score_main	<	all	threshold	all	youden	1,0.5	0.3,0.8	specificity	FALSE				
+all_partial_sens	coords	score_main	<	all	threshold	all	youden	1,0.5	0.3,0.8	sensitivity	FALSE				
+all_partial_spec_gt	coords	score_ties	>	all	threshold	all	youden	1,0.5	0.2,0.9	specificity	FALSE				
+all_partial_sens_gt	coords	score_ties	>	all	threshold	all	youden	1,0.5	0.2,0.9	sensitivity	FALSE				
+all_partial_spec_pct	coords	score_main	<	all	threshold	all	youden	1,0.5	30,80	specificity	TRUE				
+all_partial_sens_pct	coords	score_main	<	all	threshold	all	youden	1,0.5	30,80	sensitivity	TRUE				
+all_auto	coords	score_ties	auto	all	threshold	all	youden	1,0.5		specificity	FALSE				
+all_auto_reverse	coords	score_main	auto	all	threshold	all	youden	1,0.5		specificity	FALSE				
+num_threshold	coords	score_main	<	num:-Inf,-1,1,1.5,2.5,5.5,9,10.5,100,Inf	threshold	all	youden	1,0.5		specificity	FALSE				
+num_threshold_gt	coords	score_main	>	num:-Inf,-1,1,1.5,2.5,5.5,9,10.5,100,Inf	threshold	all	youden	1,0.5		specificity	FALSE				
+num_threshold_pct	coords	score_main	<	num:-Inf,1.5,5.5,Inf	threshold	all	youden	1,0.5		specificity	TRUE				
+num_specificity	coords	score_ties	<	num:0,0.05,0.1,0.25,0.35,0.5,0.7,0.9,1	specificity	all	youden	1,0.5		specificity	FALSE				
+num_specificity_gt	coords	score_ties	>	num:0,0.05,0.1,0.25,0.35,0.5,0.7,0.9,1	specificity	all	youden	1,0.5		specificity	FALSE				
+num_sensitivity	coords	score_ties	<	num:0,0.1,0.25,0.5,0.72,0.9,1	sensitivity	all	youden	1,0.5		specificity	FALSE				
+num_sensitivity_gt	coords	score_ties	>	num:0,0.1,0.25,0.5,0.72,0.9,1	sensitivity	all	youden	1,0.5		specificity	FALSE				
+num_spec_pct	coords	score_ties	<	num:0,5,10,25,35,50,70,90,100	specificity	all	youden	1,0.5		specificity	TRUE				
+num_sens_pct	coords	score_ties	<	num:0,10,25,50,72,90,100	sensitivity	all	youden	1,0.5		specificity	TRUE				
+num_tp	coords	score_ties	<	num:0,1,2,3.5,5,6,7	tp	all	youden	1,0.5		specificity	FALSE				
+num_fpr	coords	score_ties	<	num:0,0.1,0.3,0.5,1	fpr	all	youden	1,0.5		specificity	FALSE				
+num_tnr	coords	score_ties	<	num:0,0.1,0.5,0.9,1	tnr	all	youden	1,0.5		specificity	FALSE				
+num_spec_partial	coords	score_ties	<	num:0.2,0.5	specificity	all	youden	1,0.5	0.3,0.8	specificity	FALSE				
+num_spec_default_ret	coords	score_ties	<	num:0.1,0.5	specificity		youden	1,0.5		specificity	FALSE				
+num_spec_dup	coords	score_ties	<	num:0,0,0.5,0.5	specificity		youden	1,0.5		specificity	FALSE				
+num_sens_single_ret	coords	score_ties	<	num:0.3	sensitivity	sensitivity	youden	1,0.5		specificity	FALSE				
+best_youden	coords	score_main	<	best	threshold	all	youden	1,0.5		specificity	FALSE				
+best_topleft	coords	score_main	<	best	threshold	all	closest.topleft	1,0.5		specificity	FALSE				
+best_youden_weights	coords	score_main	<	best	threshold	all	youden	2,0.3		specificity	FALSE				
+best_topleft_weights	coords	score_main	<	best	threshold	all	closest.topleft	1,0.3		specificity	FALSE				
+best_ties	coords	score_tiebest	<	best	threshold	all	youden	1,0.5		specificity	FALSE				
+best_percent	coords	score_main	<	best	threshold	all	youden	1,0.5		specificity	TRUE				
+best_topleft_percent	coords	score_main	<	best	threshold	threshold,specificity,sensitivity,closest.topleft	closest.topleft	1,0.5		specificity	TRUE				
+best_topleft_percent_all	coords	score_main	<	best	threshold	all	closest.topleft	1,0.5		specificity	TRUE				
+best_topleft_plain	coords	score_main	<	best	threshold	threshold,specificity,sensitivity,closest.topleft	closest.topleft	1,0.5		specificity	FALSE				
+best_youden_plain	coords	score_main	<	best	threshold	threshold,specificity,sensitivity,youden	youden	1,0.5		specificity	FALSE				
+best_partial_spec	coords	score_main	<	best	threshold	all	youden	1,0.5	0.3,0.8	specificity	FALSE				
+best_partial_sens	coords	score_main	<	best	threshold	all	youden	1,0.5	0.3,0.8	sensitivity	FALSE				
+best_gt	coords	score_main	>	best	threshold	all	youden	1,0.5		specificity	FALSE				
+local_maximas	coords	score_ties	<	local maximas	threshold	all	youden	1,0.5		specificity	FALSE				
+num_threshold_ret_subset	coords	score_main	<	num:1.5,2.5,5.5	threshold	threshold,sensitivity	youden	1,0.5		specificity	FALSE				
+boot_spec	ci	score_main	<	num:0.2,0.5,0.8	specificity	specificity,sensitivity	youden	1,0.5		specificity	FALSE	stop	draws_main	TRUE	0.9
+boot_sens	ci	score_main	<	num:0.2,0.5	sensitivity	specificity,sensitivity	youden	1,0.5		specificity	FALSE	stop	draws_main	TRUE	0.95
+boot_threshold	ci	score_main	<	num:2,5,8	threshold		youden	1,0.5		specificity	FALSE	stop	draws_main	TRUE	0.95
+boot_threshold_gt	ci	score_main	>	num:2,5,8	threshold		youden	1,0.5		specificity	FALSE	stop	draws_main	TRUE	0.95
+boot_spec_gt	ci	score_ties	>	num:0.2,0.5,0.8	specificity	specificity,sensitivity	youden	1,0.5		specificity	FALSE	stop	draws_main	TRUE	0.95
+boot_spec_conf99	ci	score_main	<	num:0.5	specificity	specificity,sensitivity	youden	1,0.5		specificity	FALSE	stop	draws_main	TRUE	0.99
+boot_best_clean	ci	score_perfect	<	best	threshold	threshold,specificity,sensitivity	youden	1,0.5		specificity	FALSE	omit	draws_perfect	TRUE	0.95
+boot_best_topleft	ci	score_perfect	<	best	threshold	threshold,specificity,sensitivity	closest.topleft	1,0.5		specificity	FALSE	omit	draws_perfect	TRUE	0.95
+boot_best_random	ci	score_tiebest	<	best	threshold	youden	youden	1,0.5		specificity	FALSE	random	draws_random	TRUE	0.95
+boot_best_stop	ci_error	score_tiebest	<	best	threshold	threshold,specificity,sensitivity	youden	1,0.5		specificity	FALSE	stop	draws_policy	TRUE	0.95
+boot_best_omit	ci	score_tiebest	<	best	threshold	threshold,specificity,sensitivity	youden	1,0.5		specificity	FALSE	omit	draws_policy	TRUE	0.95
+boot_nonstrat_spec	ci	score_main	<	num:0.2,0.5,0.8	specificity	specificity,sensitivity	youden	1,0.5		specificity	FALSE	stop	draws_nonstrat	FALSE	0.95
+boot_nonstrat_threshold	ci	score_ties	<	num:1.5,5.5	threshold		youden	1,0.5		specificity	FALSE	stop	draws_nonstrat	FALSE	0.95
