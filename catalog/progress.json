@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-11-19",
+  "methods": {
+    "survival-survdiff": {
+      "status": "native_validated",
+      "covered": [
+        "survdiff",
+        "survdiff_one_sample"
+      ],
+      "evidence": [
+        "docs/methods/survdiff.md"
+      ],
+      "remaining": [
+        "R formula 和 S3 接口适配"
+      ]
+    },
+    "proc-delong": {
+      "status": "native_validated",
+      "covered": [
+        "delong_auc",
+        "delong_paired_test",
+        "delong_unpaired_test"
+      ],
+      "evidence": [
+        "docs/methods/roc-delong.md"
+      ],
+      "remaining": [
+        "部分 AUC、平滑 ROC、阈值置信区间和重采样"
+      ]
+    },
+    "survrm2-rmst2": {
+      "status": "native_validated",
+      "covered": [
+        "rmst2 未调整及协变量调整"
+      ],
+      "evidence": [
+        "docs/methods/rmst2.md"
+      ],
+      "remaining": [
+        "R 展示对象和绘图工作流"
+      ]
+    },
+    "cmprsk-competing-risks": {
+      "status": "adopted_with_adapter",
+      "covered": [
+        "pycmprsk 累积发生、Gray 检验和 Fine–Gray",
+        "cmprsk_timepoints",
+        "cmprsk_residuals_by_time"
+      ],
+      "evidence": [
+        "docs/methods/competing-risks.md",
+        "validation/adoption/pycmprsk/README.md"
+      ],
+      "remaining": [
+        "不同删失机制、大样本性能及公式接口"
+      ]
+    },
+    "riskregression-competing-score": {
+      "status": "native_partial_parity",
+      "covered": [
+        "score_competing_risks 的边际 IPCW AUC/Brier、影响函数、配对比较"
+      ],
+      "evidence": [
+        "docs/methods/competing-risk-scores.md"
+      ],
+      "remaining": [
+        "AUC 影响函数针对非默认目标原因的 R 差异",
+        "Cox 删失、重拟合交叉验证、积分 Brier 和校准"
+      ]
+    },
+    "gsdesign-group-sequential": {
+      "status": "native_validated",
+      "covered": [
+        "单侧有效性 O’Brien–Fleming 与 Hwang–Shih–DeCani 花费边界"
+      ],
+      "evidence": [
+        "docs/methods/group-sequential.md"
+      ],
+      "remaining": [
+        "无效边界、双侧设计、条件效能、事件驱动的样本量与日历时间"
+      ]
+    },
+    "rms-clinical-modeling": {
+      "status": "native_validated",
+      "covered": [
+        "validate_logistic 无惩罚二分类模型固定索引重采样"
+      ],
+      "evidence": [
+        "docs/methods/logistic-validation.md"
+      ],
+      "remaining": [
+        "calibrate 曲线、公式与样条、惩罚、校准列线图、其他结局及重采样方法"
+      ]
+    },
+    "metafor-meta-analysis": {
+      "status": "native_validated",
+      "covered": [
+        "meta_reml 单截距随机效应、Knapp–Hartung、预测与剖面似然区间"
+      ],
+      "evidence": [
+        "docs/methods/meta-reml.md"
+      ],
+      "remaining": [
+        "rma.mv 的嵌套随机结构、抽样协方差、CR2 与小样本自由度"
+      ]
+    },
+    "survey-complex-design": {
+      "status": "native_validated",
+      "covered": [
+        "svycoxph 首阶段 Taylor 方差，Efron/Breslow"
+      ],
+      "evidence": [
+        "docs/methods/survey-cox.md"
+      ],
+      "remaining": [
+        "抽样两阶段设计、复制权重、复杂抽样预测曲线"
+      ]
+    },
+    "mice-multiple-imputation": {
+      "status": "native_validated",
+      "covered": [
+        "pool_scalar 的 Rubin 和 Reiter 规则"
+      ],
+      "evidence": [
+        "docs/methods/mi-pooling.md"
+      ],
+      "remaining": [
+        "插补链、分层与被动变量、合并多参数模型"
+      ]
+    },
+    "mstate-transition-models": {
+      "status": "native_validated",
+      "covered": [
+        "probtrans 从给定累积风险轨迹估计状态占用"
+      ],
+      "evidence": [
+        "docs/methods/multistate.md"
+      ],
+      "remaining": [
+        "msprep、长表、转移风险拟合和事件列结构转换"
+      ]
+    },
+    "glmmtmb-zero-inflated-mixed": {
+      "status": "native_validated",
+      "covered": [
+        "零膨胀 Poisson 的一个随机截距、固定零膨胀回归和 Laplace 对数似然"
+      ],
+      "evidence": [
+        "docs/methods/zip-random-intercept.md"
+      ],
+      "remaining": [
+        "固定效应与方差的推断、离散度模型、其他分布及多组件随机结构"
+      ]
+    },
+    "limma-linear-models": {
+      "status": "adoption_validated",
+      "covered": [
+        "pylimma 普通/分块经验贝叶斯和 voom 质量权重",
+        "InMoose 普通拟合"
+      ],
+      "evidence": [
+        "validation/adoption/limma/README.md"
+      ],
+      "remaining": [
+        "方阵权重需显式对齐",
+        "复杂设计和 robust 分支"
+      ]
+    },
+    "edger-count-models": {
+      "status": "adoption_validated",
+      "covered": [
+        "edgePython 普通及低分数计数准似然，固定和自动估计离散度"
+      ],
+      "evidence": [
+        "validation/adoption/inmoose/README.md"
+      ],
+      "remaining": [
+        "复杂归一化、稳健方差与广覆盖快照"
+      ]
+    },
+    "deseq2-count-models": {
+      "status": "native_and_adoption_validated",
+      "covered": [
+        "PyDESeq2 多因素标准 Wald、ratio normalization、参数化 blind VST",
+        "固定离散度、固定归一化因子的嵌套负二项 LRT"
+      ],
+      "evidence": [
+        "docs/methods/deseq2-adoption.md",
+        "docs/methods/nbinom-lrt.md"
+      ],
+      "remaining": [
+        "下限约束激活的 LRT、局部 VST、其他收缩与过滤策略"
+      ]
+    },
+    "variancepartition-dream": {
+      "status": "native_validated",
+      "covered": [
+        "逐特征加权 Gaussian REML 单随机截距、Satterthwaite 对比"
+      ],
+      "evidence": [
+        "docs/methods/dream.md"
+      ],
+      "remaining": [
+        "多随机项、Kenward–Roger、voom 权重与经验贝叶斯联合验收"
+      ]
+    }
+  }
+}
