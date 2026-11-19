@@ -2,10 +2,13 @@
 
 from dataclasses import dataclass
 from math import inf, isfinite, sqrt
-from numbers import Real
+from numbers import Integral, Real
 
 import numpy as np
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
+from scipy.linalg import cho_factor, cho_solve
+from scipy.stats import chi2
+from scipy.stats import f as fisher_f
 from scipy.stats import t as student_t
 
 
@@ -26,6 +29,24 @@ class PooledScalar:
     pvalue: float
     lower: float
     upper: float
+
+
+@dataclass(frozen=True)
+class PooledParameters:
+    estimate: NDArray[np.float64]
+    within_covariance: NDArray[np.float64]
+    between_covariance: NDArray[np.float64]
+    total_covariance: NDArray[np.float64]
+    marginal: tuple[PooledScalar, ...]
+
+
+@dataclass(frozen=True)
+class PooledTest:
+    statistic: float
+    df1: int
+    df2: float
+    pvalue: float
+    relative_increase: float
 
 
 def _real_vector(values: ArrayLike, name: str) -> np.ndarray:
@@ -73,9 +94,10 @@ def pool_scalar(
     if rule not in ("rubin1987", "reiter2003"):
         raise ValueError("rule must be 'rubin1987' or 'reiter2003'")
 
-    qbar = float(estimates.mean())
+    deltas = estimates - estimates[0]
+    qbar = float(estimates[0] + deltas.mean())
     ubar = float(variances.mean())
-    between = float(estimates.var(ddof=1))
+    between = float(deltas.var(ddof=1))
     added = between * (1 + 1 / m)
     with np.errstate(invalid="ignore", divide="ignore", over="ignore"):
         relative = float(np.divide(added, ubar))
@@ -105,3 +127,159 @@ def pool_scalar(
         qbar, ubar, between, total, relative, float(df), fmi,
         standard_error, statistic, pvalue, qbar - margin, qbar + margin,
     )
+
+
+def _coefficient_inputs(estimates, covariances):
+    q = np.asarray(estimates)
+    u = np.asarray(covariances)
+    for array in (q, u):
+        if array.dtype.kind not in "buif" or not np.isfinite(array).all():
+            raise ValueError("estimates and covariances must be finite real arrays")
+    if q.ndim != 2 or len(q) < 2 or not q.shape[1]:
+        raise ValueError("estimates must have one row per fit and one column per parameter")
+    if u.shape != (len(q), q.shape[1], q.shape[1]):
+        raise ValueError("covariances must have one square parameter covariance per fit")
+    q, u = q.astype(float), u.astype(float)
+    scale = np.max(abs(u), axis=(1, 2))
+    if np.any(np.max(abs(u - u.transpose(0, 2, 1)), axis=(1, 2)) > 1e-12 * scale):
+        raise ValueError("each covariance must be symmetric")
+    u = (u + u.transpose(0, 2, 1)) / 2
+    if np.any(np.linalg.eigvalsh(u)[:, 0] < -1e-12 * scale):
+        raise ValueError("each covariance must be positive semidefinite")
+    if np.any(np.diagonal(u, axis1=1, axis2=2) < 0):
+        raise ValueError("covariance diagonal entries must be nonnegative")
+    return q, u
+
+
+def _complete_df(degrees):
+    if not isinstance(degrees, Real) or not 0 < degrees:
+        raise ValueError("complete_df must be positive or infinity")
+    return float(degrees)
+
+
+def _moments(estimates, covariances):
+    delta = estimates - estimates[0]
+    mean_delta = delta.mean(axis=0)
+    estimate = estimates[0] + mean_delta
+    centered = delta - mean_delta
+    between = centered.T @ centered / (len(estimates) - 1)
+    return estimate, covariances.mean(axis=0), between
+
+
+def pool_parameters(
+    estimates: ArrayLike,
+    covariances: ArrayLike,
+    *,
+    complete_df: float = inf,
+    confidence_level: float = 0.95,
+) -> PooledParameters:
+    """Pool aligned vector estimates, full covariances and marginal inference.
+
+    Inputs have shape fits × parameters and fits × parameters × parameters.
+    The within- and between-imputation covariances follow Rubin's rules.
+    """
+    q, u = _coefficient_inputs(estimates, covariances)
+    degrees = _complete_df(complete_df)
+    point, within, between = _moments(q, u)
+    marginal = tuple(
+        pool_scalar(
+            q[:, j], u[:, j, j], n=degrees + 1, confidence_level=confidence_level,
+        )
+        for j in range(q.shape[1])
+    )
+    return PooledParameters(point, within, between, within + (1 + 1 / len(q)) * between, marginal)
+
+
+def _d1_degrees(relative, constraints, fits, complete_df):
+    t = constraints * (fits - 1)
+    if not isfinite(complete_df):
+        if relative == 0:
+            return inf
+        if t <= 4:
+            return t * (1 + 1 / constraints) * (1 + 1 / relative)**2 / 2
+        return 4 + (t - 4) * (1 + (1 - 2 / t) / relative)**2
+
+    effective = complete_df * (1 - 2 / (complete_df + 3))
+    if relative == 0:
+        return effective
+    # Reiter's finite-complete-data-df moment adjustment.
+    if t in (2, 4):
+        return float("nan")
+    a = relative * t / (t - 2)
+    term = 1 + a
+    c1, c2 = effective - 2 * term, effective - 4 * term
+    if not c1 or not c2 or not term:
+        return float("nan")
+    scaled = a**2 / (t - 4)
+    correction = (
+        (1 + scaled * (c1 / term**2 + 4 / term + 4 / c1)) / c2
+        + scaled * (8 * c1 / term + 8) / c2**2
+        + scaled * 16 * c1 / c2**3
+    )
+    return 4 + 1 / correction if correction else inf
+
+
+def _pooled_test(statistic, numerator_df, denominator_df, relative):
+    if denominator_df == inf:
+        pvalue = chi2.sf(statistic * numerator_df, df=numerator_df)
+    else:
+        pvalue = fisher_f.sf(statistic, numerator_df, denominator_df)
+    return PooledTest(float(statistic), int(numerator_df), float(denominator_df),
+                      float(pvalue), float(relative))
+
+
+def pool_d1(
+    estimates: ArrayLike,
+    covariances: ArrayLike,
+    *,
+    contrast: ArrayLike | None = None,
+    null: ArrayLike = 0,
+    complete_df: float = inf,
+) -> PooledTest:
+    """Test a joint linear null after multiple imputation using D1.
+
+    Contrast rows define hypotheses on the parameter vector. The null value
+    may be scalar or one value per contrast row. The default tests all
+    parameters jointly against zero.
+    """
+    q, u = _coefficient_inputs(estimates, covariances)
+    degrees = _complete_df(complete_df)
+    matrix = np.eye(q.shape[1]) if contrast is None else np.atleast_2d(np.asarray(contrast))
+    if (
+        matrix.ndim != 2 or matrix.shape[1] != q.shape[1] or not len(matrix)
+        or matrix.dtype.kind not in "buif" or not np.isfinite(matrix).all()
+        or np.linalg.matrix_rank(matrix) != len(matrix)
+    ):
+        raise ValueError("contrast must have linearly independent parameter-aligned rows")
+    target = np.asarray(null)
+    if (
+        target.shape not in ((), (len(matrix),)) or target.dtype.kind not in "buif"
+        or not np.isfinite(target).all()
+    ):
+        raise ValueError("null must be finite and match the number of contrast rows")
+    # A fixed null shift changes only the mean, leaving the covariance components intact.
+    estimate, within, between = _moments(q @ matrix.T, matrix @ u @ matrix.T)
+    difference = estimate - target
+    try:
+        factor = cho_factor(within)
+    except np.linalg.LinAlgError as error:
+        raise ValueError("the average within-imputation contrast covariance is singular") from error
+    k = len(matrix)
+    relative = max(0.0, (1 + 1 / len(q)) * np.trace(cho_solve(factor, between)) / k)
+    statistic = difference @ cho_solve(factor, difference) / (k * (1 + relative))
+    return _pooled_test(statistic, k, _d1_degrees(relative, k, len(q), degrees), relative)
+
+
+def pool_d2(statistics: ArrayLike, df: int) -> PooledTest:
+    """Combine repeated Wald or likelihood-ratio chi-square tests using D2."""
+    values = _real_vector(statistics, "statistics")
+    if len(values) < 2 or np.any(values < 0):
+        raise ValueError("statistics must contain two or more nonnegative test values")
+    if not isinstance(df, Integral) or isinstance(df, bool) or df < 1:
+        raise ValueError("df must be a positive integer")
+    m = len(values)
+    roots = np.sqrt(values)
+    relative = float((1 + 1 / m) * (roots - roots[0]).var(ddof=1))
+    statistic = (values.mean() / df - (m + 1) / (m - 1) * relative) / (1 + relative)
+    denominator_df = inf if relative == 0 else df**(-3 / m) * (m - 1) * (1 + 1 / relative)**2
+    return _pooled_test(statistic, df, denominator_df, relative)
