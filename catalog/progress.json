@@ -59,17 +59,19 @@
       ]
     },
     "riskregression-competing-score": {
-      "status": "native_partial_parity",
+      "status": "native_validated",
       "covered": [
         "score_competing_risks 的边际 IPCW AUC/Brier、影响函数、配对比较",
-        "反向 Cox 删失权重与分层、积分 Brier、旧版 AUC 影响函数复现"
+        "反向 Cox 删失权重与分层、积分 Brier、旧版 AUC 影响函数复现",
+        "固定时点分组与近邻校准，局部累积发生率和 Jackknife 伪值"
       ],
       "evidence": [
-        "docs/methods/competing-risk-scores.md"
+        "docs/methods/competing-risk-scores.md",
+        "docs/methods/competing-risk-calibration.md"
       ],
       "remaining": [
-        "AUC 影响函数针对非默认目标原因的 R 差异",
-        "重拟合交叉验证与校准图"
+        "重拟合交叉验证",
+        "自动带宽、校准信赖带和成组重抽样推断"
       ]
     },
     "gsdesign-group-sequential": {
@@ -88,25 +90,33 @@
     "rms-clinical-modeling": {
       "status": "native_validated",
       "covered": [
-        "validate_logistic 无惩罚二分类模型固定索引重采样"
+        "validate_logistic 无惩罚二分类模型固定索引重采样",
+        "calibrate_logistic 表观及偏差校正曲线、四种重采样与点态近似区间",
+        "Hmisc/rms 限制性三次样条、自动结点、预测重用和主成分旋转"
       ],
       "evidence": [
-        "docs/methods/logistic-validation.md"
+        "docs/methods/logistic-validation.md",
+        "docs/methods/logistic-calibration-curve.md",
+        "docs/methods/restricted-cubic-splines.md"
       ],
       "remaining": [
-        "calibrate 曲线、公式与样条、惩罚、校准列线图、其他结局及重采样方法"
+        "公式、datadist、Predict 和列线图",
+        "惩罚、变量选择、整群重采样、其他结局"
       ]
     },
     "metafor-meta-analysis": {
       "status": "native_validated",
       "covered": [
-        "meta_reml 单截距随机效应、Knapp–Hartung、预测与剖面似然区间"
+        "meta_reml 单截距随机效应、Knapp–Hartung、预测与剖面似然区间",
+        "rma.mv 的相关抽样协方差、嵌套及交叉随机截距、ML/REML 与方差剖面区间",
+        "CR0、CR1、CR2、Satterthwaite 与 HTZ 联合检验"
       ],
       "evidence": [
-        "docs/methods/meta-reml.md"
+        "docs/methods/meta-reml.md",
+        "docs/methods/meta-multilevel.md"
       ],
       "remaining": [
-        "rma.mv 的嵌套随机结构、抽样协方差、CR2 与小样本自由度"
+        "估计随机项相关、vcalc、预测区间、影响诊断与稀疏模型"
       ]
     },
     "survey-complex-design": {
@@ -126,25 +136,33 @@
     "mice-multiple-imputation": {
       "status": "native_validated",
       "covered": [
-        "pool_scalar 的 Rubin 和 Reiter 规则"
+        "pool_scalar 的 Rubin 和 Reiter 规则",
+        "mice 数值及二元全条件插补链、预测矩阵、访问顺序、被动变量与重插补",
+        "向量 Rubin 协方差合并、D1 联合 Wald、D2 重复统计量合并"
       ],
       "evidence": [
-        "docs/methods/mi-pooling.md"
+        "docs/methods/mi-pooling.md",
+        "docs/methods/chained-imputation.md"
       ],
       "remaining": [
-        "插补链、分层与被动变量、合并多参数模型"
+        "多层、多分类、插补块、非随机缺失与诊断",
+        "D3、D4 及自动模型对象适配"
       ]
     },
     "mstate-transition-models": {
       "status": "native_validated",
       "covered": [
-        "probtrans 从给定累积风险轨迹估计状态占用"
+        "probtrans 从给定累积风险轨迹估计状态占用",
+        "msprep 宽表转长表前向流程、左进入、并列及协变量复写",
+        "msfit 转移分层 Cox、Aalen/Greenwood 协方差与最终状态概率串联"
       ],
       "evidence": [
-        "docs/methods/multistate.md"
+        "docs/methods/multistate.md",
+        "docs/methods/mstate-prep.md",
+        "docs/methods/mstate-fit.md"
       ],
       "remaining": [
-        "msprep、长表、转移风险拟合和事件列结构转换"
+        "MarkovTest、expand.covs、转移相关其他并列模型与复杂风险项"
       ]
     },
     "glmmtmb-zero-inflated-mixed": {
@@ -189,14 +207,17 @@
       "status": "native_and_adoption_validated",
       "covered": [
         "PyDESeq2 多因素标准 Wald、ratio normalization、参数化 blind VST",
-        "固定离散度、固定归一化因子的嵌套负二项 LRT"
+        "固定离散度、固定归一化因子的嵌套负二项 LRT",
+        "已拟合局部离散度趋势的精确 VST、R 网格与零计数外推"
       ],
       "evidence": [
         "docs/methods/deseq2-adoption.md",
-        "docs/methods/nbinom-lrt.md"
+        "docs/methods/nbinom-lrt.md",
+        "docs/methods/local-vst.md"
       ],
       "remaining": [
-        "下限约束激活的 LRT、局部 VST、其他收缩与过滤策略"
+        "下限约束激活的 LRT、局部离散度完整拟合及盲态设计",
+        "其他收缩、过滤与 rlog"
       ]
     },
     "variancepartition-dream": {

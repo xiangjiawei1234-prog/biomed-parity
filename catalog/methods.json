@@ -225,7 +225,8 @@
       "priority": "P1",
       "r_package": "riskRegression",
       "r_entry_points": [
-        "Score"
+        "Score",
+        "plotCalibration"
       ],
       "license": "GPL-2.0-or-later",
       "assessment": "compatibility_gap",
@@ -238,7 +239,8 @@
       "validation_targets": [
         "多事件类型下不同预测时点的 AUC 和 Brier",
         "影响函数标准误和置信区间",
-        "对比行、评价时间范围及删失模型"
+        "对比行、评价时间范围及删失模型",
+        "固定时点的局部校准和 Jackknife 伪值"
       ],
       "sources": [
         {
@@ -256,6 +258,10 @@
         {
           "label": "scikit-survival 指标",
           "url": "https://scikit-survival.readthedocs.io/en/stable/api/metrics.html"
+        },
+        {
+          "label": "竞争风险校准接口",
+          "url": "https://search.r-project.org/CRAN/refmans/riskRegression/html/plotCalibration.html"
         }
       ]
     },
@@ -324,7 +330,8 @@
         "validate",
         "datadist",
         "Predict",
-        "nomogram"
+        "nomogram",
+        "rcs"
       ],
       "license": "GPL-2.0-or-later",
       "assessment": "workflow_gap",
@@ -359,6 +366,10 @@
         {
           "label": "scikit-learn 概率校准",
           "url": "https://scikit-learn.org/stable/modules/calibration.html"
+        },
+        {
+          "label": "限制性三次样条",
+          "url": "https://search.r-project.org/CRAN/refmans/Hmisc/html/rcspline.eval.html"
         }
       ]
     },
@@ -376,14 +387,14 @@
         "predict"
       ],
       "license": "GPL-2.0-or-later",
-      "assessment": "verify_existing",
+      "assessment": "compatibility_gap",
       "python_candidates": [
         "pimeta",
         "PyMetaAnalysis",
         "PyMARE",
         "statsmodels.stats.meta_analysis"
       ],
-      "gap": "pimeta 声称覆盖 rma.mv、诊断、CR2/CR3 与剖面似然区间。PyMetaAnalysis 文档提供 Q-profile 区间。仓库已迁移 rma.uni 截距型 REML 及其剖面似然区间。独立核对已有候选的多层拟合时，应覆盖相关效应、结构化随机项、协方差与稳健推断。",
+      "gap": "本地验证中，pimeta 1.0.0 复现所测嵌套或交叉拟合及单系数 CR2，其已安装接口缺少所测固定方差、已知相关矩阵、多层方差剖面区间和 HTZ 联合检验。这些数值路径已由原生实现对照，随机效应相关参数估计仍待核对。",
       "validation_targets": [
         "给定非对角 V 的多层 REML",
         "结构化和嵌套随机效应、方差分量和预测区间",
@@ -522,6 +533,14 @@
         {
           "label": "miceforest API",
           "url": "https://miceforest.readthedocs.io/en/latest/ImputationKernel.html"
+        },
+        {
+          "label": "MICE 预测矩阵和被动插补",
+          "url": "https://amices.org/mice/reference/mice.html"
+        },
+        {
+          "label": "D1/D2 多参数检验",
+          "url": "https://search.r-project.org/CRAN/refmans/mitml/html/testModels.html"
         }
       ]
     },
@@ -718,7 +737,7 @@
         "PyDESeq2",
         "inmoose.deseq2"
       ],
-      "gap": "PyDESeq2 0.6.0 的本地两类 Wald 拟合在 5% BH 阈值给出相同发现，系数、校正 p 值和盲 VST 有可测差异。测试的 PyDESeq2 入口拒绝 LRT 和 local VST。其余兼容工作包括其他系数收缩和复杂变换流程。",
+      "gap": "PyDESeq2 0.6.0 的本地两类 Wald 拟合在 5% BH 阈值给出相同发现，系数、校正 p 值和盲 VST 有可测差异。0.6.0 拒绝 LRT 和 local VST。后续开发版已支持 local VST，所测合成数据的最大绝对差约 0.01235。输入同一 R 局部离散度趋势时，原生 VST 变换与 R 的差低于 1.2e-13。",
       "validation_targets": [
         "多因素 Wald、对比编码与离群值处理",
         "同一设计矩阵的全模型和约简模型 LRT",
@@ -740,6 +759,10 @@
         {
           "label": "InMoose 差异表达",
           "url": "https://inmoose.readthedocs.io/en/stable/diffexp.html"
+        },
+        {
+          "label": "PyDESeq2 已验证开发提交",
+          "url": "https://github.com/owkin/PyDESeq2/commit/81bb3ca7205d601dea21543d4c9adab160dbeb2e"
         }
       ]
     },

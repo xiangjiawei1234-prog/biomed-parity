@@ -7,7 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 
-> **项目状态：Alpha（v0.1.1，迁移进行中）。** 方法目录中的 16 个 R 入口均已建立至少一组数值对照，其中竞争风险评分的非默认目标原因 AUC 推断为部分一致。各入口仍存在未覆盖的接口与统计路径，公开 API 可能随验收进展调整。已验证范围与剩余任务见[迁移进展](catalog/progress.json)。
+> **项目状态：Alpha（v0.1.1，迁移进行中）。** 方法目录中的 16 组 R 统计入口均已建立数值对照。下表描述当前源码中的方法范围。各入口仍存在未覆盖的接口与统计路径，公开 API 可能随验收进展调整。已验证范围与剩余任务见[迁移进展](catalog/progress.json)。
 
 **biomed-parity** provides independent Python implementations of selected biomedical statistical methods, accompanied by reproducible R reference cases and numerical comparisons. The implementations depend only on NumPy and SciPy and do not require an R runtime. The project is an early-stage research prototype: public APIs may change as validation continues. Documentation is written in Chinese; docstrings and code comments are in English.
 
@@ -35,12 +35,12 @@
 
 | 分类 | R 入口 |
 | --- | --- |
-| 生存与竞争风险 | `survival::survdiff`、`survRM2::rmst2`、`cmprsk`、`riskRegression::Score`、`mstate` |
+| 生存与竞争风险 | `survival::survdiff`、`survRM2::rmst2`、`cmprsk`、`riskRegression::Score/plotCalibration`、`mstate::msprep/msfit/probtrans` |
 | 诊断准确性 | `pROC::roc`、`auc`、`ci.auc`、`roc.test`（DeLong、部分 AUC、Bootstrap） |
 | 临床试验设计 | `gsDesign`（边界、越界概率、条件把握度） |
-| 临床预测与回归 | `rms::lrm`、`calibrate`、`validate`、`glmmTMB`、`variancePartition::dream` |
-| 流行病学与证据综合 | `survey`（`svycoxph`、`twophase`）、`mice`、`metafor` |
-| 人体表达统计 | `limma`、`edgeR`、`DESeq2`（含原生负二项 LRT） |
+| 临床预测与回归 | `rms::calibrate/validate/rcs`、`glmmTMB`、`variancePartition::dream` |
+| 流行病学与证据综合 | `survey`（`svycoxph`、`twophase`）、`mice`（含插补链和 D1/D2）、`metafor::rma.uni/rma.mv` |
+| 人体表达统计 | `limma`、`edgeR`、`DESeq2`（负二项 LRT 和给定趋势的局部 VST） |
 
 ## 安装与验证
 
@@ -66,7 +66,7 @@ python3 -m venv .venv
 python3 -m pip install "git+https://github.com/xiangjiawei1234-prog/biomed-parity.git"
 ```
 
-默认测试仅依赖入库的 R 参考快照，无需安装 R。当前版本默认测试套件为 366 项通过，16 项实时 R 对照按配置跳过。
+默认测试仅依赖入库的 R 参考快照，无需安装 R。当前源码及运行环境的结果见 [本地验证记录](docs/validation.md)。
 
 ## 实时 R 对照
 
@@ -77,7 +77,7 @@ Rscript --vanilla validation/install_r.R
 R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 .venv/bin/python -m pytest -q -W error
 ```
 
-实时对照共 382 项测试，调用对应 R 包并逐项比较数值行为。
+实时对照调用对应 R 包并逐项比较数值行为。
 
 ## 项目结构
 
