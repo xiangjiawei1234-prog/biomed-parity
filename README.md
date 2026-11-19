@@ -2,6 +2,7 @@
 
 生物医学统计方法的独立 Python 实现，附可复现的 R 参考用例与数值对照。
 
+[![PyPI](https://img.shields.io/pypi/v/biomed-parity.svg)](https://pypi.org/project/biomed-parity/)
 [![CI](https://github.com/xiangjiawei1234-prog/biomed-parity/actions/workflows/ci.yml/badge.svg)](https://github.com/xiangjiawei1234-prog/biomed-parity/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
@@ -43,7 +44,13 @@
 
 ## 安装与验证
 
-仓库尚未发布到 PyPI。从源码安装并运行默认测试：
+从 PyPI 安装：
+
+```sh
+python3 -m pip install biomed-parity
+```
+
+开发或验证时从源码安装并运行默认测试：
 
 ```sh
 git clone https://github.com/xiangjiawei1234-prog/biomed-parity.git

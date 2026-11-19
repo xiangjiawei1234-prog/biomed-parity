@@ -41,6 +41,7 @@ test = ["pytest>=8,<10"]
 [project.urls]
 Homepage = "https://github.com/xiangjiawei1234-prog/biomed-parity"
 Repository = "https://github.com/xiangjiawei1234-prog/biomed-parity"
+PyPI = "https://pypi.org/project/biomed-parity/"
 Issues = "https://github.com/xiangjiawei1234-prog/biomed-parity/issues"
 Changelog = "https://github.com/xiangjiawei1234-prog/biomed-parity/releases"
 
