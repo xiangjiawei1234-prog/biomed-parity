@@ -1,0 +1,23 @@
+{
+  "datasets": {
+    "interleaved_small": {
+      "labels": [0, 1, 0, 1, 0, 1, 0, 1],
+      "scores": [1, 2, 3, 4, 5, 6, 7, 8]
+    }
+  },
+  "cases": [
+    {"id": "auc_binormal", "dataset": "continuous", "n": 31, "seed": 77021},
+    {"id": "auc_binormal_auto_ordinary", "dataset": "continuous", "n": 31, "seed": 9106, "direction": "auto", "stratified": false, "confidence_level": 0.9},
+    {"id": "auc_binormal_partial_percent", "dataset": "continuous", "n": 29, "seed": 77021, "percent": true, "partial_auc": [51, 93], "confidence_level": 0.8},
+    {"id": "auc_binormal_omitted_fit", "dataset": "continuous", "n": 47, "seed": 77021, "append_draw": "separated"},
+    {"id": "auc_density", "dataset": "continuous", "method": "density", "seed": 16506, "n": 61, "direction": "auto", "bw": "nrd"},
+    {"id": "auc_density_ordinary_single_class", "dataset": "interleaved_small", "method": "density", "seed": 599, "n": 53, "stratified": false, "append_draw": "one_class", "confidence_level": 1},
+    {"id": "auc_density_corrected_below_chance", "dataset": "continuous", "method": "density", "seed": 3427, "n": 31, "kernel": "cosine", "partial_auc": [0.65, 0.98], "focus": "sensitivity", "standardize": true},
+    {"id": "auc_density_corrected_percent", "dataset": "tied", "method": "density", "seed": 33917, "n": 31, "percent": true, "kernel": "epanechnikov", "bw": 0.65, "adjust": 1.2, "cut": 0.5, "partial_auc": [61, 99], "standardize": true},
+    {"id": "sensitivity_binormal", "dataset": "continuous", "kind": "sensitivity", "n": 31, "seed": 77021, "specificity": [0.83, 0, 0.25, 1, 0.5, 0.83]},
+    {"id": "sensitivity_binormal_omitted_fits_percent", "dataset": "continuous", "kind": "sensitivity", "n": 47, "seed": 77021, "specificity": [22, 59, 81], "percent": true, "append_draw": "separated"},
+    {"id": "sensitivity_density_ordinary_percent", "dataset": "tied", "kind": "sensitivity", "method": "density", "n": 45, "seed": 85709, "direction": ">", "stratified": false, "confidence_level": 0.9, "percent": true, "specificity": [10, 51, 85, 95]},
+    {"id": "sensitivity_density_scalar", "dataset": "tied", "kind": "sensitivity", "method": "density", "n": 57, "seed": 85709, "confidence_level": 0, "specificity": 0.64},
+    {"id": "sensitivity_density_numerical_bounds", "dataset": "interleaved_small", "kind": "sensitivity", "method": "density", "n": 49, "seed": 12391, "specificity": [0, 0.25, 0.8, 1], "confidence_level": 1, "bw": 1.3}
+  ]
+}
