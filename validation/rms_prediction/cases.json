@@ -1,0 +1,64 @@
+[
+  {
+    "id": "mixed_summary",
+    "kind": "summary",
+    "data": {
+      "two": [2, 2, 5, 2, 5, null],
+      "three": [1, 1, 1, 1, 5, 10],
+      "grade": ["high", "low", "low", "high", null, "middle"],
+      "label": ["b", null, "a", "b", "b", "c"]
+    },
+    "factor_levels": {"grade": ["unused", "high", "low", "middle"]}
+  },
+  {
+    "id": "first_level_and_tied_quantiles",
+    "kind": "summary",
+    "data": {
+      "x": [-2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3],
+      "group": ["b", "a", "a", "c", "c", "a", "b", "c", "a", "b", "b", "c", "b"]
+    },
+    "factor_levels": {"group": ["c", "b", "a"]},
+    "options": {"categorical_adjustment": "first", "q_display": [0.25, 0.75], "n_unique": 3}
+  },
+  {
+    "id": "different_observation_counts",
+    "kind": "summary",
+    "preset": "varying_n",
+    "options": {"q_effect": [0.1, 0.85]}
+  },
+  {
+    "id": "spline_ols_mean",
+    "kind": "prediction",
+    "model": "ols",
+    "vary": {"x": null, "arm": ["standard", "watch"]},
+    "options": {"points": 5, "confidence_level": 0.9}
+  },
+  {
+    "id": "spline_ols_reference",
+    "kind": "prediction",
+    "model": "ols",
+    "vary": {"arm": ["watch", "targeted"], "x": [-0.75, 0, 0.8], "z": 0},
+    "options": {"adjust_to": {"arm": "watch", "x": 0, "z": 0}, "ref_zero": true}
+  },
+  {
+    "id": "logistic_probability",
+    "kind": "prediction",
+    "model": "lrm",
+    "vary": {"arm": null},
+    "options": {"transform": "logistic", "confidence_level": 0.9}
+  },
+  {
+    "id": "logistic_odds_ratio",
+    "kind": "prediction",
+    "model": "lrm",
+    "vary": {"x": [-1.5, 0, 1.5]},
+    "options": {"adjust_to": {"x": 0}, "ref_zero": true, "transform": "exp"}
+  },
+  {
+    "id": "cox_centered_mean",
+    "kind": "prediction",
+    "model": "cph",
+    "vary": {"x": null, "arm": null},
+    "options": {"points": 5}
+  }
+]
