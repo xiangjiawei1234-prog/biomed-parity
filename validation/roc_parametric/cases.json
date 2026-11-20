@@ -1,0 +1,42 @@
+{
+  "datasets": {
+    "mixed_supports": {
+      "labels": [0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1],
+      "scores": [-3, 0.12, -0.2, 0, 0.31, 0.8, 0.7, 1.9, 1.1, 2.1, 2.3, 4.3, 8.5]
+    },
+    "positive_ties": {
+      "labels": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+      "scores": [0.1, 0.65, 1.6, 2.2, 4.1, 4.1, 0.4, 0.9, 1.4, 2.8, 5.9, 9.2]
+    },
+    "exponential_with_zero": {
+      "labels": [0, 0, 0, 0, 0, 1, 1, 1, 1],
+      "scores": [0, 0, 1, 2, 2, 0, 1, 4.5, 8]
+    },
+    "constant_positive": {"labels": [0, 0, 1, 1], "scores": [3, 3, 3, 3]},
+    "exponential_single_each": {"labels": [0, 1], "scores": [1, 2]},
+    "zero_control_mean": {"labels": [0, 0, 1, 1], "scores": [0, 0, 1, 2]},
+    "uneven_variances": {
+      "labels": [0, 0, 0, 0, 0, 1, 1, 1, 1, 1],
+      "scores": [1, 2, 3, 4, 5, 1.6, 2.6, 2.7, 2.8, 3.4]
+    }
+  },
+  "cases": [
+    {"id": "normal_defaults", "dataset": "mixed_supports"},
+    {"id": "normal_reverse_auto", "dataset": "uneven_variances", "direction": "auto", "n": 101},
+    {"id": "normal_reverse_percent", "dataset": "mixed_supports", "direction": ">", "percent": true, "n": 17},
+    {"id": "lognormal_explicit_alias", "dataset": "positive_ties", "control_distribution": "log-normal", "case_distribution": "lognormal", "n": 33},
+    {"id": "families_mix_with_off_support_grid", "dataset": "mixed_supports", "case_distribution": "lognormal", "n": 43},
+    {"id": "exponential_includes_zero", "dataset": "exponential_with_zero", "control_distribution": "exponential", "case_distribution": "exponential", "n": 29},
+    {"id": "exponential_equal_endpoints", "dataset": "constant_positive", "control_distribution": "exponential", "case_distribution": "exponential", "direction": ">", "n": 7},
+    {"id": "exponential_one_observation_each", "dataset": "exponential_single_each", "control_distribution": "exponential", "case_distribution": "exponential", "n": 21},
+    {"id": "mixed_log_exp_partial_sensitivity", "dataset": "positive_ties", "control_distribution": "lognormal", "case_distribution": "exponential", "partial_auc": [0.59, 0.97], "focus": "sensitivity", "n": 79},
+    {"id": "mixed_exp_log_corrected_percent", "dataset": "positive_ties", "control_distribution": "exponential", "case_distribution": "lognormal", "partial_auc": [58, 98], "percent": true, "standardize": true, "allow_below_chance": true, "n": 249},
+    {"id": "normal_partial_below_chance", "dataset": "uneven_variances", "partial_auc": [0.62, 0.97], "standardize": true, "n": 51},
+    {"id": "normal_single_grid_point", "dataset": "mixed_supports", "n": 1},
+    {"id": "lognormal_rejects_zero", "dataset": "exponential_with_zero", "control_distribution": "lognormal", "error": "need positive values"},
+    {"id": "exponential_rejects_negatives", "dataset": "mixed_supports", "control_distribution": "exponential", "error": "Exponential values must"},
+    {"id": "exponential_rejects_zero_mean", "dataset": "zero_control_mean", "control_distribution": "exponential", "error": "missing value where TRUE/FALSE needed"},
+    {"id": "normal_zero_variance_undefined", "dataset": "constant_positive", "n": 21, "undefined_r_auc": true},
+    {"id": "off_support_grid_has_no_case_mass", "dataset": "mixed_supports", "case_distribution": "lognormal", "n": 1, "undefined_r_auc": true}
+  ]
+}
