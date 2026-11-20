@@ -5,7 +5,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from biomed_parity.mstate_markov import markov_test
+from biomed_parity.mstate_markov import markov_test, optimal_weights_matrix, optimal_weights_multiple
 from biomed_parity.mstate_prep import msprep
 from validation.mstate_markov.verify import CASES, HERE, assert_case, verify
 
@@ -66,6 +66,55 @@ def test_no_bootstrap_output(illness_death):
     assert result.overall_statistic == 1
 
 
+def test_optimal_weights_use_state_occupancy_at_the_landmark(illness_death):
+    grid = [1, 2, 4, 5, 6]
+    np.testing.assert_allclose(
+        optimal_weights_matrix(illness_death, 2, grid),
+        [[2 / 3, 2 / 3], [2 / 3, 2 / 3], [2 / 3, 2 / 3], [0.5, 0.5], [0, 0]],
+        rtol=0, atol=1e-15,
+    )
+    np.testing.assert_allclose(
+        optimal_weights_multiple(illness_death, 2, grid, min_time=0.5),
+        [2 / 9, 4 / 9, 8 / 9, 0.25, 0], rtol=0, atol=1e-15,
+    )
+
+
+def test_weighted_summaries_with_no_supported_grid_points(illness_death):
+    result = markov_test(
+        illness_death, 2, [2, 4, 5], multipliers=[[1, 1], [2, 1]],
+        state_weights=[[1, 0], [0, 0], [0, 0]], overall_weights=[0, 0, 0],
+    )
+    np.testing.assert_array_equal(result.state_statistics, [1, np.nan])
+    np.testing.assert_array_equal(result.state_pvalues, [0.5, np.nan])
+    assert np.isnan(result.overall_statistic)
+    assert np.isnan(result.overall_pvalue)
+    assert np.isnan(result.bootstrap_overall_statistics).all()
+
+
+def test_optimal_weights_align_qualifying_states_by_index():
+    records = msprep(
+        [[0, 0, 5, 0, 0], [0, 0, 0, 0, 7]],
+        [[0, 0, 1, 0, 0], [0, 0, 0, 0, 1]],
+        [(0, 1), (1, 2), (3, 4)], start_state=[1, 3],
+    )
+    np.testing.assert_array_equal(optimal_weights_matrix(records, 1, [2]), [[0.5, 0.5]])
+    result = markov_test(records, 1, [2], n_bootstrap=0, state_weights="optimal")
+    np.testing.assert_array_equal(result.qualifying_states, [0, 1])
+    np.testing.assert_array_equal(result.state_statistics, [np.nan, 0])
+
+
+def test_optimal_weights_count_future_zero_duration_events():
+    records = msprep(
+        [[0, 1, 5], [0, 4, 6], [0, 6, 6], [0, 0, 3]],
+        [[0, 1, 1], [0, 1, 1], [0, 0, 1], [0, 0, 1]],
+        [(0, 1), (0, 2), (1, 2)], start_state=[0, 0, 0, 1], start_time=[0, 0, 0, 3],
+    )
+    np.testing.assert_array_equal(
+        optimal_weights_matrix(records, 2, [2, 3]),
+        [[np.sqrt(6) / 3, np.sqrt(6) / 3], [2 / 3, 2 / 3]],
+    )
+
+
 def test_zero_duration_intervals_removed(illness_death):
     end = illness_death.t_stop.copy()
     last = np.flatnonzero(illness_death.id == 3)
@@ -85,6 +134,9 @@ def test_zero_duration_intervals_removed(illness_death):
         (2, [2], {"multipliers": [[1, 2]], "n_bootstrap": 2}, "match the number"),
         (2, [2], {"n_bootstrap": -1}, "nonnegative integer"),
         (2, [2], {"distribution": "other"}, "distribution"),
+        (2, [2], {"state_weights": [[1]]}, "qualifying_states"),
+        (2, [2], {"overall_weights": [-1]}, "nonnegative"),
+        (2, [2], {"state_weights": "optimal", "min_time": 3}, "first grid point"),
     ],
 )
 def test_invalid_test_inputs(illness_death, transition, grid, options, message):

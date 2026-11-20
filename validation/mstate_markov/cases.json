@@ -38,6 +38,7 @@
     ],
     "transition": 4,
     "grid": [1.5, 3.5, 4.5, 5, 6.5, 8, 9, 12, 14, 16],
+    "min_time": 1,
     "seed": 47,
     "distribution": "poisson",
     "replicates": 17
