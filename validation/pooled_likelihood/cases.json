@@ -1,0 +1,6 @@
+[
+  {"id": "systolic_pressure_full_two_terms", "family": "gaussian", "n": 54, "m": 6, "added": 2, "draw_scale": 0.8, "base_scale": 0},
+  {"id": "systolic_pressure_short_imputation_run", "family": "gaussian", "n": 39, "m": 3, "added": 1, "draw_scale": 2.3, "base_scale": 2.1},
+  {"id": "binary_readmission_logit", "family": "binomial", "n": 64, "m": 5, "added": 1, "draw_scale": 1.6, "base_scale": 0},
+  {"id": "binary_readmission_both_covariates_vary", "family": "binomial", "n": 72, "m": 4, "added": 2, "draw_scale": 0.6, "base_scale": 2.1}
+]

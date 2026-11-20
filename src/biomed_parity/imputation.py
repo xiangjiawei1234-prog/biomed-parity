@@ -1,5 +1,6 @@
-"""Scalar inference for repeated complete-data estimates."""
+"""Pooled inference for repeated complete-data estimates and model tests."""
 
+import warnings
 from dataclasses import dataclass
 from math import inf, isfinite, sqrt
 from numbers import Integral, Real
@@ -282,4 +283,110 @@ def pool_d2(statistics: ArrayLike, df: int) -> PooledTest:
     relative = float((1 + 1 / m) * (roots - roots[0]).var(ddof=1))
     statistic = (values.mean() / df - (m + 1) / (m - 1) * relative) / (1 + relative)
     denominator_df = inf if relative == 0 else df**(-3 / m) * (m - 1) * (1 + 1 / relative)**2
+    return _pooled_test(statistic, df, denominator_df, relative)
+
+
+def _nested_loglikelihoods(full_loglik, reduced_loglik, df):
+    full = _real_vector(full_loglik, "full_loglik")
+    reduced = _real_vector(reduced_loglik, "reduced_loglik")
+    if full.size < 2 or full.shape != reduced.shape:
+        raise ValueError("full and reduced log likelihoods must align across at least two imputations")
+    if not isinstance(df, Integral) or isinstance(df, (bool, np.bool_)) or df < 1:
+        raise ValueError("df must be the positive integer difference in model parameter counts")
+    return full, reduced
+
+
+def pool_d3(
+    full_loglik: ArrayLike,
+    reduced_loglik: ArrayLike,
+    restricted_full_loglik: ArrayLike,
+    restricted_reduced_loglik: ArrayLike,
+    df: int,
+    *,
+    ariv: str = "default",
+) -> PooledTest:
+    """Pool nested log likelihoods using the Meng–Rubin D3 test.
+
+    The first pair contains per-imputation maximum log likelihoods. The
+    restricted pair evaluates each model on the same imputations under its
+    own across-imputation pooled parameters. The caller selects how to
+    restrict nuisance and regression parameters when calculating those inputs.
+    Use ``ariv="positive"`` to truncate negative relative variance increases.
+    """
+    full, reduced = _nested_loglikelihoods(full_loglik, reduced_loglik, df)
+    restricted_full = _real_vector(restricted_full_loglik, "restricted_full_loglik")
+    restricted_reduced = _real_vector(restricted_reduced_loglik, "restricted_reduced_loglik")
+    if restricted_full.shape != full.shape or restricted_reduced.shape != reduced.shape:
+        raise ValueError("restricted log likelihoods must align with the fitted log likelihoods")
+    if ariv not in ("default", "positive"):
+        raise ValueError("ariv must be 'default' or 'positive' for D3")
+
+    m = full.size
+    fitted = 2 * (full - reduced).mean()
+    restricted = 2 * (restricted_full - restricted_reduced).mean()
+    relative = (m + 1) / (df * (m - 1)) * (fitted - restricted)
+    if ariv == "positive":
+        relative = np.maximum(relative, 0.0)
+    with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+        statistic = restricted / (df * (1 + relative))
+        denominator_df = _d1_degrees(relative, df, m, inf)
+    if np.isfinite(statistic) and statistic < 0:
+        warnings.warn("D3 statistic is negative; inspect the restricted model likelihoods", RuntimeWarning,
+                      stacklevel=2)
+    return _pooled_test(statistic, df, denominator_df, relative)
+
+
+def pool_d4(
+    full_loglik: ArrayLike,
+    reduced_loglik: ArrayLike,
+    stacked_full_loglik: float,
+    stacked_reduced_loglik: float,
+    df: int,
+    *,
+    ariv: str = "default",
+    full_model_df: int | None = None,
+) -> PooledTest:
+    """Pool nested log likelihoods using the Chan–Meng D4 test in mitml.
+
+    Stack all completed datasets row-wise and fit each model once, with
+    parameters shared across imputations. Supply the resulting unscaled
+    stacked log likelihoods along with the per-imputation fits. ``ariv``
+    selects the default, nonnegative (``"positive"``), or ``"robust"``
+    variance increase. The robust method requires the full model's total
+    parameter count, including estimated nuisance parameters.
+    """
+    full, reduced = _nested_loglikelihoods(full_loglik, reduced_loglik, df)
+    if ariv not in ("default", "positive", "robust"):
+        raise ValueError("ariv must be 'default', 'positive' or 'robust' for D4")
+    for value in (stacked_full_loglik, stacked_reduced_loglik):
+        if not isinstance(value, Real) or isinstance(value, (bool, np.bool_)) or not isfinite(value):
+            raise ValueError("stacked log likelihoods must be finite numbers")
+
+    m = full.size
+    # mitml removes differences considered equal by R's all.equal() before pooling.
+    tolerance = sqrt(np.finfo(float).eps)
+    stacked_difference = (stacked_full_loglik - stacked_reduced_loglik) / m
+    stacked = 0.0 if abs(stacked_difference) <= tolerance else 2 * stacked_difference
+    if ariv == "robust":
+        if (
+            not isinstance(full_model_df, Integral) or isinstance(full_model_df, (bool, np.bool_))
+            or full_model_df < df
+        ):
+            raise ValueError("full_model_df must be an integer at least as large as df for robust D4")
+        constraints = full_model_df
+        loss = 2 * (full - stacked_full_loglik / m).mean()
+    else:
+        constraints = df
+        difference = full - reduced
+        scale = np.where(abs(full) > tolerance, abs(full), 1.0)
+        fitted = 2 * np.where(abs(difference) <= tolerance * scale, 0.0, difference).mean()
+        loss = fitted - stacked
+
+    adjusted_df = constraints * (m - 1)
+    relative = (m + 1) / adjusted_df * loss
+    if ariv == "positive":
+        relative = np.maximum(relative, 0.0)
+    with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+        denominator_df = inf if relative == 0 else adjusted_df * (1 + 1 / relative)**2
+        statistic = stacked / (df * (1 + relative))
     return _pooled_test(statistic, df, denominator_df, relative)
