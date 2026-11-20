@@ -18,6 +18,11 @@
     {"id": "sensitivity_binormal_omitted_fits_percent", "dataset": "continuous", "kind": "sensitivity", "n": 47, "seed": 77021, "specificity": [22, 59, 81], "percent": true, "append_draw": "separated"},
     {"id": "sensitivity_density_ordinary_percent", "dataset": "tied", "kind": "sensitivity", "method": "density", "n": 45, "seed": 85709, "direction": ">", "stratified": false, "confidence_level": 0.9, "percent": true, "specificity": [10, 51, 85, 95]},
     {"id": "sensitivity_density_scalar", "dataset": "tied", "kind": "sensitivity", "method": "density", "n": 57, "seed": 85709, "confidence_level": 0, "specificity": 0.64},
-    {"id": "sensitivity_density_numerical_bounds", "dataset": "interleaved_small", "kind": "sensitivity", "method": "density", "n": 49, "seed": 12391, "specificity": [0, 0.25, 0.8, 1], "confidence_level": 1, "bw": 1.3}
+    {"id": "sensitivity_density_numerical_bounds", "dataset": "interleaved_small", "kind": "sensitivity", "method": "density", "n": 49, "seed": 12391, "specificity": [0, 0.25, 0.8, 1], "confidence_level": 1, "bw": 1.3},
+    {"id": "auc_fitdistr_normal_reverse_auto", "dataset": "uneven_variances", "method": "fitdistr", "n": 63, "seed": 72207, "direction": "auto", "append_draw": "separated"},
+    {"id": "auc_fitdistr_partial_percent", "dataset": "positive_ties", "method": "fitdistr", "n": 79, "seed": 5269, "control_distribution": "log-normal", "case_distribution": "exponential", "percent": true, "partial_auc": [59, 97], "focus": "sensitivity", "standardize": true},
+    {"id": "auc_fitdistr_exponential_ordinary", "dataset": "exponential_with_zero", "method": "fitdistr", "n": 43, "seed": 35801, "control_distribution": "exponential", "case_distribution": "exponential", "stratified": false, "append_draw": "one_class", "confidence_level": 0.9},
+    {"id": "sensitivity_fitdistr_reverse_mixed_percent", "dataset": "mixed_supports", "kind": "sensitivity", "method": "fitdistr", "n": 51, "seed": 61429, "case_distribution": "lognormal", "direction": ">", "percent": true, "specificity": [85, 0, 20, 100, 85], "append_draw": "separated"},
+    {"id": "sensitivity_fitdistr_exponential", "dataset": "exponential_with_zero", "kind": "sensitivity", "method": "fitdistr", "n": 39, "seed": 13479, "control_distribution": "exponential", "case_distribution": "exponential", "specificity": 0.64}
   ]
 }

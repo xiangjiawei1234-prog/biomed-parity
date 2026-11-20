@@ -1,7 +1,9 @@
 """Percentile bootstrap intervals for one smoothed binary ROC curve."""
 
 from dataclasses import dataclass
+from functools import partial
 from numbers import Real
+from typing import Literal
 from warnings import warn
 
 import numpy as np
@@ -9,8 +11,11 @@ from numpy.typing import ArrayLike, NDArray
 
 from .roc import _binary_inputs
 from .roc_bootstrap import Focus, RocDirection
+from .roc_parametric import ParametricDistribution, smooth_parametric_roc
 from .roc_smoothing import DensityKernel, SmoothingMethod, smooth_roc
 from .roc_thresholds import _draws
+
+BootstrapSmoothingMethod = SmoothingMethod | Literal["fitdistr"]
 
 
 @dataclass(frozen=True)
@@ -42,16 +47,25 @@ def _probabilities(confidence_level):
     return (tail, 0.5, 1 - tail)
 
 
-def _refit_samples(labels, scores, settings, estimate, stratified, n_resamples, random_state, indices):
+def _fitter(method, bw, kernel, adjust, cut, control_distribution, case_distribution):
+    if method == "fitdistr":
+        return partial(smooth_parametric_roc, control_distribution=control_distribution,
+            case_distribution=case_distribution)
+    if method not in ("binormal", "density"):
+        raise ValueError("method must be 'binormal', 'density', or 'fitdistr'")
+    return partial(smooth_roc, method=method, bw=bw, kernel=kernel, adjust=adjust, cut=cut)
+
+
+def _refit_samples(labels, scores, fit, settings, estimate, stratified, n_resamples, random_state, indices):
     rng = np.random.default_rng(random_state) if indices is None else None
     draws, count = _draws(labels == 1, n_resamples, rng, indices, stratified)
     values = []
     for selection in draws:
         try:
-            refit = smooth_roc(labels[selection], scores[selection], **settings)
+            refit = fit(labels[selection], scores[selection], **settings)
         except ValueError:
             # The full sample has already validated settings. Resampling can
-            # remove a class or leave too few interior points for a binormal fit.
+            # remove a class or leave too little variation to fit a curve.
             continue
         value = estimate(refit)
         if np.isfinite(value).all():
@@ -77,13 +91,15 @@ def bootstrap_smooth_auc_ci(
     labels: ArrayLike,
     scores: ArrayLike,
     *,
-    method: SmoothingMethod = "binormal",
+    method: BootstrapSmoothingMethod = "binormal",
     direction: RocDirection = "<",
     n: int = 512,
     bw: str | float = "nrd0",
     kernel: DensityKernel = "gaussian",
     adjust: float = 1.0,
     cut: float = 3.0,
+    control_distribution: ParametricDistribution = "normal",
+    case_distribution: ParametricDistribution = "normal",
     partial_auc: tuple[float, float] | None = None,
     focus: Focus = "specificity",
     standardize: bool = False,
@@ -99,19 +115,20 @@ def bootstrap_smooth_auc_ci(
 
     Sampling is stratified by default. Fixed zero-based index rows override
     n_resamples. All draws use the direction resolved on the original sample.
+    With method="fitdistr", independently refit the chosen class distributions.
     """
     probabilities = _probabilities(confidence_level)
     labels, scores = _binary_inputs(labels, scores)
-    settings = dict(method=method, direction=direction, n=n, bw=bw, kernel=kernel,
-        adjust=adjust, cut=cut, partial_auc=partial_auc, focus=focus, standardize=standardize,
+    fit = _fitter(method, bw, kernel, adjust, cut, control_distribution, case_distribution)
+    settings = dict(direction=direction, n=n, partial_auc=partial_auc, focus=focus, standardize=standardize,
         allow_below_chance=allow_below_chance, percent=percent)
-    observed = smooth_roc(labels, scores, **settings)
+    observed = fit(labels, scores, **settings)
     scale = 100.0 if percent else 1.0
     if percent and partial_auc is not None:
         partial_auc = np.asarray(partial_auc, dtype=float) / scale
     settings.update(direction=observed.direction, allow_below_chance=True,
         percent=False, partial_auc=partial_auc)
-    values, count, omitted = _refit_samples(labels, scores, settings,
+    values, count, omitted = _refit_samples(labels, scores, fit, settings,
         lambda result: result.auc, stratified, n_resamples, random_state, bootstrap_indices)
     lower, median, upper = np.quantile(values, probabilities) * scale if values else (np.nan,) * 3
     return SmoothAucCIResult(observed.auc, float(median), (float(lower), float(upper)), count, omitted)
@@ -122,13 +139,15 @@ def bootstrap_smooth_sensitivity_ci(
     scores: ArrayLike,
     specificity: ArrayLike,
     *,
-    method: SmoothingMethod = "binormal",
+    method: BootstrapSmoothingMethod = "binormal",
     direction: RocDirection = "<",
     n: int = 512,
     bw: str | float = "nrd0",
     kernel: DensityKernel = "gaussian",
     adjust: float = 1.0,
     cut: float = 3.0,
+    control_distribution: ParametricDistribution = "normal",
+    case_distribution: ParametricDistribution = "normal",
     percent: bool = False,
     stratified: bool = True,
     confidence_level: float = 0.95,
@@ -140,6 +159,7 @@ def bootstrap_smooth_sensitivity_ci(
 
     Coordinates use the same scale as specificity. Fixed zero-based index
     rows override n_resamples. Each draw refits the original smoothing method.
+    With method="fitdistr", independently refit the chosen class distributions.
     """
     probabilities = _probabilities(confidence_level)
     labels, scores = _binary_inputs(labels, scores)
@@ -149,12 +169,12 @@ def bootstrap_smooth_sensitivity_ci(
         or not np.isfinite(targets).all() or np.any((targets < 0) | (targets > scale))):
         raise ValueError(f"specificity must contain finite values in [0, {scale:g}]")
     targets = targets.astype(float)
-    settings = dict(method=method, direction=direction, n=n, bw=bw, kernel=kernel,
-        adjust=adjust, cut=cut, percent=percent)
-    observed = smooth_roc(labels, scores, **settings)
+    fit = _fitter(method, bw, kernel, adjust, cut, control_distribution, case_distribution)
+    settings = dict(direction=direction, n=n, percent=percent)
+    observed = fit(labels, scores, **settings)
     settings["direction"] = observed.direction
     sensitivity = _sensitivity_at(observed, targets)
-    values, count, omitted = _refit_samples(labels, scores, settings,
+    values, count, omitted = _refit_samples(labels, scores, fit, settings,
         lambda result: _sensitivity_at(result, targets), stratified, n_resamples, random_state, bootstrap_indices)
     intervals = np.quantile(values, probabilities, axis=0).T if values else np.full((targets.size, 3), np.nan)
     return SmoothSensitivityCIResult(targets, sensitivity, intervals, count, omitted)

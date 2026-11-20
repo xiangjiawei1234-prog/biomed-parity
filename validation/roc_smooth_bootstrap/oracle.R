@@ -1,8 +1,11 @@
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 1L) stop("Usage: Rscript oracle.R cases.json")
 input <- jsonlite::read_json(args[[1L]], simplifyVector = FALSE)
-linked <- file.path(dirname(args[[1L]]), "..", "roc_smoothing", "cases.json")
-datasets <- c(input$datasets, jsonlite::read_json(linked, simplifyVector = FALSE)$datasets)
+datasets <- input$datasets
+for (method in c("roc_smoothing", "roc_parametric")) {
+    linked <- file.path(dirname(args[[1L]]), "..", method, "cases.json")
+    datasets <- c(datasets, jsonlite::read_json(linked, simplifyVector = FALSE)$datasets)
+}
 default <- function(value, fallback) if (is.null(value)) fallback else value
 RNGkind("Mersenne-Twister", "Inversion", "Rejection")
 
@@ -14,9 +17,14 @@ evaluate <- function(case) {
     sensitivity <- identical(case$kind, "sensitivity")
     targets <- unlist(case$specificity)
     scale <- if (percent) 100 else 1
-    settings <- list(method = default(case$method, "binormal"), n = default(case$n, 512L),
-        kernel = default(case$kernel, "gaussian"), bw = default(case$bw, "nrd0"),
-        cut = default(case$cut, 3), adjust = default(case$adjust, 1), reuse.auc = FALSE)
+    settings <- list(method = default(case$method, "binormal"), n = default(case$n, 512L), reuse.auc = FALSE)
+    if (identical(settings$method, "fitdistr")) {
+        settings$density.controls <- case$control_distribution
+        settings$density.cases <- case$case_distribution
+    } else {
+        settings <- c(settings, list(kernel = default(case$kernel, "gaussian"), bw = default(case$bw, "nrd0"),
+            cut = default(case$cut, 3), adjust = default(case$adjust, 1)))
+    }
     area_args <- list(partial.auc = default(unlist(case$partial_auc), FALSE),
         partial.auc.focus = default(case$focus, "specificity"),
         partial.auc.correct = isTRUE(case$standardize),
@@ -55,7 +63,7 @@ evaluate <- function(case) {
     }, simplify = FALSE)
     null <- rep(NA_real_, max(1L, length(targets)))
     draw_values <- function(index) {
-        refit <- tryCatch(smooth(index, observed$direction, percent && sensitivity), error = identity)
+        refit <- suppressWarnings(tryCatch(smooth(index, observed$direction, percent && sensitivity), error = identity))
         if (inherits(refit, "error")) null else measure(refit, draw_area)
     }
     summarize <- function(values) {
@@ -93,6 +101,7 @@ results <- lapply(input$cases, function(case) {
     tryCatch(evaluate(case), error = function(e) stop(case$id, ": ", conditionMessage(e), call. = FALSE))
 })
 names(results) <- vapply(input$cases, function(case) case$id, character(1))
-versions <- list(R = as.character(getRversion()), pROC = as.character(packageVersion("pROC")))
+versions <- list(R = as.character(getRversion()), pROC = as.character(packageVersion("pROC")),
+    MASS = as.character(packageVersion("MASS")))
 cat(jsonlite::toJSON(list(versions = versions, results = results),
     auto_unbox = TRUE, digits = NA, na = "null", null = "null", pretty = TRUE), "\n", sep = "")

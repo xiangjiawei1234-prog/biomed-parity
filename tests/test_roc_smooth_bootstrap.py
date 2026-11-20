@@ -12,8 +12,10 @@ from biomed_parity.roc_smooth_bootstrap import bootstrap_smooth_auc_ci, bootstra
 
 FIXTURES = Path(__file__).resolve().parents[1] / "validation" / "roc_smooth_bootstrap"
 INPUT = json.loads((FIXTURES / "cases.json").read_text(encoding="utf-8"))
-LINKED = json.loads((FIXTURES.parent / "roc_smoothing" / "cases.json").read_text(encoding="utf-8"))
-DATASETS = INPUT["datasets"] | LINKED["datasets"]
+DATASETS = INPUT["datasets"].copy()
+for method in ("roc_smoothing", "roc_parametric"):
+    linked = FIXTURES.parent / method / "cases.json"
+    DATASETS.update(json.loads(linked.read_text(encoding="utf-8"))["datasets"])
 CASES = INPUT["cases"]
 EXPECTED = json.loads((FIXTURES / "expected.json").read_text(encoding="utf-8"))["results"]
 
@@ -89,13 +91,16 @@ def test_seed_uses_subject_indices(stratified):
     assert fixed.n_resamples == count
 
 
-def test_all_draws_omitted_leave_point_estimates_and_missing_bounds():
+@pytest.mark.parametrize("method", ["binormal", "fitdistr"])
+def test_all_draws_omitted_leave_point_estimates_and_missing_bounds(method):
     data = DATASETS["continuous"]
     indices = [[0] * 10 + [10] * 7] * 2
     with pytest.warns(RuntimeWarning, match="2 bootstrap draws"):
-        area = bootstrap_smooth_auc_ci(**data, bootstrap_indices=indices)
+        area = bootstrap_smooth_auc_ci(**data, method=method, bootstrap_indices=indices)
     with pytest.warns(RuntimeWarning, match="2 bootstrap draws"):
-        sensitivity = bootstrap_smooth_sensitivity_ci(**data, specificity=0.5, bootstrap_indices=indices)
+        sensitivity = bootstrap_smooth_sensitivity_ci(
+            **data, method=method, specificity=0.5, bootstrap_indices=indices,
+        )
     assert np.isfinite(area.auc)
     assert np.isnan([*area.confidence_interval, area.median]).all()
     assert np.isfinite(sensitivity.sensitivity).all()

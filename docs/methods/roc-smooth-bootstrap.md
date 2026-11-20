@@ -1,6 +1,6 @@
 # 平滑 ROC 的 Bootstrap 区间
 
-`biomed_parity.roc_smooth_bootstrap` 使用 Bootstrap 对单条平滑二分类 ROC 计算完整或部分 AUC 的分位数区间，也可在固定特异度上计算灵敏度的逐点区间。每个重抽样重新拟合双正态或核密度曲线。区间口径对应 pROC 1.19.1 的 `ci.auc()` 和 `ci.se()`。[pROC AUC 区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.auc) · [pROC 灵敏度区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.se)
+`biomed_parity.roc_smooth_bootstrap` 使用 Bootstrap 对单条平滑二分类 ROC 计算完整或部分 AUC 的分位数区间，也可在固定特异度上计算灵敏度的逐点区间。每个重抽样重新拟合双正态、核密度或按类拟合分布的参数化曲线。区间口径对应 pROC 1.19.1 的 `ci.auc()` 和 `ci.se()`。[pROC AUC 区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.auc) · [pROC 灵敏度区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.se)
 
 ## 接口
 
@@ -9,7 +9,7 @@
 | `bootstrap_smooth_auc_ci(labels, scores, ...)` | `auc` 为原始样本的平滑 AUC，`median` 为重抽样的中位数，`confidence_interval` 为下、上分位点。可用 `partial_auc`、`focus` 和 `standardize` 指定部分 AUC。 |
 | `bootstrap_smooth_sensitivity_ci(labels, scores, specificity, ...)` | `specificity` 保留输入顺序，`sensitivity` 为原始样本的估计，`intervals` 每行依次为下分位点、中位数和上分位点。可指定一个数或一维数组。 |
 
-两种结果都提供总抽样次数 `n_resamples` 和被丢弃的次数 `omitted_resamples`。`method`、`direction`、`n`、`bw`、`kernel`、`adjust`、`cut` 和 `percent` 与 [`smooth_roc`](roc-smoothing.md) 一致。`direction="auto"` 只在原始样本上判定一次，之后每个重抽样固定使用该方向。密度带宽规则 `"nrd0"` 和 `"nrd"` 在每个重抽样重新估计。
+两种结果都提供总抽样次数 `n_resamples` 和被丢弃的次数 `omitted_resamples`。`method` 默认为 `"binormal"`，也支持 `"density"` 和 `"fitdistr"`。`direction="auto"` 只在原始样本上判定一次，之后每个重抽样固定使用该方向。核密度的 `bw`、`kernel`、`adjust` 与 `cut` 沿用 `smooth_roc` 的设置，带宽规则 `"nrd0"` 和 `"nrd"` 在每个重抽样重新估计。[双正态与核密度平滑](roc-smoothing.md)
 
 ```python
 from biomed_parity.roc_smooth_bootstrap import bootstrap_smooth_auc_ci, bootstrap_smooth_sensitivity_ci
@@ -19,6 +19,19 @@ scores = [0.1, 0.4, 0.6, 0.8, 0.3, 0.5, 0.7, 0.9]
 area = bootstrap_smooth_auc_ci(labels, scores, method="density", random_state=24)
 pointwise = bootstrap_smooth_sensitivity_ci(
     labels, scores, specificity=[0.7, 0.8, 0.9], method="density", random_state=24,
+)
+```
+
+## 参数化平滑区间
+
+两种区间函数均可用 `method="fitdistr"`，通过 `control_distribution` 和 `case_distribution` 分别选择对照和病例分布。两组默认均为 `"normal"`，也可选 `"lognormal"`（别名 `"log-normal"`）或 `"exponential"`。每次重抽样重新估计两组参数，并用当次抽样的合并分数范围构建网格。正态或对数正态样本缺乏变异、指数样本均值为零或网格内某组没有正密度时，计入 `omitted_resamples`。[分布要求与平滑网格](roc-parametric.md)
+
+```python
+area = bootstrap_smooth_auc_ci(
+    labels=[0] * 8 + [1] * 8,
+    scores=[0.1, 0.3, 0.4, 0.6, 0.7, 0.8, 1.0, 1.1, 0.2, 0.5, 0.7, 0.9, 1.1, 1.4, 1.6, 2.0],
+    method="fitdistr", control_distribution="lognormal",
+    case_distribution="exponential", partial_auc=(0.65, 1.0), random_state=24,
 )
 ```
 
@@ -32,7 +45,7 @@ pointwise = bootstrap_smooth_sensitivity_ci(
 
 ## 验证与范围
 
-13 个场景包含 8 个 AUC 区间和 5 个灵敏度区间。场景覆盖双正态和核密度、分层和普通抽样、概率及百分制、完整与部分 AUC、机会水平以下的校正、特异度端点与重复输入，以及因单类和完全分离被丢弃的抽样。每个场景用同一 R 种子生成 43 次抽样，手动逐次调用 pROC 并与公开 `ci.auc()` 或 `ci.se()` 交叉核对。3 个场景还加入一条指定的失败抽样，共保存 562 个抽样索引行。[对照用例](../../validation/roc_smooth_bootstrap/cases.json) · [参考脚本](../../validation/roc_smooth_bootstrap/oracle.R) · [R 4.5.3 / pROC 1.19.1 快照](../../validation/roc_smooth_bootstrap/expected.json)
+18 个场景包含 11 个 AUC 区间和 7 个灵敏度区间，其中 5 个场景使用参数化平滑。场景覆盖分层与普通抽样、概率及百分制、完整与部分 AUC、机会水平以下的校正、特异度端点与重复输入，以及因单类、完全分离、零方差或零均值被丢弃的抽样。每个场景按固定的 R 种子生成 43 次抽样，手动逐次调用 pROC，并与使用同一随机数流的公开 `ci.auc()` 或 `ci.se()` 交叉核对。6 个场景各加入一条指定的失败抽样，共保存 780 个抽样索引行。[对照用例](../../validation/roc_smooth_bootstrap/cases.json) · [参考脚本](../../validation/roc_smooth_bootstrap/oracle.R) · [R 4.5.3 / pROC 1.19.1 / MASS 7.3-65 快照](../../validation/roc_smooth_bootstrap/expected.json)
 
 原样本点估计及分位数在 0–1 尺度上的最大绝对偏差为 `7.8e-16`，丢弃抽样数逐场景一致。数值容差为相对 `2e-14`、绝对 `3e-15`，百分制绝对容差乘以 100。
 
@@ -42,4 +55,4 @@ R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 python -m pytest -q -W error tests/t
 R_LIBS_USER="$PWD/.r-lib" Rscript --vanilla validation/roc_smooth_bootstrap/oracle.R validation/roc_smooth_bootstrap/cases.json
 ```
 
-小样本重抽样可能产生水平的双正态拟合。Python 沿用原平滑模块的确定性端点；pROC 的曲线取点依赖理论零斜率处的浮点舍入，有时会报错或得到不同的点坐标。此时两端的有效抽样计数或区间可能不同。仅有一笔有效抽样时 Python 仍保留结果维度。两端随机数流各自独立。此接口覆盖单条曲线与逐点区间，同时置信带、两条平滑曲线的推断、多分类与其他平滑模型属于独立范围。
+小样本重抽样可能产生水平的双正态拟合。Python 沿用原平滑模块的确定性端点。pROC 的曲线取点依赖理论零斜率处的浮点舍入，有时会报错或得到不同的点坐标。此时两端的有效抽样计数或区间可能不同。仅有一笔有效抽样时 Python 仍保留结果维度。两端随机数流各自独立。此接口覆盖单条曲线与逐点区间，同时置信带、两条平滑曲线的推断、多分类与其他平滑模型属于独立范围。

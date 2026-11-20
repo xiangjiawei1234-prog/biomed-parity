@@ -26,16 +26,20 @@ print(roc.auc, roc.control_fit.estimates)
 
 `direction="<"` 表示高分偏向病例，`">"` 表示低分偏向病例，`"auto"` 使用两组中位数。`n` 是合并分数最小和最大值间的等距网格大小，默认为 512。两组拟合后的密度在同一网格上计算并各自归一化。每个网格阈值依据对应方向累计密度，灵敏度包含该阈值的病例质量。返回按特异度升序排列的 `specificity` 和 `sensitivity`，含 `n` 个平滑点和 `(0,1)`、`(1,0)` 两个锚点。[pROC 平滑实现](https://github.com/xrobin/pROC/blob/master/R/smooth.R) · [密度坐标实现](https://github.com/xrobin/pROC/blob/master/R/roc.utils.R)
 
-完整 AUC 使用含锚点曲线的梯形积分。`partial_auc=(a,b)` 可用 `focus="specificity"` 或 `"sensitivity"` 计算部分面积，可用 `standardize=True` 做 McClish 校正并用 `allow_below_chance=True` 保留低于机会水平的校正值。`percent=True` 将坐标、AUC 和部分面积端点改用 0–100 尺度。分布参数保留原始尺度。[pROC AUC 手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#auc)
+完整 AUC 使用含锚点曲线的梯形积分。`partial_auc=(a,b)` 可用 `focus="specificity"` 或 `"sensitivity"` 计算部分面积。`standardize=True` 做 McClish 校正。默认情况下，低于机会水平的校正值返回 `NaN` 并发出 `RuntimeWarning`，可用 `allow_below_chance=True` 保留该值。`percent=True` 将坐标、AUC 和部分面积端点改用 0–100 尺度。分布参数保留原始尺度。[pROC AUC 手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#auc)
 
 ## 验证与范围
 
 17 个场景覆盖 7 组人工数据。12 个数值场景比较两组拟合参数、标准误、协方差、对数似然、整条曲线与 AUC，并覆盖不同支持范围、两种方向、单点网格、重复网格值、两种部分面积轴、校正和百分制。另有 3 个双方均拒绝的场景，2 个 pROC 返回缺失 AUC 而 Python 报错的场景。数值容差为相对 `3e-14`、绝对 `5e-15`，百分制坐标和 AUC 的绝对容差乘以 100。实测最大绝对误差为归一化曲线坐标 `3.6e-15`、AUC `2.5e-15`、参数 `4.9e-15`、对数似然 `4.9e-14`。[用例](../../validation/roc_parametric/cases.json) · [R 4.5.3 / pROC 1.19.1 / MASS 7.3-65 快照](../../validation/roc_parametric/expected.json) · [R 参考脚本](../../validation/roc_parametric/oracle.R)
 
-零方差正态样本或网格内没有某一组的正密度时会抛出 `ValueError`。密度计算在对数尺度归一化，以避免普通密度求值中的下溢。支持范围为上述闭式模型的未加权二分类点估计。其它 MASS 参数分布、用户提供密度函数、拟合起始值及该方法的重抽样推断属于独立工作。
+零方差正态样本或网格内没有某一组的正密度时会抛出 `ValueError`。密度计算在对数尺度归一化，以避免普通密度求值中的下溢。支持范围为上述闭式模型的未加权二分类点估计。其它 MASS 参数分布、用户提供密度函数与拟合起始值属于独立工作。
 
 ```sh
 python -m pytest -q tests/test_roc_parametric.py
 R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 python -m pytest -q -W error tests/test_roc_parametric.py
 R_LIBS_USER="$PWD/.r-lib" Rscript --vanilla validation/roc_parametric/oracle.R validation/roc_parametric/cases.json
 ```
+
+## Bootstrap 区间
+
+用 `bootstrap_smooth_auc_ci` 或 `bootstrap_smooth_sensitivity_ci` 设置 `method="fitdistr"`，可计算 AUC 或指定特异度下的灵敏度区间。两种函数沿用相同的分布参数，并在每次重抽样重新估计两组分布。[参数化平滑区间与验证](roc-smooth-bootstrap.md#参数化平滑区间)
