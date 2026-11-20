@@ -265,6 +265,103 @@
     },
     "density_constant_nrd_error": {
       "error": "'bw' is not positive."
+    },
+    "density_tabulated_ignores_kernel_settings": {
+      "specificity": [0, 0, 0, 0.142857142857143, 0.714285714285714, 1, 1],
+      "sensitivity": [1, 1, 1, 1, 0.875, 0.75, 0],
+      "auc": 0.910714285714286,
+      "direction": "<",
+      "method": "density",
+      "percent": false,
+      "bandwidth": null,
+      "coefficients": null,
+      "warnings": []
+    },
+    "density_tabulated_percent_sensitivity_auto_reverse": {
+      "specificity": [0, 0, 6.25, 18.75, 68.75, 93.75, 100, 100],
+      "sensitivity": [100, 100, 100, 100, 100, 85.7142857142857, 35.7142857142857, 0],
+      "auc": 97.1038961038961,
+      "direction": ">",
+      "method": "density",
+      "percent": true,
+      "bandwidth": null,
+      "coefficients": null,
+      "warnings": []
+    },
+    "density_tabulated_auto_uses_observed_direction": {
+      "specificity": [0, 0, 0, 0.25, 1],
+      "sensitivity": [1, 1, 0.2, 0, 0],
+      "auc": 0.025,
+      "direction": ">",
+      "method": "density",
+      "percent": false,
+      "bandwidth": null,
+      "coefficients": null,
+      "warnings": []
+    },
+    "density_tabulated_partial_specificity": {
+      "specificity": [0, 0, 0, 0.142857142857143, 0.714285714285714, 1, 1],
+      "sensitivity": [1, 1, 1, 1, 0.875, 0.75, 0],
+      "auc": 0.501818303571429,
+      "direction": "<",
+      "method": "density",
+      "percent": false,
+      "bandwidth": null,
+      "coefficients": null,
+      "warnings": []
+    },
+    "density_tabulated_single_bin": {
+      "specificity": [0, 0, 1],
+      "sensitivity": [1, 1, 0],
+      "auc": 0.5,
+      "direction": ">",
+      "method": "density",
+      "percent": false,
+      "bandwidth": null,
+      "coefficients": null,
+      "warnings": []
+    },
+    "density_tabulated_constant_specificity_reverse": {
+      "specificity": [0, 0, 0, 0, 1],
+      "sensitivity": [1, 0.2, 0.6, 1, 0],
+      "auc": 0.5,
+      "direction": ">",
+      "method": "density",
+      "percent": false,
+      "bandwidth": null,
+      "coefficients": null,
+      "warnings": []
+    },
+    "density_tabulated_controls_only": {
+      "specificity": [0, 0, 0.0625, 0.125, 0.3125, 0.625, 0.875, 1, 1],
+      "sensitivity": [1, 1, 0.997341597552632, 0.89152614940293, 0.648289549287619, 0.323553063286994, 0.143569266565583, 0.0346982660055389, 0],
+      "auc": 0.487184184000171,
+      "direction": "<",
+      "method": "density",
+      "percent": false,
+      "bandwidth": 0.947201532647743,
+      "coefficients": null,
+      "warnings": []
+    },
+    "density_tabulated_cases_only": {
+      "specificity": [0, 0, 0, 0.05, 0.2, 0.4, 0.6, 0.8, 0.95, 1, 1],
+      "sensitivity": [1, 1, 1, 1, 1, 0.954545454545455, 0.772727272727273, 0.545454545454545, 0.136363636363636, 0, 0],
+      "auc": 0.754545454545455,
+      "direction": ">",
+      "method": "density",
+      "percent": false,
+      "bandwidth": 1.2,
+      "coefficients": null,
+      "warnings": []
+    },
+    "density_tabulated_length_mismatch": {
+      "error": "Length of 'density.controls' and 'density.cases' differ."
+    },
+    "density_tabulated_kernel_length_mismatch": {
+      "error": "Length of 'density.controls' and 'density.cases' differ."
+    },
+    "density_tabulated_zero_mass": {
+      "error": "missing value where TRUE/FALSE needed"
     }
   }
 }

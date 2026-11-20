@@ -23,11 +23,12 @@ density = smooth_roc(
 | `direction` | 默认 `"<"` 表示高分偏向病例，`">"` 表示低分偏向病例。设为 `"auto"` 则复现 `pROC::roc()` 的中位数规则，对照中位数不高于病例时取 `"<"`。 |
 | `n` | 默认为 512。双正态至少需要 2 个网格点，密度至少需要 1 个。 |
 | `bw`, `kernel`, `adjust`, `cut` | 密度参数。`bw` 可取正数、`"nrd0"` 或 `"nrd"`。默认核为 `"gaussian"`，其余支持 `"rectangular"`、`"triangular"`、`"epanechnikov"`、`"biweight"`、`"cosine"`、`"optcosine"`。`adjust` 默认 1，`cut` 默认 3。 |
+| `density_controls`、`density_cases` | 为相应组提供按分数升序的等距网格密度，取值有限且非负，两组各有正质量。省略一组时在公共核密度网格上估计该组，表长必须等于 `n`。同时提供两组时由共同表长决定网格点数。 |
 | `partial_auc`, `focus` | 两个端点可任意顺序给出。`focus="specificity"` 以特异度为横轴，也可用 `"sensitivity"`。省略 `partial_auc` 就计算完整面积。 |
 | `standardize`, `allow_below_chance` | 默认均为 `False`。部分面积可用 McClish 公式校正，校正后机会水平为 0.5。低于机会水平时返回 `NaN` 和 `RuntimeWarning`，设置 `allow_below_chance=True` 可保留该校正值。 |
 | `percent` | 默认采用 0–1 尺度。设为 `True` 时，灵敏度、特异度、部分面积的端点及 AUC 采用 0–100 尺度。 |
 
-`SmoothROCResult` 返回按特异度升序排列的 `specificity` 和 `sensitivity`、面积 `auc`、实际采用的 `direction`、`method` 及 `percent` 标志。数组包含 `n` 个计算点和两个锚点，锚点按 `(特异度, 灵敏度)` 表示为 `(0, 1)` 与 `(1, 0)`，百分制时相应缩放。双正态结果提供 `coefficients=(截距, 斜率)`，密度结果提供调整后的数值 `bandwidth`。另一个模型的专属字段为 `None`。曲线点可以包含重复锚点。
+`SmoothROCResult` 返回按特异度升序排列的 `specificity` 和 `sensitivity`、面积 `auc`、实际采用的 `direction`、`method` 及 `percent` 标志。数组包含计算点和两个锚点，锚点按 `(特异度, 灵敏度)` 表示为 `(0, 1)` 与 `(1, 0)`，百分制时相应缩放。双正态结果提供 `coefficients=(截距, 斜率)`，核密度结果提供调整后的数值 `bandwidth`。两个密度表均给定时，`bandwidth` 为 `None`。曲线点可以包含重复锚点。
 
 ## 估计与积分
 
@@ -37,7 +38,7 @@ density = smooth_roc(
 
 ## 对照与范围
 
-[人工数据和场景](../../validation/roc_smoothing/cases.json)覆盖 8 组数据和 26 个场景。22 个场景比较完整网格与 AUC，1 个水平双正态场景比较内部点、系数与 AUC，3 个场景验证两侧均拒绝无法拟合的曲线或零带宽。用例涵盖两种方向与自动方向、并列分数、完全分离、常数分数、两种带宽规则及数值带宽、七种核、小于和大于默认值的网格、两种部分面积轴、百分制及机会水平以下的校正行为。[R 参考脚本](../../validation/roc_smoothing/oracle.R) · [版本化快照](../../validation/roc_smoothing/expected.json)
+[人工数据和场景](../../validation/roc_smoothing/cases.json)覆盖 8 组数据和 37 个场景。30 个场景比较完整网格与 AUC，1 个水平双正态场景比较内部点、系数与 AUC，6 个场景验证输入或拟合错误。用例涵盖两种方向与自动方向、并列分数、完全分离、常数分数、单侧及双侧给定密度表、七种核、两种部分面积轴、百分制及校正行为。给定密度表时，自动方向仍由原始分数决定。 [R 参考脚本](../../validation/roc_smoothing/oracle.R) · [版本化快照](../../validation/roc_smoothing/expected.json)
 
 相对容差为 `2e-14`，绝对容差为 `3e-15`（百分制曲线坐标与 AUC 乘以 100）。实测在 0–1 尺度上的最大绝对差为曲线坐标 `1.67e-15`、AUC `6.67e-16`；未缩放的系数和带宽分别为 `2.45e-15` 和 `5.12e-15`。
 
@@ -49,4 +50,4 @@ R_LIBS_USER="$PWD/.r-lib" Rscript --vanilla validation/roc_smoothing/oracle.R va
 
 水平双正态拟合采用负斜率趋近零时的端点极限，保持曲线方向。pROC 在无穷分位点上的结果依赖 `lm` 对理论零斜率的浮点舍入，可出现相反的端点顺序或报错。密度方法要求两组在所选输出网格上有正质量，过稀的网格可能无法分辨窄核。
 
-当前支持范围是固定二分类方向及平滑曲线的点估计。自定义密度、`fitdistr`、`logcondens`、`SJ`/`ucv`/`bcv` 带宽、R 4.4 之前的密度坐标，以及平滑曲线上的阈值、置信区间、检验和多分类 ROC 均未纳入本模块。经验曲线的相关入口见 [ROC 坐标与阈值](roc-thresholds.md)和 [部分 AUC 与 Bootstrap](roc-bootstrap.md)。
+反向评分且对照质量全部位于首个表格单元时，网格坐标和完整 AUC 与 R 对照。以灵敏度为横轴的部分 AUC 采用几何积分，退化曲线的结果可能与 pROC 不同。当前密度表入口仍要求原始二分类分数。函数型密度、`logcondens`、`SJ`/`ucv`/`bcv` 带宽及 R 4.4 之前的密度坐标仍待迁移。其他入口详见 [参数分布平滑](roc-parametric.md) · [平滑曲线 Bootstrap](roc-smooth-bootstrap.md) · [多分类 ROC](roc-multiclass.md)。

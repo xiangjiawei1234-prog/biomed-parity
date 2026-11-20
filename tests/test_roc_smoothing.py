@@ -20,14 +20,16 @@ ATOL = 3e-15
 
 def _fit(case):
     inputs = INPUT["datasets"][case["dataset"]]
-    options = {key: value for key, value in case.items() if key not in ("id", "dataset", "error", "compare")}
+    options = {key: value for key, value in case.items()
+        if key not in ("id", "dataset", "error", "python_error", "compare")}
     return smooth_roc(**inputs, **options)
 
 
 def _assert_parity(case, reference):
     if "error" in case:
         assert case["error"] in reference["error"]
-        message = "distinct interior sensitivities" if case.get("method") != "density" else "positive bandwidth"
+        message = case.get("python_error",
+            "distinct interior sensitivities" if case.get("method") != "density" else "positive bandwidth")
         with pytest.raises(ValueError, match=message):
             _fit(case)
         return
@@ -64,7 +66,9 @@ def _assert_parity(case, reference):
                 rtol=RTOL, atol=ATOL, err_msg=f"{case['id']} {field}")
     for field in ("direction", "method", "percent"):
         assert getattr(actual, field) == reference[field]
-    assert len(actual.specificity) == len(actual.sensitivity) == case.get("n", 512) + 2
+    size = (len(case["density_controls"]) if "density_controls" in case and "density_cases" in case
+        else case.get("n", 512))
+    assert len(actual.specificity) == len(actual.sensitivity) == size + 2
     np.testing.assert_array_equal(actual.specificity[[0, -1]], [0, scale])
     np.testing.assert_array_equal(actual.sensitivity[[0, -1]], [scale, 0])
 
@@ -108,9 +112,28 @@ def test_horizontal_binormal_fit_has_deterministic_endpoints():
         ({"method": "density", "kernel": "uniform"}, "kernel"),
         ({"method": "density", "adjust": 0.0}, "adjust"),
         ({"method": "density", "cut": -1.0}, "cut"),
+        ({"density_controls": [1]}, "require method='density'"),
+        ({"method": "density", "density_controls": []}, "nonempty"),
+        ({"method": "density", "density_cases": [[1, 2]]}, "one-dimensional"),
+        ({"method": "density", "density_cases": [1, -1]}, "nonnegative"),
+        ({"method": "density", "density_cases": [1, np.inf]}, "finite"),
+        ({"method": "density", "density_cases": [1, np.nan]}, "finite"),
+        ({"method": "density", "density_cases": ["1", "2"]}, "densities"),
         ({"partial_auc": (-0.3, 0.8)}, "partial_auc"),
     ],
 )
 def test_invalid_smoothing_options(options, message):
     with pytest.raises(ValueError, match=message):
         smooth_roc(**INPUT["datasets"]["tied"], **options)
+
+
+def test_tabulated_density_rates_are_invariant_to_classwise_rescaling():
+    inputs = INPUT["datasets"]["tied"]
+    densities = dict(density_controls=np.array([1.0, 2.0, 4.0]), density_cases=np.array([0.0, 3.0, 7.0]))
+    baseline = smooth_roc(**inputs, method="density", **densities)
+    scaled = smooth_roc(**inputs, method="density",
+        density_controls=densities["density_controls"] * 3e307,
+        density_cases=densities["density_cases"] * 1e-312)
+    np.testing.assert_allclose(baseline.specificity, scaled.specificity, rtol=RTOL, atol=ATOL)
+    np.testing.assert_allclose(baseline.sensitivity, scaled.sensitivity, rtol=RTOL, atol=ATOL)
+    assert scaled.auc == pytest.approx(baseline.auc, rel=RTOL, abs=ATOL)

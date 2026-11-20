@@ -10,6 +10,8 @@ evaluate <- function(case) {
     method <- default(case$method, "binormal")
     bw <- default(case$bw, "nrd0")
     adjust <- default(case$adjust, 1)
+    density.controls <- unlist(case$density_controls)
+    density.cases <- unlist(case$density_cases)
     warnings <- character()
     capture <- function(w) {
         warnings <<- c(warnings, conditionMessage(w))
@@ -18,13 +20,14 @@ evaluate <- function(case) {
     tryCatch(withCallingHandlers({
         smoothed <- pROC::smooth(roc, method = method, n = default(case$n, 512),
             bw = bw, kernel = default(case$kernel, "gaussian"), cut = default(case$cut, 3),
-            adjust = adjust, reuse.auc = FALSE)
+            adjust = adjust, density.controls = density.controls, density.cases = density.cases,
+            reuse.auc = FALSE)
         area <- pROC::auc(smoothed, partial.auc = default(unlist(case$partial_auc), FALSE),
             partial.auc.focus = default(case$focus, "specificity"),
             partial.auc.correct = isTRUE(case$standardize),
             allow.invalid.partial.auc.correct = isTRUE(case$allow_below_chance))
         bandwidth <- NULL
-        if (method == "density") {
+        if (method == "density" && (is.null(density.controls) || is.null(density.cases))) {
             predictor <- c(roc$controls, roc$cases)
             bandwidth <- adjust * if (is.numeric(bw)) bw else {
                 get(paste0("bw.", bw), envir = asNamespace("stats"))(predictor)

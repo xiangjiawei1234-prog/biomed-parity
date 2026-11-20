@@ -41,6 +41,17 @@
     {"id": "density_single_grid_point", "dataset": "single_per_class", "method": "density", "direction": ">", "n": 1},
     {"id": "density_constant_nrd0_fallback", "dataset": "constant", "method": "density", "n": 15},
     {"id": "density_zero_nrd0_fallback", "dataset": "zero", "method": "density", "n": 15},
-    {"id": "density_constant_nrd_error", "dataset": "constant", "method": "density", "bw": "nrd", "error": "not positive"}
+    {"id": "density_constant_nrd_error", "dataset": "constant", "method": "density", "bw": "nrd", "error": "not positive"},
+    {"id": "density_tabulated_ignores_kernel_settings", "dataset": "tied", "method": "density", "n": 0, "bw": "unused", "kernel": "unused", "adjust": -1, "cut": -1, "density_controls": [0, 1, 4, 2, 0], "density_cases": [0, 0, 1, 1, 6]},
+    {"id": "density_tabulated_percent_sensitivity_auto_reverse", "dataset": "continuous", "method": "density", "direction": "auto", "percent": true, "focus": "sensitivity", "standardize": true, "partial_auc": [35, 90], "density_controls": [0, 1, 4, 8, 2, 1], "density_cases": [5, 7, 2, 0, 0, 0]},
+    {"id": "density_tabulated_auto_uses_observed_direction", "dataset": "continuous", "method": "density", "direction": "auto", "density_controls": [3, 1, 0], "density_cases": [0, 1, 4]},
+    {"id": "density_tabulated_partial_specificity", "dataset": "tied", "method": "density", "partial_auc": [0.26, 0.81], "density_controls": [0, 1, 4, 2, 0], "density_cases": [0, 0, 1, 1, 6]},
+    {"id": "density_tabulated_single_bin", "dataset": "single_per_class", "method": "density", "direction": ">", "density_controls": [11], "density_cases": [42]},
+    {"id": "density_tabulated_constant_specificity_reverse", "dataset": "single_per_class", "method": "density", "direction": ">", "density_controls": [1, 0, 0], "density_cases": [1, 2, 2]},
+    {"id": "density_tabulated_controls_only", "dataset": "tied", "method": "density", "n": 7, "bw": "nrd", "cut": 1.5, "adjust": 0.8, "density_controls": [1, 1, 3, 5, 4, 2, 0]},
+    {"id": "density_tabulated_cases_only", "dataset": "continuous", "method": "density", "direction": ">", "n": 9, "bw": 1.2, "kernel": "rectangular", "density_cases": [0, 3, 9, 5, 4, 1, 0, 0, 0]},
+    {"id": "density_tabulated_length_mismatch", "dataset": "tied", "method": "density", "density_controls": [1, 2], "density_cases": [3, 4, 5], "error": "differ", "python_error": "same length"},
+    {"id": "density_tabulated_kernel_length_mismatch", "dataset": "tied", "method": "density", "n": 3, "density_cases": [1, 2], "error": "differ", "python_error": "same length"},
+    {"id": "density_tabulated_zero_mass", "dataset": "tied", "method": "density", "density_controls": [0, 0, 0], "density_cases": [1, 2, 3], "error": "missing value where TRUE/FALSE needed", "python_error": "positive finite mass"}
   ]
 }

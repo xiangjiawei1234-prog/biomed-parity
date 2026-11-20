@@ -1,4 +1,4 @@
-"""Binormal and kernel-density smoothing of binary ROC curves."""
+"""Binormal and density smoothing of binary ROC curves."""
 
 from dataclasses import dataclass
 from math import hypot, pi, sqrt
@@ -31,7 +31,7 @@ _KERNEL_SUPPORT = {
 
 @dataclass(frozen=True)
 class SmoothROCResult:
-    """Smoothed rates and area, with binormal coefficients or density bandwidth."""
+    """Smoothed rates and area, with binormal coefficients or an estimated bandwidth."""
 
     specificity: NDArray[np.float64]
     sensitivity: NDArray[np.float64]
@@ -122,7 +122,7 @@ def _binned_density(scores, spectrum, internal_grid, output_grid):
     return np.interp(output_grid, internal_grid, np.maximum(convolution[:size], 0))
 
 
-def _density(labels, scores, direction, n, bw, adjust, cut, kernel):
+def _kernel_densities(labels, scores, n, bw, adjust, cut, kernel, control_density, case_density):
     if not isinstance(kernel, str) or (kernel != "gaussian" and kernel not in _KERNEL_SUPPORT):
         raise ValueError("kernel must be one of the seven supported density kernels")
     if not isinstance(cut, Real) or not np.isfinite(cut) or cut < 0:
@@ -148,21 +148,42 @@ def _density(labels, scores, direction, n, bw, adjust, cut, kernel):
         lags = np.arange(size + 1) * (span / (size - 1)) / bandwidth
     positive_kernel = _kernel_values(lags, kernel)
     spectrum = np.fft.rfft(np.r_[positive_kernel, positive_kernel[-2:0:-1]])
-    control_density = _binned_density(controls, spectrum, internal_grid, output_grid)
-    case_density = _binned_density(cases, spectrum, internal_grid, output_grid)
+    if control_density is None:
+        control_density = _binned_density(controls, spectrum, internal_grid, output_grid)
+    if case_density is None:
+        case_density = _binned_density(cases, spectrum, internal_grid, output_grid)
+    return control_density, case_density, bandwidth
 
+
+def _tabulated_density(values, name):
+    if values is None:
+        return None
+    values = np.asarray(values)
+    if (values.ndim != 1 or not values.size or values.dtype.kind not in "iuf"
+        or not np.isfinite(values).all() or np.any(values < 0)):
+        raise ValueError(f"{name} must be a nonempty one-dimensional vector of finite nonnegative densities")
+    return values.astype(np.result_type(values.dtype, np.float64), copy=False)
+
+
+def _density_cumulative(density, *, reverse):
+    peak = density.max()
+    if not np.isfinite(peak) or peak <= 0:
+        raise ValueError("density grid must have positive finite mass for both classes")
+    # Rescale before accumulating so large density values cannot overflow.
+    ordered = density[::-1] if reverse else density
+    cumulative = np.cumsum(ordered / peak, dtype=float)
+    return cumulative / cumulative[-1]
+
+
+def _density_rates(control_density, case_density, direction):
+    if control_density.size != case_density.size:
+        raise ValueError("density_controls and density_cases must have the same length")
     # The threshold's own grid bin counts toward sensitivity in either direction.
+    negatives = _density_cumulative(control_density, reverse=direction == ">")
+    positives = _density_cumulative(case_density, reverse=direction == "<")
     if direction == "<":
-        negatives = np.cumsum(control_density)
-        positives = np.cumsum(case_density[::-1])
-        sp, se = np.r_[0, negatives[:-1]], positives[::-1]
-    else:
-        negatives = np.cumsum(control_density[::-1])
-        positives = np.cumsum(case_density)
-        sp, se = np.r_[negatives[:-1][::-1], 0], positives
-    if negatives[-1] <= 0 or positives[-1] <= 0:
-        raise ValueError("density grid must have positive mass for both classes")
-    return sp / negatives[-1], se / positives[-1], bandwidth
+        return np.r_[0, negatives[:-1]], positives[::-1]
+    return np.r_[negatives[:-1][::-1], 0], positives
 
 
 def _auc(specificity, sensitivity, coefficients, area, allow_below_chance):
@@ -202,6 +223,8 @@ def smooth_roc(
     kernel: DensityKernel = "gaussian",
     adjust: float = 1.0,
     cut: float = 3.0,
+    density_controls: ArrayLike | None = None,
+    density_cases: ArrayLike | None = None,
     partial_auc: tuple[float, float] | None = None,
     focus: Focus = "specificity",
     standardize: bool = False,
@@ -210,16 +233,23 @@ def smooth_roc(
 ) -> SmoothROCResult:
     """Smooth a binary ROC and compute its full or requested partial AUC.
 
-    Labels use 0 for controls and 1 for cases. The returned rates contain
-    n fitted points and two anchors, in increasing specificity order.
-    Density smoothing uses a common bandwidth and grid for both classes.
-    Percent mode scales both rates and the area to the 0–100 convention.
+    Labels use 0 for controls and 1 for cases. Rates are ordered by
+    increasing specificity and include two anchors. With method="density",
+    density_controls and density_cases can supply values on the same evenly
+    spaced grid, ordered by increasing score. If either is omitted, estimate
+    it on the common n-point kernel grid. With both supplied, their length
+    sets the number of fitted points and bandwidth is None. Percent mode
+    uses the 0–100 convention.
     """
     if method not in ("binormal", "density"):
         raise ValueError("method must be 'binormal' or 'density'")
-    minimum_n = 2 if method == "binormal" else 1
-    if not isinstance(n, Integral) or isinstance(n, bool) or n < minimum_n:
-        raise ValueError(f"n must be an integer of at least {minimum_n} for {method} smoothing")
+    if method != "density" and (density_controls is not None or density_cases is not None):
+        raise ValueError("density_controls and density_cases require method='density'")
+    uses_kernel = method == "density" and (density_controls is None or density_cases is None)
+    if method == "binormal" or uses_kernel:
+        minimum_n = 2 if method == "binormal" else 1
+        if not isinstance(n, Integral) or isinstance(n, bool) or n < minimum_n:
+            raise ValueError(f"n must be an integer of at least {minimum_n} for {method} smoothing")
     labels, scores = _binary_inputs(labels, scores)
     scores = scores.astype(float, copy=False)
     if not np.any(labels == 0) or not np.any(labels == 1):
@@ -230,7 +260,13 @@ def smooth_roc(
     if method == "binormal":
         sp, se, coefficients = _binormal(labels, scores, direction, percent, int(n))
     else:
-        sp, se, bandwidth = _density(labels, scores, direction, int(n), bw, adjust, cut, kernel)
+        controls = _tabulated_density(density_controls, "density_controls")
+        cases = _tabulated_density(density_cases, "density_cases")
+        if uses_kernel:
+            controls, cases, bandwidth = _kernel_densities(
+                labels, scores, int(n), bw, adjust, cut, kernel, controls, cases,
+            )
+        sp, se = _density_rates(controls, cases, direction)
     if np.any(np.diff(sp) < 0):
         sp, se = sp[::-1], se[::-1]
     sp, se = np.r_[0.0, sp, 1.0], np.r_[1.0, se, 0.0]
