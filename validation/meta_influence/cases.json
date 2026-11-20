@@ -1,0 +1,10 @@
+[
+  {"id": "row-deletion-correlated-sampling", "random": false, "clustered": false,
+   "reestimate": false, "test": "z"},
+  {"id": "cluster-deletion-fixed-components", "random": true, "clustered": true,
+   "reestimate": false, "test": "knha", "cook_coefficients": [1]},
+  {"id": "cluster-deletion-reestimated-components", "random": true, "clustered": true,
+   "reestimate": true, "test": "z"},
+  {"id": "inestimable-deletion", "random": false, "clustered": true, "rare": true,
+   "reestimate": false, "test": "z"}
+]

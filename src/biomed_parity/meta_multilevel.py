@@ -34,6 +34,17 @@ class MetaWaldTest:
 
 
 @dataclass(frozen=True)
+class _MetaFitInputs:
+    sampling: Array
+    groups: dict[str, NDArray[np.intp]]
+    kernels: dict[str, Array]
+    fixed_variances: dict[str, float]
+    intercept: bool
+    test: str
+    dfs: str | Array
+
+
+@dataclass(frozen=True)
 class MetaMultilevelResult:
     """Fitted coefficients, covariance components, and model-based inference."""
 
@@ -52,6 +63,7 @@ class MetaMultilevelResult:
     _tested: NDArray[np.intp] = field(repr=False)
     _random_variance: Array | None = field(default=None, repr=False)
     _estimated_variances: int | None = field(default=None, repr=False)
+    _fit_inputs: _MetaFitInputs | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -138,8 +150,8 @@ def _gls(y, design, decomposition):
     y_w = solve_triangular(factor, y, lower=True, check_finite=False)
     x_w = solve_triangular(factor, design, lower=True, check_finite=False)
     basis, r = qr(x_w, mode="economic", check_finite=False)
-    beta = solve_triangular(r, basis.T @ y_w, check_finite=False)
-    return beta, y_w - x_w @ beta, basis, r
+    beta = solve_triangular(r, np.einsum("ij,i->j", basis, y_w), check_finite=False)
+    return beta, y_w - np.einsum("ij,j->i", x_w, beta), basis, r
 
 
 @dataclass(frozen=True)
@@ -434,10 +446,16 @@ def meta_multilevel(
         }
     log_likelihood = -nll - 0.5 * len(objective.y) * (np.log(2 * np.pi) + np.log(scale))
     random_variance = (fitted * scale) @ np.diagonal(components, axis1=1, axis2=2)
+    fit_inputs = _MetaFitInputs(
+        sampling, dict(zip(intercept_terms, labels, strict=True)),
+        {name: components[i].copy() for i, name in enumerate(names) if name in extra},
+        {name: float(fixed[i]) for i, name in enumerate(names) if not free[i]},
+        intercept, test, dfs if isinstance(dfs, str) or degrees is None else degrees,
+    )
     return MetaMultilevelResult(
         beta, inference, dict(zip(names, map(float, fitted * scale), strict=True)), intervals,
         marginal_scaled * scale, residual, float(log_likelihood), heterogeneity, omnibus,
-        method, float(confidence_level), design, tested, random_variance, int(free.sum()),
+        method, float(confidence_level), design, tested, random_variance, int(free.sum()), fit_inputs,
     )
 
 
