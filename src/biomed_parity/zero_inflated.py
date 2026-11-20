@@ -17,6 +17,8 @@ class ZeroInflatedPoissonResult:
     converged: bool
     iterations: int
     message: str
+    group_labels: tuple = ()
+    random_intercepts: tuple[float, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -31,6 +33,8 @@ class ZeroInflatedNegativeBinomialResult:
     converged: bool
     iterations: int
     message: str
+    group_labels: tuple = ()
+    random_intercepts: tuple[float, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -41,11 +45,12 @@ class _ZipData:
     inflation_design: NDArray[np.float64]
     offset: NDArray[np.float64]
     group_count: int
+    group_labels: tuple
 
     def likelihood(
         self, count_coefficients: NDArray, inflation_coefficients: NDArray, sd: float,
-        log_shape: NDArray | None = None,
-    ) -> float:
+        log_shape: NDArray | None = None, *, return_modes=False,
+    ):
         with np.errstate(over="ignore", invalid="ignore"):
             fixed_count = np.einsum("ij,j->i", self.count_design, count_coefficients) + self.offset
             logit_zi = np.einsum("ij,j->i", self.inflation_design, inflation_coefficients)
@@ -96,7 +101,8 @@ class _ZipData:
         if sd == 0:
             if (fixed_count > 340).any():
                 raise ValueError("count predictor exceeds the supported numerical range")
-            return float(conditional(mode)[0].sum())
+            result = float(conditional(mode)[0].sum())
+            return (result, mode) if return_modes else result
 
         max_eta = np.full(self.group_count, -np.inf)
         np.maximum.at(max_eta, self.groups, fixed_count)
@@ -110,7 +116,8 @@ class _ZipData:
             if converged.all() and (curvature > 0).all():
                 if (fixed_count + sd * mode[self.groups] > 340).any():
                     raise ValueError("count predictor exceeds the supported numerical range")
-                return float(ll.sum() - 0.5 * (np.sum(mode**2) + np.log(curvature).sum()))
+                result = float(ll.sum() - 0.5 * (np.sum(mode**2) + np.log(curvature).sum()))
+                return (result, sd * mode) if return_modes else result
 
             lower = np.where((score > 0) & ~converged, mode, lower)
             upper = np.where((score <= 0) & ~converged, mode, upper)
@@ -132,25 +139,33 @@ def _matrix(value: ArrayLike | None, n: int, name: str) -> NDArray[np.float64]:
     return matrix.astype(float, copy=False)
 
 
+def _group_codes(groups):
+    groups = np.asarray(groups)
+    if groups.ndim != 1 or not groups.size:
+        raise ValueError("groups must be a nonempty vector")
+    if groups.dtype.kind in "biufUS":
+        if groups.dtype.kind == "f" and not np.isfinite(groups).all():
+            raise ValueError("groups must have a nonmissing label in every row")
+        levels, codes = np.unique(groups, return_inverse=True)
+        return tuple(levels.tolist()), codes
+    elif groups.dtype.kind == "O" and all(isinstance(label, (str, int, np.integer)) for label in groups):
+        assigned = {}
+        codes = np.array([assigned.setdefault(label, len(assigned)) for label in groups], dtype=np.intp)
+        return tuple(assigned), codes
+    else:
+        raise ValueError("groups must contain strings or finite numeric labels")
+
+
 def _prepare(counts, groups, count_design, inflation_design, offset) -> _ZipData:
     counts = np.asarray(counts)
-    groups = np.asarray(groups)
-    if counts.ndim != 1 or groups.shape != counts.shape or counts.size == 0:
+    if counts.ndim != 1 or np.shape(groups) != counts.shape or counts.size == 0:
         raise ValueError("counts and groups must be nonempty, equal-length vectors")
     if (
         counts.dtype.kind not in "iuf" or not np.isfinite(counts).all()
         or (counts < 0).any() or (counts != np.floor(counts)).any()
     ):
         raise ValueError("counts must contain finite nonnegative integers")
-    if groups.dtype.kind in "biufUS":
-        if groups.dtype.kind == "f" and not np.isfinite(groups).all():
-            raise ValueError("groups must have a nonmissing label in every row")
-        _, codes = np.unique(groups, return_inverse=True)
-    elif groups.dtype.kind == "O" and all(isinstance(label, (str, int, np.integer)) for label in groups):
-        assigned = {}
-        codes = np.array([assigned.setdefault(label, len(assigned)) for label in groups], dtype=np.intp)
-    else:
-        raise ValueError("groups must contain strings or finite numeric labels")
+    levels, codes = _group_codes(groups)
     offset = np.zeros(counts.size) if offset is None else np.asarray(offset)
     if offset.shape != counts.shape or offset.dtype.kind not in "iuf" or not np.isfinite(offset).all():
         raise ValueError("offset must be a vector of finite real numbers with one value per row")
@@ -159,7 +174,7 @@ def _prepare(counts, groups, count_design, inflation_design, offset) -> _ZipData
         counts.astype(float, copy=False), codes,
         _matrix(count_design, counts.size, "count_design"),
         _matrix(inflation_design, counts.size, "inflation_design"),
-        offset.astype(float, copy=False), int(codes.max()) + 1,
+        offset.astype(float, copy=False), len(levels), levels,
     )
 
 
@@ -230,14 +245,17 @@ def fit_zip_random_intercept(
         else str(result.message)
     )
     sd = float(np.exp(result.x[-1]))
+    log_likelihood, modes = data.likelihood(result.x[:p], result.x[p:-1], sd, return_modes=True)
     return ZeroInflatedPoissonResult(
         count_coefficients=tuple(float(beta) for beta in result.x[:p]),
         inflation_coefficients=tuple(float(gamma) for gamma in result.x[p:-1]),
         random_intercept_sd=sd,
-        log_likelihood=data.likelihood(result.x[:p], result.x[p:-1], sd),
+        log_likelihood=log_likelihood,
         converged=bool(result.success and not at_boundary),
         iterations=int(result.nit),
         message=message,
+        group_labels=data.group_labels,
+        random_intercepts=tuple(map(float, modes)),
     )
 
 
@@ -308,10 +326,11 @@ def fit_zinb2_random_intercept(
         raise ValueError("dispersion_design must have full column rank")
     split = p + q
 
-    def likelihood(parameters):
+    def likelihood(parameters, *, return_modes=False):
         log_shape = np.einsum("ij,j->i", dispersion, parameters[split:-1])
         return data.likelihood(
             parameters[:p], parameters[p:split], float(np.exp(parameters[-1])), log_shape,
+            return_modes=return_modes,
         )
 
     def objective(parameters):
@@ -335,12 +354,15 @@ def fit_zinb2_random_intercept(
         ))
     result = min(fits, key=lambda fit: fit.fun)
     at_boundary = result.x[-1] <= lower_log_sd + 1e-6 or result.x[-1] >= upper_log_sd - 1e-6
+    log_likelihood, modes = likelihood(result.x, return_modes=True)
     return ZeroInflatedNegativeBinomialResult(
         count_coefficients=tuple(map(float, result.x[:p])),
         inflation_coefficients=tuple(map(float, result.x[p:split])),
-        random_intercept_sd=float(np.exp(result.x[-1])), log_likelihood=likelihood(result.x),
+        random_intercept_sd=float(np.exp(result.x[-1])), log_likelihood=log_likelihood,
         converged=bool(result.success and not at_boundary), iterations=int(result.nit),
         message=("random-intercept SD reached a numerical fitting boundary"
                  if at_boundary else str(result.message)),
         dispersion_coefficients=tuple(map(float, result.x[split:-1])),
+        group_labels=data.group_labels,
+        random_intercepts=tuple(map(float, modes)),
     )
