@@ -1,0 +1,35 @@
+{
+  "weights": [1.5, 2, 1.6, 2.1, 2.3, 1.4, 2.2, 1.3, 2.8, 1.9],
+  "outcomes": [[126, 0], [147, 1], [133, 1], [142, 0], [120, 1], [138, 0], [131, 1], [154, 1], [129, 0], [146, 0]],
+  "designs": {
+    "individual": {},
+    "hospital": {"psu": [3, 7, 3, 2, 7, 2, 4, 4, 3, 4]},
+    "nested_hospital": {
+      "strata": ["urban", "rural", "urban", "rural", "urban", "rural", "urban", "rural", "urban", "urban"],
+      "psu": ["z", "z", "a", "a", "z", "z", "c", "a", "c", "c"]
+    },
+    "lonely_hospital": {
+      "strata": ["urban", "urban", "rural", "rural", "rural", "remote", "urban", "rural", "island", "island"],
+      "psu": ["a", "a", "b", "c", "b", "x", "d", "e", "m", "m"]
+    },
+    "one_stratum": {
+      "strata": ["urban", "urban", "urban", "urban", "urban", "urban", "urban", "urban", "urban", "urban"],
+      "psu": [3, 7, 3, 2, 7, 2, 4, 4, 3, 4]
+    }
+  },
+  "cases": [
+    {"name": "jk1_individual_auto", "design": "individual"},
+    {"name": "jk1_cluster_population_size", "design": "hospital", "options": {"type": "JK1", "fpctype": "population", "fpc": 14, "mse": true}},
+    {"name": "jk1_cluster_inherits_sampling_fraction", "design": "hospital", "inherit_fpc": true, "options": {"fpc": 0.4}},
+    {"name": "jkn_interleaved_nested_psus", "design": "nested_hospital", "options": {"fpc": {"rural": 8, "urban": 15}, "fpctype": "population", "mse": true}},
+    {"name": "jkn_one_explicit_stratum", "design": "one_stratum", "options": {"fpc": 0.75, "fpctype": "correction"}},
+    {"name": "jkn_drops_exhaustively_sampled_stratum", "design": "nested_hospital", "options": {"fpc": [0.4, 1, 0.4, 1, 0.4, 1, 0.4, 1, 0.4, 0.4], "mse": true}},
+    {"name": "jkn_lonely_fail", "design": "lonely_hospital", "error": "has only one PSU"},
+    {"name": "jkn_lonely_remove", "design": "lonely_hospital", "options": {"lonely_psu": "remove"}},
+    {"name": "jkn_lonely_certainty", "design": "lonely_hospital", "options": {"lonely_psu": "certainty", "mse": true}},
+    {"name": "jkn_lonely_adjust", "design": "lonely_hospital", "options": {"lonely_psu": "adjust", "mse": true}},
+    {"name": "jkn_lonely_average", "design": "lonely_hospital", "options": {"lonely_psu": "average", "fpc": [0.2, 0.1, 0.7, 1]}},
+    {"name": "jkn_lonely_explicit_zero_fraction", "design": "lonely_hospital", "options": {"fpc": {"urban": 0.2, "rural": 0.1, "remote": 0, "island": 1}}},
+    {"name": "jkn_fails_without_retained_replicates", "design": "nested_hospital", "options": {"fpc": 1}, "error": "All strata were exhaustively sampled"}
+  ]
+}
