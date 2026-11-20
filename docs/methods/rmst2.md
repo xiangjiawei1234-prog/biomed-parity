@@ -22,7 +22,7 @@ print(result.rmst_difference.estimate)  # 1.1333333333333333
 
 传入一列或多列数值型基线协变量会返回 `AdjustedRMSTResult`。差值模型使用恒等链接，两种比值模型使用对数链接。删失曲线按臂估计。推断包含组内删失过程对夹心方差的贡献，结果中的三个系数表依次为截距、组别和输入的协变量列。该路径要求正随访时间、正截断时间、满秩设计及各臂的可估计对数比值。无有限解、矩阵秩不足或迭代失败时会报错。 [Tian、Zhao 与 Wei 的方法论文](https://doi.org/10.1093/biostatistics/kxt050) · [调整模型和链接函数](https://ageconsearch.umn.edu/record/340147/files/Cronin.pdf)
 
-当前 API 直接返回数值，R 的格式化输出、绘图及完整 `survfit` 对象留在原工作流。缺失记录需在调用前按研究方案处理。
+当前 API 直接返回数值。绘制两臂曲线时，可使用配套接口输出 Kaplan–Meier 阶梯线、RMST/RMTL 的阴影坐标和可选区间。缺失记录需在调用前按研究方案处理。 [RMST 曲线数据](rmst-curves.md)
 
 ## 验证
 
