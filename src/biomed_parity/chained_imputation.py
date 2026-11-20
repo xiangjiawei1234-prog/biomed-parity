@@ -10,6 +10,7 @@ from numpy.typing import ArrayLike, NDArray
 from scipy.linalg import qr, solve_triangular
 from scipy.special import expit
 
+from ._contrasts import _factor_contrasts
 from .categorical_imputation import augment_categorical, categorical_probabilities
 from .multilevel_imputation import TwoLevelOptions, _draw_for_chain
 
@@ -132,22 +133,6 @@ def _two_level_settings(methods, options):
                 raise ValueError("two_level_options must map the two-level outcome columns to TwoLevelOptions")
             multilevel[column] = settings
     return multilevel
-
-
-def _factor_contrasts(n_levels, ordered):
-    if not ordered:
-        return np.eye(n_levels)[:, 1:]
-    # Orthonormal polynomials on evenly spaced level ranks match contr.poly.
-    scores = np.linspace(-1, 1, n_levels)
-    basis = np.empty((n_levels, n_levels))
-    basis[:, 0] = 1 / np.sqrt(n_levels)
-    for degree in range(1, n_levels):
-        vector = scores * basis[:, degree - 1]
-        previous = basis[:, :degree]
-        for _ in range(2):
-            vector -= previous @ (previous.T @ vector)
-        basis[:, degree] = vector / np.linalg.norm(vector)
-    return basis[:, 1:]
 
 
 def _encode_predictors(current, chosen, levels, contrasts):

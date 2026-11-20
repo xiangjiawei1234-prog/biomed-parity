@@ -1,6 +1,6 @@
 # mstate 转移风险拟合
 
-`biomed_parity.mstate_fit.msfit()` 从计数过程长表估计各转移的累积风险。每条边拥有单独的 Breslow 基线风险。可以只估计基线，也可以拟合各层共享的 Cox 系数，或传入外部系数进行预测。返回的时间轴、转移边和累积风险方差可直接用于 Aalen–Johansen 预测。 [mstate::msfit 手册](https://hputter.github.io/mstate/reference/msfit.html) · [mstate 分析教程](https://www.jstatsoft.org/article/view/v038i07)
+`biomed_parity.mstate_fit.msfit()` 从计数过程长表估计各转移的累积风险。每条边拥有单独的 Breslow 基线风险。可以只估计基线，也可以拟合各层共享的 Cox 系数，或传入外部系数进行预测。返回的时间轴、转移边和累积风险方差可直接用于 Aalen–Johansen 预测。对需要独立系数的协变量，可以先按转移展开。 [mstate::msfit 手册](https://hputter.github.io/mstate/reference/msfit.html) · [mstate 分析教程](https://www.jstatsoft.org/article/view/v038i07) · [按转移展开协变量](mstate-covariates.md)
 
 ## 从宽表到状态概率
 

@@ -1,0 +1,26 @@
+{
+  "time": [[null, 1, 5], [null, 2, 6], [null, 3, 10], [null, 4, 9],
+           [null, 5, 8], [null, 3, 3], [null, 4, 4], [null, 7, 7],
+           [null, 6, 12], [null, 8, 15]],
+  "status": [[null, 1, 1], [null, 1, 0], [null, 1, 1], [null, 1, 1],
+             [null, 1, 0], [null, 0, 1], [null, 0, 0], [null, 0, 1],
+             [null, 1, 1], [null, 1, 0]],
+  "keep": {
+    "age": [18, 21, 22, null, 35, 36, 28, 45, 46, 47],
+    "stage": ["late stage", "early", "early", "unknown", null, "early", "late stage", "unknown", "early", "late stage"],
+    "grade": [8, 2, 14, 0, 3, null, 0, 8, 2, 14],
+    "marker": [true, false, false, null, true, true, false, true, false, true]
+  },
+  "cases": [
+    {"id": "numeric-and-nominal", "covariates": ["age", "stage"],
+     "factor_levels": {"stage": ["late stage", "early", "unknown"]}},
+    {"id": "ordered-and-unused-level", "covariates": ["grade", "stage"],
+     "factor_levels": {"grade": [8, 2, 14, 0, 3], "stage": ["early", "late stage", "unknown", "remission"]},
+     "ordered": ["grade"]},
+    {"id": "short-names", "covariates": ["stage", "grade", "marker"],
+     "factor_levels": {"stage": ["late stage", "early", "unknown"], "grade": [8, 2, 14, 0, 3]},
+     "ordered": ["grade"], "long_names": false},
+    {"id": "implicit-labels", "covariates": ["stage", "marker"]},
+    {"id": "append-binary-and-numeric", "covariates": ["marker", "age"], "append": true}
+  ]
+}
