@@ -1,0 +1,9 @@
+[
+  {"name": "gaussian_bootstrap_combined", "family": "gaussian", "scheme": "bootstrap", "combined": true, "zero_weights": true, "rscales": [0, 0.5, 1, 0.8, 1.2, 0.9, 1.1, 1.4], "rescale": false},
+  {"name": "gaussian_jk1_offset_no_intercept", "family": "gaussian", "scheme": "jk1", "mse": true, "offset": true, "intercept": false},
+  {"name": "gaussian_replicate_rank_deficiency", "family": "gaussian", "scheme": "bootstrap", "bad_replicate": true, "mse": true},
+  {"name": "gaussian_intercept_only_nonpositive_df", "family": "gaussian", "scheme": "bootstrap", "n_covariates": 0, "degf": 0},
+  {"name": "binary_fay_combined", "family": "quasibinomial", "scheme": "fay", "mse": true, "combined": true, "zero_sampling_weight_only": true},
+  {"name": "binary_bootstrap_offset_subset_and_missing", "family": "quasibinomial", "scheme": "bootstrap", "subset": true, "missing": true, "offset": true, "rescale": true, "df_resid": "Inf", "confidence_level": 0.9},
+  {"name": "gaussian_missing_rows_reduce_attached_design_rank", "family": "gaussian", "scheme": "bootstrap", "missing_rank": true}
+]

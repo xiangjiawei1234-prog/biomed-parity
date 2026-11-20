@@ -23,7 +23,7 @@ print(mean.estimate, mean.covariance, total.standard_errors)
 
 `design.subset(mask)` 对布尔掩码选择的行做调查域估计。把选中行的结局传给其 `.mean()` 或 `.total()`。`na_rm=True` 在分析前删除任何结局缺失的行。两种操作都保留原有复制列和方差缩放。权重和为零的复制均值以 `NaN` 保留在 `replicate_estimates` 中，并从协方差计算中剔除。某次复制的所有权重为零时，复制总量为零。`design_df` 支持显式设置 `degf`，否则按实际分析行的复制权重数值秩减一计算。
 
-范围限于使用已提供的复制权重做数值结局的汇总和调查域估计。复制权重生成、抽样校准和复制权重回归属于后续工作。
+给定设计也可用于 Gaussian 或二元 quasibinomial 回归。仓库另提供一阶段 JK1/JKn 权重生成，以及线性和 raking 校准。 [重复权重回归](survey-glm.md) · [Jackknife 权重生成](survey-jackknife.md) · [调查校准](survey-calibration.md)
 
 用 R 4.5.3 和 survey 4.5 核对了 14 个人工方案中的抽样权重、复制权重、均值、总量、复制估计、中心、协方差、标准误和自由度。 [验证用例](../../validation/survey_replicates/cases.json)
 

@@ -111,16 +111,21 @@ class SurveyReplicateDesign:
         usable_replicates = replicates[valid]
         if not np.isfinite(estimate).all() or not np.isfinite(usable_replicates).all():
             raise ValueError("weighted estimates must be finite")
-        rscales = design.rscales[valid]
-        center = estimate
-        if not design.mse:
-            active = usable_replicates[rscales > 0]
-            center = active.mean(axis=0) if active.size else np.full(estimate.shape, np.nan)
-        deviations = (usable_replicates - center) * np.sqrt(rscales[:, None])
-        covariance = design.scale * (deviations.T @ deviations)
+        covariance, center = _replicate_covariance(
+            usable_replicates, estimate, design.scale, design.rscales[valid], design.mse,
+        )
         return SurveyReplicateResult(
             estimate, covariance, np.sqrt(np.diag(covariance)), replicates, center, design.design_df,
         )
+
+
+def _replicate_covariance(replicates, estimate, scale, rscales, mse):
+    center = estimate
+    if not mse:
+        active = replicates[rscales > 0]
+        center = active.mean(axis=0) if active.size else np.full(estimate.shape, np.nan)
+    deviations = (replicates - center) * np.sqrt(rscales[:, None])
+    return scale * (deviations.T @ deviations), center
 
 
 def _readonly(array):
