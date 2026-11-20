@@ -1,0 +1,5 @@
+[
+  {"id": "three-fold-km", "n_folds": 3, "seed": 513, "cause": 1, "horizons": [10, 22, 31]},
+  {"id": "four-fold-cox", "n_folds": 4, "seed": 181, "cause": 2, "horizons": [11, 19, 28],
+   "censoring": "cox"}
+]
