@@ -1,4 +1,4 @@
-"""Predictor summaries, prediction grids, and pointwise Wald inference."""
+"""Predictor summaries, prediction grids, and Wald inference."""
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -8,7 +8,9 @@ from warnings import warn
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
-from scipy.special import ndtri, stdtrit
+from scipy.optimize import brentq
+from scipy.special import fdtrc, gammaincc, ndtri, stdtrit
+from scipy.stats.qmc import Sobol
 
 
 @dataclass(frozen=True)
@@ -43,7 +45,7 @@ class WaldPrediction:
 
 @dataclass(frozen=True)
 class GridPrediction(WaldPrediction):
-    """Pointwise predictions and their input settings."""
+    """Predictions and their input settings."""
 
     grid: dict[str, NDArray]
 
@@ -239,6 +241,78 @@ def prediction_grid(
     return _expand_grid(distribution, vary, points, _adjustment_values(distribution, adjust_to))
 
 
+def _simultaneous_critical(design, covariance, error, alpha, residual_df, marginal):
+    # Rescale the coefficient covariance before factoring so that predictors
+    # measured in very different units can contribute to the same family.
+    diagonal = np.diag(covariance)
+    active = diagonal > 0
+    if np.any(diagonal < 0) or np.any(covariance[~active]):
+        raise ValueError("simultaneous confidence bands require a positive semidefinite covariance")
+    if not active.any():
+        return marginal
+    scales = np.sqrt(diagonal[active])
+    correlation = covariance[np.ix_(active, active)] / scales[:, None] / scales
+    values, vectors = np.linalg.eigh(correlation * 0.5 + correlation.T * 0.5)
+    if values[0] < -max(correlation.shape) * np.finfo(float).eps * values[-1]:
+        raise ValueError("simultaneous confidence bands require a positive semidefinite covariance")
+    nonzero = error > 0
+    if np.count_nonzero(nonzero) < 2:
+        return marginal
+    positive = values > 0
+    factor = vectors[:, positive] * np.sqrt(values[positive])
+    contrasts = np.einsum("ij,jk->ik", design[np.ix_(nonzero, active)] * scales, factor)
+    norms = np.linalg.norm(contrasts, axis=1)
+    nonzero = norms > 0
+    directions = contrasts[nonzero] / norms[nonzero, None]
+    # Repeated and opposite directions impose the same absolute constraint.
+    largest_component = np.argmax(np.abs(directions), axis=1)
+    sign = np.sign(directions[np.arange(len(directions)), largest_component])
+    directions = np.unique(directions * sign[:, None], axis=0)
+    if len(directions) < 2:
+        return marginal
+
+    # Integrate in the span of the prediction directions so grids can have
+    # more predictions than coefficients.
+    _, singular, axes = np.linalg.svd(directions, full_matrices=False)
+    rank = np.count_nonzero(singular > singular[0] * max(directions.shape) * np.finfo(float).eps)
+    if rank == 1:
+        return marginal
+    directions = np.einsum("ij,kj->ik", directions, axes[:rank])
+
+    # The largest absolute standardized error is the product of the radial
+    # draw and the largest projection of its unit direction onto the rows.
+    # Integrate the independent radius analytically, leaving only directions
+    # for numerical integration.
+    points = Sobol(d=rank, seed=0).random_base2(16)
+    eps = np.finfo(float).eps
+    samples = ndtri(np.clip(points, eps, 1 - eps))
+    samples /= np.linalg.norm(samples, axis=1)[:, None]
+    maximum = np.empty(len(samples))
+    batch = max(1, 1_048_576 // len(directions))
+    for start in range(0, len(samples), batch):
+        rows = slice(start, start + batch)
+        # Dot products of unit vectors are bounded. Some BLAS kernels
+        # nevertheless leave floating-point flags set after these products.
+        with np.errstate(divide="ignore", over="ignore", invalid="ignore"):
+            projections = samples[rows] @ directions.T
+        np.abs(projections, out=projections)
+        maximum[rows] = projections.max(axis=1)
+
+    def tail(critical):
+        squared_radius = (critical / maximum)**2
+        if residual_df is None:
+            survival = gammaincc(rank / 2, squared_radius / 2)
+        else:
+            survival = fdtrc(rank, residual_df, squared_radius / rank)
+        return survival.mean() - alpha
+
+    bonferroni_tail = alpha / (2 * len(directions))
+    limit = -ndtri(bonferroni_tail) if residual_df is None else -stdtrit(residual_df, bonferroni_tail)
+    if tail(limit) >= 0:
+        return limit
+    return max(marginal, brentq(tail, 0, limit, xtol=1e-12))
+
+
 def wald_predict(
     design: ArrayLike,
     coefficients: ArrayLike,
@@ -247,15 +321,17 @@ def wald_predict(
     reference: ArrayLike | None = None,
     center: ArrayLike | None = None,
     confidence_level: float = 0.95,
+    confidence_type: str = "mean",
     residual_df: float | None = None,
     transform: Callable[[NDArray[np.float64]], ArrayLike] | None = None,
 ) -> WaldPrediction:
-    """Evaluate a prefit numeric design and its pointwise mean confidence limits.
+    """Evaluate a prefit design with pointwise or simultaneous mean confidence limits.
 
     A reference row gives differences from a fixed predictor setting. A
     center row provides the fitted centering design, as for a Cox model.
     Supply residual degrees of freedom for t limits. A monotone transform
     maps estimates and confidence endpoints after link-scale inference.
+    Select confidence_type="simultaneous" for coverage across all design rows.
     """
     design = _finite_array(design, "design", 2)
     beta = _finite_array(coefficients, "coefficients", 1)
@@ -272,15 +348,20 @@ def wald_predict(
         if len(baseline) != len(beta):
             raise ValueError(f"{label} must have one entry per coefficient")
         design -= baseline
-    linear = design @ beta
-    variance = np.einsum("ij,ij->i", design @ covariance, design)
+    linear = np.einsum("ij,j->i", design, beta)
+    weighted_design = np.einsum("ij,jk->ik", design, covariance)
+    variance = np.einsum("ij,ij->i", weighted_design, design)
     if np.any(variance < 0):
-        magnitude = np.einsum("ij,ij->i", np.abs(design) @ np.abs(covariance), np.abs(design))
+        absolute = np.abs(design)
+        weighted_absolute = np.einsum("ij,jk->ik", absolute, np.abs(covariance))
+        magnitude = np.einsum("ij,ij->i", weighted_absolute, absolute)
         if np.any(variance < -16 * np.finfo(float).eps * magnitude):
             raise ValueError("covariance implies a negative prediction variance")
     error = np.sqrt(np.maximum(variance, 0))
     if not _finite_real(confidence_level) or not 0 <= confidence_level < 1:
         raise ValueError("confidence_level must be in [0, 1)")
+    if not isinstance(confidence_type, str) or confidence_type not in ("mean", "simultaneous"):
+        raise ValueError("confidence_type must be 'mean' or 'simultaneous'")
     if residual_df is not None and (not _finite_real(residual_df) or residual_df <= 0):
         raise ValueError("residual_df must be positive and finite")
 
@@ -295,6 +376,8 @@ def wald_predict(
         return WaldPrediction(linear, error, estimate, None, None)
     tail = (1 - confidence_level) / 2
     critical = -ndtri(tail) if residual_df is None else -stdtrit(residual_df, tail)
+    if confidence_type == "simultaneous":
+        critical = _simultaneous_critical(design, covariance, error, 2 * tail, residual_df, critical)
     lower, upper = output(linear - critical * error), output(linear + critical * error)
     return WaldPrediction(linear, error, estimate, np.minimum(lower, upper), np.maximum(lower, upper))
 
@@ -311,10 +394,15 @@ def predict(
     ref_zero: bool = False,
     center: ArrayLike | None = None,
     confidence_level: float = 0.95,
+    confidence_type: str = "mean",
     residual_df: float | None = None,
     transform: Callable[[NDArray[np.float64]], ArrayLike] | None = None,
 ) -> GridPrediction:
-    """Apply the fitted model's design function to an rms-style prediction grid."""
+    """Apply a fitted model's design function to an rms-style prediction grid.
+
+    The default confidence limits apply to each row separately. Use
+    confidence_type="simultaneous" to combine all rows into one family.
+    """
     if not isinstance(ref_zero, (bool, np.bool_)):
         raise ValueError("ref_zero must be boolean")
     adjustment = _adjustment_values(distribution, adjust_to)
@@ -330,7 +418,8 @@ def predict(
         reference = baseline[0]
     result = wald_predict(
         matrix, coefficients, covariance, reference=reference, center=None if ref_zero else center,
-        confidence_level=confidence_level, residual_df=residual_df, transform=transform,
+        confidence_level=confidence_level, confidence_type=confidence_type,
+        residual_df=residual_df, transform=transform,
     )
     return GridPrediction(
         result.linear_predictor, result.standard_error, result.estimate, result.lower, result.upper, grid

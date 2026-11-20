@@ -1,6 +1,6 @@
-# rms 变量分布与逐点预测
+# rms 变量分布与预测区间
 
-`rms_prediction` 提供 `datadist` 风格的变量分布摘要，以及从已有系数和协方差计算逐点均值预测及 Wald 置信区间的接口。可单独生成预测设置，也可将设置传给已有模型的设计函数。 [rms datadist](https://cran.r-project.org/web/packages/rms/refman/rms.html#datadist) [rms Predict](https://cran.r-project.org/web/packages/rms/refman/rms.html#Predict)
+`rms_prediction` 提供 `datadist` 风格的变量分布摘要，以及从已有系数和协方差计算均值预测、逐点 Wald 区间和同时置信带的接口。可单独生成预测设置，也可将设置传给已有模型的设计函数。 [rms datadist](https://cran.r-project.org/web/packages/rms/refman/rms.html#datadist) [rms Predict](https://cran.r-project.org/web/packages/rms/refman/rms.html#Predict)
 
 ```python
 import numpy as np
@@ -21,6 +21,7 @@ result = predict(
     coefficients=[0.4, 0.03, -0.2],
     covariance=np.diag([0.01, 0.0001, 0.04]),
     ref_zero=True,
+    confidence_type="simultaneous",
 )
 print(result.grid)
 print(result.estimate)
@@ -41,10 +42,11 @@ print(result.lower, result.upper)
 
 - 普通预测计算 `X @ beta`，方差为同一设计向量对系数协方差的二次型。`center` 可提供 Cox 模型拟合时的设计列均值，预测和方差均使用中心化设计。
 - `ref_zero=True` 先生成调整值对应的参考设计，再使用差值设计 `X - X_ref` 计算估计和方差。参考行的差值和标准误均为零。低层接口用 `reference` 直接提供参考设计。
-- 默认用标准正态临界值。提供 `residual_df` 时改用 Student t 临界值，例如 OLS 的残差自由度。可通过 `confidence_level=0` 只返回预测和标准误。
+- 默认的 `confidence_type="mean"` 为每个设置计算逐点 Wald 区间。默认用标准正态临界值，提供 `residual_df` 时改用 Student t 临界值，例如 OLS 的残差自由度。可通过 `confidence_level=0` 只返回预测和标准误。
+- `confidence_type="simultaneous"` 将一次调用的全部预测行作为同一组，对标准化预测误差的最大绝对值求联合临界值。误差相关性由同一个系数协方差矩阵计算。提供 `residual_df` 时使用有共同尺度的多元 t 分布，否则使用多元正态分布。固定种子的 Sobol 准蒙特卡罗积分近似计算临界值。零标准误行的上下界等于预测值。
 - `transform` 可用单调函数把估计和端点转到所需尺度，例如 `np.exp` 将参考差转换为比值。标准误保留在线性预测尺度。
 
-当前接口覆盖普通分类和数值变量摘要，以及已有系数和协方差下的均值逐点区间。 [rms predictrms](https://cran.r-project.org/web/packages/rms/refman/rms.html#predictrms)
+逐点区间和同时置信带的覆盖对象都是均值预测或参考差值。同时置信带的覆盖范围由此次提交的有限预测设置确定。 [rms predictrms](https://cran.r-project.org/web/packages/rms/refman/rms.html#predictrms)
 
 ## 本地验证
 
@@ -53,4 +55,6 @@ R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 .venv/bin/python -m pytest -q tests/
 R_LIBS_USER="$PWD/.r-lib" .venv/bin/python validation/rms_prediction/verify.py
 ```
 
-用 R 4.5.3 和 rms 8.2.1 比较八个案例。三个摘要案例覆盖缺失值、离散变量、分类顺序及并列分位数。五个预测案例使用 R 拟合的系数和协方差，核对 OLS 样条与分组交互、逻辑回归风险概率和参考比值、Cox 中心化线性预测。预测设置、线性预测、标准误及区间均纳入对照，预测值和区间的绝对容差为 `1e-10`。
+使用 R 4.5.3、rms 8.2-1、multcomp 1.4-31 和 mvtnorm 1.4-2 比较 12 个案例。三个摘要案例覆盖缺失值、离散变量、分类顺序及并列分位数。九个预测案例使用 R 拟合的系数和协方差，分别验证 OLS 样条与分组交互、逻辑回归风险概率与相对参考设置的优势比、Cox 中心化线性预测。
+
+五个逐点案例与 `rms::Predict` 对照，预测值、标准误和正态区间端点的绝对容差为 `1e-10`，t 区间端点为 `2e-10`。四个同时置信带案例与 `multcomp::glht` 及 `mvtnorm` 积分结果对照，在线性预测尺度上以每行标准误为单位比较端点，绝对容差为 `1.5e-3`。其中三个案例另与 `rms::Predict(conf.type="simultaneous")` 的默认临界值对照，绝对容差为 `6e-3`。rms 8.2-1 为带截距模型计算 `ref.zero` 同时置信带时未构造对应的截距列，因此相对参考设置的优势比案例将截距为零的设计差值直接传入 `glht`。

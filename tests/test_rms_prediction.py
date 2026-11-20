@@ -3,6 +3,7 @@ import os
 
 import numpy as np
 import pytest
+from scipy.special import ndtri
 from scipy.stats import t
 
 from biomed_parity.rms_prediction import datadist, predict, prediction_grid, wald_predict
@@ -63,6 +64,39 @@ def test_reference_contrast_uses_shared_covariance_and_t_critical_value():
     np.testing.assert_allclose(result.upper, [0, 2 + t.ppf(0.95, 9)], atol=1e-12, rtol=0)
 
 
+def test_simultaneous_normal_limits_match_independent_family_probability():
+    covariance = np.diag([1e-12, 4, 9])
+    result = wald_predict(np.eye(3), [0, 0, 0], covariance, confidence_type="simultaneous")
+    expected = ndtri((1 + 0.95**(1 / 3)) / 2)
+    np.testing.assert_allclose(result.upper / result.standard_error, expected, atol=1e-4, rtol=0)
+    np.testing.assert_array_equal(result.lower, -result.upper)
+
+
+def test_simultaneous_limits_are_invariant_to_repeated_and_reordered_rows():
+    design = np.array([[1, 0, 1], [1, 2, 0], [1, 1, 2], [1, -1, 1]])
+    options = dict(coefficients=[0, 0, 0], covariance=np.eye(3), confidence_type="simultaneous")
+    original = wald_predict(design, **options)
+    order = [3, 0, 1, 3, 2, 0]
+    repeated = wald_predict(np.vstack((design[order], -design[1])), **options)
+    np.testing.assert_array_equal(repeated.upper, original.upper[[*order, 1]])
+
+
+def test_simultaneous_rank_one_t_limits_preserve_zero_reference_and_endpoint_order():
+    options = dict(reference=[1, 0], residual_df=9, transform=lambda x: np.exp(-x))
+    args = ([[1, 0], [1, 2], [1, -1], [1, 2]], [1, 2], [[4, 0.5], [0.5, 1]])
+    result = wald_predict(*args, confidence_type="simultaneous", **options)
+    pointwise = wald_predict(*args, **options)
+    np.testing.assert_array_equal(result.lower, pointwise.lower)
+    np.testing.assert_array_equal(result.upper, pointwise.upper)
+    assert result.lower[0] == result.upper[0] == 1
+    assert np.all(result.lower <= result.upper)
+
+
+def test_simultaneous_mode_rejects_indefinite_coefficient_covariance():
+    with pytest.raises(ValueError, match="positive semidefinite covariance"):
+        wald_predict(np.eye(2), [0, 0], [[1, 2], [2, 1]], confidence_type="simultaneous")
+
+
 def test_transform_and_point_only_output():
     fit = wald_predict([[3]], [2], [[1]], transform=np.exp, confidence_level=0)
     assert fit.estimate[0] == np.exp(6)
@@ -93,5 +127,7 @@ def test_invalid_prediction_grid_and_covariance():
         prediction_grid(summary, {"unknown": 1})
     with pytest.raises(ValueError, match="negative prediction variance"):
         wald_predict([[1, 1]], [1, 1], [[1, -2], [-2, 1]])
+    with pytest.raises(ValueError, match="confidence_type"):
+        wald_predict([[1]], [1], [[1]], confidence_type="individual")
     with pytest.raises(ValueError, match="one row per prediction setting"):
         predict(summary, {"x": [1, 2]}, lambda grid: [[1]], [2], [[1]])
