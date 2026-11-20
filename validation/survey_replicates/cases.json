@@ -1,0 +1,101 @@
+[
+  {
+    "name": "brr_unequal_sampling_weights",
+    "values": [[121, 0], [138, 1], [142, 1], [127, 0], [133, 1], [118, 0], [152, 1], [126, 0]],
+    "repweights": [[2, 2, 0, 0], [2, 2, 0, 0], [0, 0, 2, 2], [0, 0, 2, 2], [2, 0, 2, 0], [2, 0, 2, 0], [0, 2, 0, 2], [0, 2, 0, 2]],
+    "weights": [1.1, 1.3, 1.6, 1.4, 2.2, 1.8, 1.7, 1.9],
+    "options": {"combined_weights": false, "scale": 7, "rscales": 0.5}
+  },
+  {
+    "name": "brr_domain_discards_empty_replicate_mean",
+    "values": [[121, 0], [138, 1], [142, 1], [127, 0], [133, 1], [118, 0], [152, 1], [126, 0]],
+    "repweights": [[2, 2, 0, 0], [2, 2, 0, 0], [0, 0, 2, 2], [0, 0, 2, 2], [2, 0, 2, 0], [2, 0, 2, 0], [0, 2, 0, 2], [0, 2, 0, 2]],
+    "weights": [1.1, 1.3, 1.6, 1.4, 2.2, 1.8, 1.7, 1.9],
+    "subset": [true, true, false, false, true, true, false, false],
+    "options": {"combined_weights": false}
+  },
+  {
+    "name": "fay_combined_mse",
+    "values": [[144, 1], [123, 0], [129, 1], [117, 0]],
+    "repweights": [[3.4, 3.4, 0.6, 0.6], [0.9, 0.9, 5.1, 5.1], [4.25, 0.75, 4.25, 0.75], [0.54, 3.06, 0.54, 3.06]],
+    "weights": [2, 3, 2.5, 1.8],
+    "options": {"type": "Fay", "rho": 0.3, "mse": true, "degf": 12}
+  },
+  {
+    "name": "jk1_infers_scale_from_factors",
+    "values": [[144], [123], [129], [117]],
+    "repweights": [[0, 1.3333333333333333, 1.3333333333333333, 1.3333333333333333], [1.3333333333333333, 0, 1.3333333333333333, 1.3333333333333333], [1.3333333333333333, 1.3333333333333333, 0, 1.3333333333333333], [1.3333333333333333, 1.3333333333333333, 1.3333333333333333, 0]],
+    "weights": [2, 3, 2.5, 1.8],
+    "options": {"type": "JK1", "combined_weights": false}
+  },
+  {
+    "name": "jk1_combined_infers_scale_from_replicate_count",
+    "values": [[144, 1], [123, 0], [129, 1], [117, 0]],
+    "repweights": [[0, 2.666666666666667, 2.666666666666667, 2.666666666666667], [4, 0, 4, 4], [3.333333333333333, 3.333333333333333, 0, 3.333333333333333], [2.4, 2.4, 2.4, 0]],
+    "weights": [2, 3, 2.5, 1.8],
+    "options": {"type": "JK1", "mse": true}
+  },
+  {
+    "name": "jkn_stratified_inferred_rscales_with_correction",
+    "values": [[144, 1], [123, 0], [129, 1], [117, 0], [153, 1]],
+    "repweights": [[0, 1.5, 1.5, 1, 1], [1.5, 0, 1.5, 1, 1], [1.5, 1.5, 0, 1, 1], [1, 1, 1, 0, 2], [1, 1, 1, 2, 0]],
+    "weights": [2, 3, 2.5, 1.8, 4.5],
+    "options": {"type": "JKn", "combined_weights": false, "fpc": [0.6, 0.6, 0.6, 0.75, 0.75], "fpctype": "correction"}
+  },
+  {
+    "name": "jkn_combined_explicit_with_sampling_fraction",
+    "values": [[144, 1], [123, 0], [129, 1], [117, 0], [153, 1]],
+    "repweights": [[0, 3, 3, 2, 2], [4.5, 0, 4.5, 3, 3], [3.75, 3.75, 0, 2.5, 2.5], [1.8, 1.8, 1.8, 0, 3.6], [4.5, 4.5, 4.5, 9, 0]],
+    "weights": [2, 3, 2.5, 1.8, 4.5],
+    "options": {"type": "JKn", "scale": 0.8, "rscales": [0.6666666666666666, 0.6666666666666666, 0.6666666666666666, 0.5, 0.5], "fpc": [0.4, 0.4, 0.4, 1, 1], "fpctype": "fraction", "mse": true}
+  },
+  {
+    "name": "bootstrap_averaged_and_unequal_rscales",
+    "values": [[144, 1], [123, 0], [129, 1], [117, 0], [153, 1]],
+    "repweights": [[1, 3, 2, 2], [4, 0, 2, 3], [2.5, 2, 3, 0.5], [1.5, 2, 1.5, 3], [4.5, 5.5, 6, 5.5]],
+    "weights": [2, 3, 2.5, 1.8, 4.5],
+    "options": {"type": "bootstrap", "bootstrap_average": 3, "rscales": [0, 0.5, 1, 2]}
+  },
+  {
+    "name": "bootstrap_explicit_scale_complete_cases",
+    "values": [[144, null], [123, 0], [null, 1], [117, 0], [153, 1]],
+    "repweights": [[1, 3, 2, 2], [4, 0, 2, 3], [2.5, 2, 3, 0.5], [1.5, 2, 1.5, 3], [4.5, 5.5, 6, 5.5]],
+    "weights": [2, 3, 2.5, 1.8, 4.5],
+    "na_rm": true,
+    "options": {"type": "bootstrap", "bootstrap_average": 3, "scale": 0.3, "mse": true}
+  },
+  {
+    "name": "acs_defaults_to_mse",
+    "values": [[144, 1], [123, 0], [129, 1], [117, 0]],
+    "repweights": [[1, 3, 2, 2], [4, 0, 2, 3], [2.5, 2, 3, 0.5], [1.5, 2, 1.5, 3]],
+    "weights": [2, 3, 2.5, 1.8],
+    "options": {"type": "ACS", "scale": 5, "rscales": 2}
+  },
+  {
+    "name": "successive_difference_defaults_to_replicate_center",
+    "values": [[144, 1], [123, 0], [129, 1], [117, 0]],
+    "repweights": [[1, 3, 2, 2], [4, 0, 2, 3], [2.5, 2, 3, 0.5], [1.5, 2, 1.5, 3]],
+    "weights": [2, 3, 2.5, 1.8],
+    "options": {"type": "successive-difference"}
+  },
+  {
+    "name": "jk2_forced_scaling",
+    "values": [[144, 1], [123, 0], [129, 1], [117, 0]],
+    "repweights": [[2, 2], [1, 1], [0, 3], [3, 0]],
+    "options": {"type": "JK2", "scale": 5, "rscales": [3, 4]}
+  },
+  {
+    "name": "other_signed_weights_and_rank_tolerance",
+    "values": [[144, 1], [123, 0], [129, 1], [117, 0]],
+    "repweights": [[1.9, 1900000, 0.000002, 2.5], [-0.5, -500000, -0.000002, 1], [3.1, 3100000, 0.000002, 2], [2.2, 2200001, 0.000003, 1.8]],
+    "weights": [2, 3, 2.5, 1.8],
+    "options": {"type": "other", "scale": 0.00001, "rscales": [1, 0.2, 2, 0.7]}
+  },
+  {
+    "name": "other_all_zero_rscales",
+    "values": [[144, 1], [123, 0], [129, 1], [117, 0]],
+    "repweights": [[1, 3, 2, 2], [4, 0, 2, 3], [2.5, 2, 3, 0.5], [1.5, 2, 1.5, 3]],
+    "weights": [2, 3, 2.5, 1.8],
+    "options": {"type": "other", "scale": 1, "rscales": 0}
+  }
+]
