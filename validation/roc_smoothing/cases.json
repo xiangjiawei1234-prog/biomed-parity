@@ -1,0 +1,46 @@
+{
+  "datasets": {
+    "continuous": {
+      "labels": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+      "scores": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5]
+    },
+    "tied": {
+      "labels": [0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1],
+      "scores": [-3.3, -2.1, -2.1, -1.5, -1.5, 0, 0, 0, 0.5, 1, 1.25, 2, 4.5]
+    },
+    "separated": {"labels": [0, 0, 0, 0, 1, 1, 1, 1], "scores": [1, 2, 3, 4, 5, 6, 7, 8]},
+    "horizontal_fit": {"labels": [0, 0, 1, 1, 1, 1, 0, 0, 0, 0], "scores": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
+    "vertical_fit": {"labels": [1, 1, 0, 0, 0, 1, 1], "scores": [1, 2, 3, 4, 5, 6, 7]},
+    "constant": {"labels": [0, 0, 0, 1, 1], "scores": [4, 4, 4, 4, 4]},
+    "zero": {"labels": [0, 0, 1], "scores": [0, 0, 0]},
+    "single_per_class": {"labels": [0, 1], "scores": [1, 2]}
+  },
+  "cases": [
+    {"id": "binormal_default", "dataset": "continuous"},
+    {"id": "binormal_auto_ties", "dataset": "tied", "direction": "auto", "n": 19},
+    {"id": "binormal_percent_auto_reverse", "dataset": "continuous", "direction": "auto", "percent": true, "n": 35},
+    {"id": "binormal_full_on_two_points", "dataset": "continuous", "direction": ">", "n": 2},
+    {"id": "binormal_partial_between_grid_points", "dataset": "continuous", "direction": ">", "n": 2, "partial_auc": [0.6, 0.75]},
+    {"id": "binormal_partial_specificity", "dataset": "tied", "n": 23, "partial_auc": [0.95, 0.7]},
+    {"id": "binormal_partial_sensitivity_corrected_percent", "dataset": "continuous", "direction": ">", "percent": true, "n": 31, "partial_auc": [63, 97], "focus": "sensitivity", "standardize": true},
+    {"id": "binormal_partial_below_chance", "dataset": "continuous", "n": 31, "partial_auc": [0.65, 0.98], "standardize": true},
+    {"id": "binormal_partial_below_chance_allowed", "dataset": "continuous", "n": 31, "partial_auc": [0.65, 0.98], "standardize": true, "allow_below_chance": true},
+    {"id": "binormal_horizontal_fit", "dataset": "horizontal_fit", "n": 15, "compare": "binormal_horizontal"},
+    {"id": "binormal_perfect_error", "dataset": "separated", "error": "not smoothable"},
+    {"id": "binormal_vertical_fit_error", "dataset": "vertical_fit", "error": "not smoothable"},
+    {"id": "density_default", "dataset": "continuous", "method": "density"},
+    {"id": "density_gaussian_nrd", "dataset": "tied", "method": "density", "bw": "nrd", "cut": 1.2, "direction": ">", "n": 25},
+    {"id": "density_gaussian_above_512", "dataset": "tied", "method": "density", "bw": 0.7, "direction": "auto", "n": 525},
+    {"id": "density_rectangular", "dataset": "tied", "method": "density", "kernel": "rectangular", "bw": 0.58, "n": 31},
+    {"id": "density_triangular", "dataset": "tied", "method": "density", "kernel": "triangular", "bw": 0.58, "direction": ">", "n": 31},
+    {"id": "density_epanechnikov_adjusted", "dataset": "tied", "method": "density", "kernel": "epanechnikov", "adjust": 0.75, "cut": 0, "percent": true, "n": 31},
+    {"id": "density_biweight", "dataset": "continuous", "method": "density", "kernel": "biweight", "direction": "auto", "n": 31},
+    {"id": "density_cosine_partial_percent", "dataset": "tied", "method": "density", "kernel": "cosine", "percent": true, "partial_auc": [60, 100], "n": 31},
+    {"id": "density_optcosine_partial_sensitivity", "dataset": "tied", "method": "density", "kernel": "optcosine", "partial_auc": [0.47, 0.86], "focus": "sensitivity", "standardize": true, "n": 31},
+    {"id": "density_perfect", "dataset": "separated", "method": "density", "n": 29},
+    {"id": "density_single_grid_point", "dataset": "single_per_class", "method": "density", "direction": ">", "n": 1},
+    {"id": "density_constant_nrd0_fallback", "dataset": "constant", "method": "density", "n": 15},
+    {"id": "density_zero_nrd0_fallback", "dataset": "zero", "method": "density", "n": 15},
+    {"id": "density_constant_nrd_error", "dataset": "constant", "method": "density", "bw": "nrd", "error": "not positive"}
+  ]
+}
