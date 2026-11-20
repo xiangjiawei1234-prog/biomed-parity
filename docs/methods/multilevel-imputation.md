@@ -19,7 +19,21 @@ draws = impute_two_level_normal(
     options=TwoLevelOptions(iterations=100),
     m=5, seed=17,
 )
-print(draws.shape)  # (5, 2)：两次插补 × 两个缺失行
+print(draws.shape)  # (5, 2)
+```
+
+也可直接在 `mice_impute` 中使用两层模型，让同一链的其他方法读取该列当前的插补值。预测矩阵的一行对应一个目标列，`two_level_options` 以零起点的目标列索引指定配置。 [链式插补](chained-imputation.md)
+
+```python
+from biomed_parity.chained_imputation import mice_impute
+
+matrix = np.column_stack((predictors, response))
+codes = np.zeros((4, 4), dtype=int)
+codes[3, :3] = types
+result = mice_impute(
+    matrix, methods=[None, None, None, "2l.pan"], predictor_matrix=codes,
+    two_level_options={3: TwoLevelOptions(iterations=100)}, m=5, seed=17,
+)
 ```
 
 ## 接口与掩码
@@ -71,7 +85,7 @@ R 的 `intercept=TRUE` 会把截距以编码 2 加入模型（`2l.pan` 中同时
 
 **2l.norm。** 模型为 `y_ij = x_ij'b_i + e_ij`，`b_i ~ N(μ, Ψ)`，残差为簇特异方差 `e_ij ~ N(0, σ_i²)`；`σ_i²` 通过共享的 `σ²₀` 与 `θ` 的层次先验收缩。模块与 mice 源码使用相同的更新顺序与分布：每个簇的系数（含总体均值 `μ`）、`Ψ`、簇特异精度、`σ²₀`、`θ`，扫描次数固定为 100（mice 的 `n.iter` 硬编码值），最后一个扫描状态用于生成 `x'b_i + e` 插补值。`ridge` 用于 `mice:::symridge` 式的对称正定修正，默认 `1e-4`。
 
-两个方法都按 `np.random.SeedSequence(seed).spawn(m)` 为每个插补分配独立随机数流。R 与 NumPy 随机数流不同，因此不能逐值比较随机抽样，只能比较分布矩。模块是单列条件模型，不包含链式插补的访问顺序、被动插补或合并推断。
+单列入口使用 `np.random.SeedSequence(seed).spawn(m)` 分配独立随机数流。链式入口在每条链中沿用已有的生成器，并在每轮重新拟合该列。R 和 NumPy 的随机抽样通过分布矩核对。
 
 ## 验证范围
 
@@ -107,4 +121,4 @@ R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 .venv/bin/python -m pytest tests/tes
 - **掩码语义。** 真实 mice 的 `mice.impute.2l.pan` 不接受自定义 `where`/`ignore` 矩阵（会以“number of items to replace is not a multiple of replacement length”告警并错位），因此 `observed`/`where` 掩码通过“把训练外响应置为 NA、只比较目标行”的方式与 R 对照；对已观测行过度插补没有 R 对应物，仅验证 Python 自身契约。
 - **2l.norm 的编码限制。** mice 的 `2l.norm` 只使用编码 2 的预测变量，遇到编码 1/3/4 会静默忽略；本模块明确以 `ValueError` 拒绝，避免静默丢弃预测变量。簇数要求也不同：mice 在 `n.class - n.rc - 1 <= 0` 时进入数值失败（如 2 簇时 `chol` 报非正定），本模块提前要求 `簇数 > 2 × 随机效应维数`。两者都是报错，但错误类型与触发条件不同。
 - **输入完备性。** 目标行预测变量不完整时本模块报错；mice 会静默跳过这些行，令完整数据保留 `NA`。mice 允许单簇 `2l.pan`（完全由先验驱动），本模块要求至少两个簇并直接拒绝。
-- **未覆盖。** 未与链式插补入口集成（访问顺序、多缺失列、被动插补、`ignore`、合并推断 D1/D2/D3/D4 均不在此模块内）；未覆盖多响应变量（`r > 1`）、二元/分类响应、MNAR、多列 cluster、对角或其它随机效应协方差结构、不等簇大小与极端数值边界；未直接对照 `β`、`σ²`、`Ψ` 等内部参数后验（模块不返回这些量），只对照可观测插补值的分布矩。2l.norm 的 `groupcenter_slope` 在 mice 中同样不可用，本模块显式拒绝。
+- **未覆盖。** 多响应变量（`r > 1`）、两层二元或分类响应、MNAR、多列簇 ID、对角或其他随机效应协方差结构、不等簇大小与极端数值边界仍待迁移。验证范围是可观测插补值的分布矩，尚未直接核对 `β`、`σ²`、`Ψ` 等内部后验。模型估计之后的合并见 [多重插补合并](mi-pooling.md)。

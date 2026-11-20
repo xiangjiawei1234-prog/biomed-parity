@@ -1,7 +1,7 @@
-"""Fully conditional imputation for numeric and binary data."""
+"""Fully conditional imputation for numeric and categorical data."""
 
 from bisect import bisect_left, bisect_right
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from numbers import Integral
 
@@ -10,10 +10,15 @@ from numpy.typing import ArrayLike, NDArray
 from scipy.linalg import qr, solve_triangular
 from scipy.special import expit
 
+from .categorical_imputation import augment_categorical, categorical_probabilities
+from .multilevel_imputation import TwoLevelOptions, _draw_for_chain
+
 
 PassiveImputation = Callable[[NDArray[np.float64]], ArrayLike]
 ImputationMethod = str | PassiveImputation | None
-_METHODS = {"pmm", "norm", "norm.predict", "mean", "logreg"}
+_CATEGORICAL_METHODS = {"polyreg", "polr"}
+_TWO_LEVEL_METHODS = {"2l.pan", "2l.norm"}
+_METHODS = {"pmm", "norm", "norm.predict", "mean", "logreg"} | _CATEGORICAL_METHODS | _TWO_LEVEL_METHODS
 
 
 @dataclass(frozen=True)
@@ -57,8 +62,108 @@ def _methods(methods, n_columns):
     normalized = tuple(None if isinstance(m, str) and not m else m for m in methods)
     if not all(m is None or callable(m) or isinstance(m, str) and m in _METHODS
                for m in normalized):
-        raise ValueError("methods must select pmm, norm, norm.predict, mean, logreg, or a callable")
+        supported = ", ".join(sorted(_METHODS))
+        raise ValueError(f"methods must select {supported}, or a callable")
     return normalized
+
+
+def _factor_levels(raw, methods, category_levels):
+    if category_levels is None:
+        category_levels = {}
+    if not isinstance(category_levels, Mapping):
+        raise ValueError("category_levels must map zero-based column indices to numeric levels")
+    levels = {}
+    for key, values in category_levels.items():
+        column = _positive_integer(key, "category_levels column", 0)
+        if column >= raw.shape[1]:
+            raise ValueError("category_levels column is out of range")
+        provided = np.asarray(values)
+        if (
+            provided.ndim != 1 or not 1 <= len(provided) <= 50
+            or provided.dtype.kind not in "buif" or not np.isfinite(provided).all()
+            or len(np.unique(provided.astype(float))) != len(provided)
+        ):
+            raise ValueError("category_levels must contain 1 to 50 distinct finite numeric labels")
+        levels[column] = provided.astype(float)
+
+    for column, method in enumerate(methods):
+        observed = raw[np.isfinite(raw[:, column]), column]
+        if isinstance(method, str) and method in _CATEGORICAL_METHODS and column not in levels:
+            levels[column] = np.unique(observed)
+        if column in levels and (len(levels[column]) > 50
+                                 or not np.isin(observed, levels[column]).all()):
+            raise ValueError(f"column {column} must use the declared labels and at most 50 levels")
+    return levels
+
+
+def _predictor_codes(raw, predictor_matrix, multilevel):
+    n_columns = raw.shape[1]
+    if predictor_matrix is None:
+        if multilevel:
+            raise ValueError("two-level methods require an explicit predictor_matrix with cluster code -2")
+        return (~np.eye(n_columns, dtype=bool)).astype(int)
+    codes = np.asarray(predictor_matrix)
+    if codes.shape != (n_columns, n_columns) or codes.dtype.kind not in "buif":
+        raise ValueError("predictor_matrix must be a square matrix of numeric predictor codes")
+    if np.any(np.diag(codes)):
+        raise ValueError("predictor_matrix cannot select a column as its own predictor")
+    for column, row in enumerate(codes):
+        if column not in multilevel:
+            if not np.isin(row, (0, 1)).all():
+                raise ValueError("predictor_matrix requires 0/1 indicators for single-level methods")
+            continue
+        if not np.isin(row, (-2, 0, 1, 2, 3, 4)).all():
+            raise ValueError("two-level predictor_matrix rows must use codes -2, 0, 1, 2, 3 or 4")
+        cluster = row == -2
+        if cluster.sum() != 1 or not np.isfinite(raw[:, cluster]).all():
+            raise ValueError(f"predictor_matrix row {column} needs one complete cluster column coded -2")
+    return codes.astype(int)
+
+
+def _two_level_settings(methods, options):
+    multilevel = {column: TwoLevelOptions() for column, method in enumerate(methods)
+                  if isinstance(method, str) and method in _TWO_LEVEL_METHODS}
+    if options is not None:
+        if not isinstance(options, Mapping):
+            raise ValueError("two_level_options must map the two-level outcome columns to TwoLevelOptions")
+        for column, settings in options.items():
+            column = _positive_integer(column, "two_level_options column", 0)
+            if column not in multilevel or not isinstance(settings, TwoLevelOptions):
+                raise ValueError("two_level_options must map the two-level outcome columns to TwoLevelOptions")
+            multilevel[column] = settings
+    return multilevel
+
+
+def _factor_contrasts(n_levels, ordered):
+    if not ordered:
+        return np.eye(n_levels)[:, 1:]
+    # Orthonormal polynomials on evenly spaced level ranks match contr.poly.
+    scores = np.linspace(-1, 1, n_levels)
+    basis = np.empty((n_levels, n_levels))
+    basis[:, 0] = 1 / np.sqrt(n_levels)
+    for degree in range(1, n_levels):
+        vector = scores * basis[:, degree - 1]
+        previous = basis[:, :degree]
+        for _ in range(2):
+            vector -= previous @ (previous.T @ vector)
+        basis[:, degree] = vector / np.linalg.norm(vector)
+    return basis[:, 1:]
+
+
+def _encode_predictors(current, chosen, levels, contrasts):
+    if not levels:
+        return current[:, chosen]
+    columns = []
+    for column in np.flatnonzero(chosen):
+        values = current[:, column]
+        if column in levels:
+            matches = values[:, None] == levels[column]
+            encoded = matches.astype(float) @ contrasts[column]
+            encoded[~np.isfinite(values)] = np.nan
+            columns.append(encoded)
+        else:
+            columns.append(values[:, None])
+    return np.column_stack(columns) if columns else np.empty((len(current), 0))
 
 
 def _design(x, train):
@@ -138,34 +243,12 @@ def _continuous_draw(method, design, y, train, target, donors, match_type, rng):
     return _pmm_donors(y, observed_design @ donor_coef, target_design @ draw, donors, rng)
 
 
-def _augment_logistic(design, y, train, unignored):
-    observed = design[train]
-    predictors = design[unignored, 1:]
-    n_predictors = predictors.shape[1]
-    if not n_predictors or (~train).sum() == 1:
-        return observed, y, np.ones(len(y))
-    center = predictors.mean(axis=0)
-    spread = predictors.std(axis=0, ddof=1)
-    low, high = predictors.min(axis=0), predictors.max(axis=0)
-    # Pair each coordinate's two perturbed values with both response classes.
-    rows = np.repeat(center[None, :], 4 * n_predictors, axis=0)
-    coordinates = np.repeat(np.arange(n_predictors), 4)
-    signs = np.tile([0.5, -0.5, 0.5, -0.5], n_predictors)
-    rows[np.arange(len(rows)), coordinates] += signs * spread[coordinates]
-    pseudo_design = np.column_stack((np.ones(len(rows)), np.clip(rows, low, high)))
-    pseudo_labels = np.tile([0.0, 0.0, 1.0, 1.0], n_predictors)
-    pseudo_weights = np.full(len(rows), observed.shape[1] / len(rows))
-    return (
-        np.vstack((observed, pseudo_design)),
-        np.r_[y, pseudo_labels],
-        np.r_[np.ones(len(y)), pseudo_weights],
-    )
-
-
 def _logistic_draw(design, y, train, target, unignored, rng):
     if len(np.unique(y)) != 2 or not np.all((y == 0) | (y == 1)):
         raise ValueError("logreg requires both observed binary classes coded 0 and 1")
-    x, response, case_weights = _augment_logistic(design, y, train, unignored)
+    x, response, case_weights = augment_categorical(
+        design, y, train, unignored, np.array([0.0, 1.0]),
+    )
     signed = 2 * response - 1
     coefficients = np.zeros(x.shape[1])
     for _ in range(80):
@@ -234,11 +317,14 @@ def _initialize(raw, methods, requested, visit, ignore, initial, rng):
     return data, latest
 
 
-def _visit_column(raw, current, column, chosen, method, target, ignore, donors, match_type, rng):
+def _visit_column(
+    raw, current, column, codes, method, target, ignore, levels, contrasts, options,
+    donors, match_type, rng,
+):
     if callable(method):
         return _passive_values(method, current, target)
-    x = current[:, chosen]
-    available = np.isfinite(x).all(axis=1)
+    chosen = codes > 0
+    available = np.isfinite(current[:, chosen]).all(axis=1)
     if np.any(target & ~available):
         raise ValueError("a requested row has an incomplete predictor")
     train = ~np.isnan(raw[:, column]) & available & ~ignore
@@ -247,9 +333,23 @@ def _visit_column(raw, current, column, chosen, method, target, ignore, donors, 
         raise ValueError("no eligible observed outcomes")
     if method == "mean":
         return np.full(target.sum(), y.mean())
+    x = _encode_predictors(current, chosen, levels, contrasts)
+    if options is not None:
+        repeats = [contrasts[j].shape[1] if j in contrasts else 1 for j in np.flatnonzero(chosen)]
+        types = np.r_[-2, np.repeat(codes[chosen], np.asarray(repeats, dtype=int))]
+        predictors = np.column_stack((raw[:, codes == -2], x))
+        return _draw_for_chain(
+            raw[:, column], predictors, types, train, target, method, options, rng,
+        )
     design = _design(x, train)
     if method == "logreg":
         return _logistic_draw(design, y, train, target, available & ~ignore, rng)
+    if method in _CATEGORICAL_METHODS:
+        classes, probabilities = categorical_probabilities(
+            method, design, y, train, target, available & ~ignore, levels[column],
+        )
+        cumulative = np.cumsum(probabilities, axis=1)
+        return classes[(rng.random(len(probabilities))[:, None] > cumulative[:, :-1]).sum(axis=1)]
     return _continuous_draw(method, design, y, train, target, donors, match_type, rng)
 
 
@@ -257,7 +357,9 @@ def mice_impute(
     data: ArrayLike,
     *,
     methods: Sequence[ImputationMethod] | None = None,
+    category_levels: Mapping[int, Sequence[float]] | None = None,
     predictor_matrix: ArrayLike | None = None,
+    two_level_options: Mapping[int, TwoLevelOptions] | None = None,
     visit_sequence: Sequence[int] | None = None,
     where: ArrayLike | None = None,
     ignore: ArrayLike | None = None,
@@ -268,17 +370,31 @@ def mice_impute(
     match_type: int = 1,
     seed: int | None = None,
 ) -> ChainedImputations:
-    """Impute numeric data through fully conditional sweeps over its columns.
+    """Impute continuous and numerically coded data through conditional sweeps.
 
     NaN marks missing values. Methods default to predictive mean matching.
-    Specify ``"logreg"`` for columns coded as binary 0/1, and a callable for
-    deterministic passive variables. A callable receives the current data and
+    Specify ``"logreg"`` for binary 0/1 columns, ``"polyreg"`` for nominal
+    outcomes, and ``"polr"`` for ordered outcomes. Categorical columns use
+    numeric labels. Supply their order in ``category_levels`` or use the ascending
+    order inferred from observed labels for ``"polyreg"`` and ``"polr"``.
+    Category predictors use treatment contrasts or orthogonal polynomials for
+    ``"polr"`` columns. A callable passive method receives the current data and
     returns one value per row. Predictor rows index outcomes and columns index
-    input variables. Visit indices are zero-based and can be repeated.
+    input variables. Rows for ``"2l.pan"`` and ``"2l.norm"`` require cluster code
+    -2 and use the effect codes of ``impute_two_level_normal``. Inner sampler
+    settings can be supplied per outcome in ``two_level_options``. Column
+    and visit indices are zero-based.
     """
     raw = _numeric_matrix(data, "data")
     n_rows, n_columns = raw.shape
     methods = _methods(methods, n_columns)
+    levels = _factor_levels(raw, methods, category_levels)
+    multilevel = _two_level_settings(methods, two_level_options)
+    predictors = _predictor_codes(raw, predictor_matrix, multilevel)
+    contrasts = {
+        column: _factor_contrasts(len(labels), ordered=methods[column] == "polr")
+        for column, labels in levels.items() if len(labels)
+    }
     m = _positive_integer(m, "m")
     iterations = _positive_integer(iterations, "iterations", minimum=0)
     donors = _positive_integer(donors, "donors")
@@ -289,18 +405,6 @@ def mice_impute(
     observed = ~np.isnan(raw)
     requested = ~observed if where is None else _mask(where, raw.shape, "where")
     excluded = np.zeros(n_rows, dtype=bool) if ignore is None else _mask(ignore, (n_rows,), "ignore")
-    if predictor_matrix is None:
-        predictors = ~np.eye(n_columns, dtype=bool)
-    else:
-        indicators = np.asarray(predictor_matrix)
-        if indicators.shape != (n_columns, n_columns) or not np.all(
-            (indicators == 0) | (indicators == 1)
-        ):
-            raise ValueError("predictor_matrix must be a square matrix of 0/1 indicators")
-        if np.any(np.diag(indicators)):
-            raise ValueError("predictor_matrix cannot select a column as its own predictor")
-        predictors = indicators.astype(bool)
-
     active = {j for j, method in enumerate(methods) if method is not None and requested[:, j].any()}
     if visit_sequence is None:
         visit = sorted(active)
@@ -313,6 +417,9 @@ def mice_impute(
     start = None if initial is None else _numeric_matrix(initial, "initial")
     if start is not None and start.shape != raw.shape:
         raise ValueError("initial must have the same shape as data")
+    effective = requested & np.isin(np.arange(n_columns), list(active))
+    if np.any(effective[:, (predictors == -2).any(axis=0)]):
+        raise ValueError("cluster columns cannot be re-imputed")
     means = np.full((m, iterations, n_columns), np.nan)
     variances = np.full_like(means, np.nan)
     completed = np.empty((m, n_rows, n_columns))
@@ -320,16 +427,21 @@ def mice_impute(
     for chain, stream in enumerate(np.random.SeedSequence(seed).spawn(m)):
         rng = np.random.default_rng(stream)
         current, latest = _initialize(raw, methods, requested, visit, excluded, start, rng)
+        for column, labels in levels.items():
+            if not np.isin(latest[effective[:, column], column], labels).all():
+                raise ValueError(f"initial values in column {column} must use declared labels")
         for sweep in range(iterations):
             for column in visit:
                 target = requested[:, column]
                 try:
                     values = _visit_column(
                         raw, current, column, predictors[column], methods[column], target,
-                        excluded, donors, match_type, rng,
+                        excluded, levels, contrasts, multilevel.get(column), donors, match_type, rng,
                     )
                     if not np.isfinite(values).all():
                         raise ValueError("imputed values are not finite")
+                    if column in levels and not np.isin(values, levels[column]).all():
+                        raise ValueError("imputed values must use declared labels")
                 except (ValueError, ArithmeticError, np.linalg.LinAlgError) as error:
                     raise ValueError(
                         f"chain {chain + 1}, sweep {sweep + 1}, column {column}: {error}"
@@ -341,5 +453,4 @@ def mice_impute(
                 if len(values) > 1:
                     variances[chain, sweep, column] = values.var(ddof=1)
         completed[chain] = latest
-    effective = requested & np.isin(np.arange(n_columns), list(active))
     return ChainedImputations(completed, means, variances, effective)

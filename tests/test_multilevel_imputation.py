@@ -7,6 +7,7 @@ import subprocess
 
 import numpy as np
 import pytest
+from biomed_parity.chained_imputation import mice_impute
 
 from biomed_parity.multilevel_imputation import (
     TwoLevelOptions,
@@ -192,6 +193,53 @@ def test_deterministic_design_matches_r(case):
 @pytest.mark.parametrize("case", DISTRIBUTION_CASES, ids=DISTRIBUTION_IDS)
 def test_stochastic_moments_match_r(case):
     _check_distribution(case, DISTRIBUTION_EXPECTED[case["id"]])
+
+
+@pytest.mark.parametrize("case_id", ["pan-random-slope", "norm-random-slope"])
+def test_two_level_means_in_chained_entry_point(case_id):
+    case = next(case for case in DISTRIBUTION_CASES if case["id"] == case_id)
+    response, predictors = _response_predictors(DISTRIBUTION_SPEC, case)
+    data = np.column_stack((predictors, response, 2 + response))
+    outcomes = data.shape[1] - 2
+    codes = np.zeros((data.shape[1], data.shape[1]), dtype=int)
+    codes[outcomes, :outcomes] = case["types"]
+    draws = 350
+    result = mice_impute(
+        data, methods=[None] * outcomes + [case["method"], lambda x: 2 + x[:, outcomes]],
+        predictor_matrix=codes, m=draws, iterations=2, seed=18531,
+        two_level_options={outcomes: TwoLevelOptions(iterations=30)},
+    )
+    actual = result.completed[:, result.where[:, outcomes], outcomes]
+    reference = DISTRIBUTION_EXPECTED[case_id]
+    mean_se = np.sqrt(actual.var(axis=0, ddof=1) / draws
+                      + np.asarray(reference["standard_deviations"])**2 / reference["n_draws"])
+    assert (abs(actual.mean(axis=0) - reference["means"]) <= 5 * mean_se).all()
+    np.testing.assert_array_equal(result.completed[:, result.where[:, outcomes], -1], 2 + actual)
+
+
+def test_two_level_chain_uses_current_predictors_and_a_fixed_cluster():
+    cluster = np.repeat(np.arange(4), 6)
+    x = np.tile([-2.0, -1, 0, 1, 2, 3], 4)
+    response = 4 + 2 * x + cluster + np.sin(x)
+    response[[2, 5, 11, 17, 23]] = np.nan
+    x[2] = np.nan
+    data = np.column_stack((cluster, x, response))
+    steps = {
+        "methods": [None, lambda current: np.where(np.isnan(current[:, 1]), 0, current[:, 1]), "2l.pan"],
+        "predictor_matrix": [[0, 0, 0], [0, 0, 0], [-2, 1, 0]],
+        "two_level_options": {2: TwoLevelOptions(iterations=10)},
+        "m": 2, "iterations": 2, "seed": 321,
+    }
+    fit = mice_impute(data, **steps)
+    assert np.isfinite(fit.completed).all()
+    np.testing.assert_array_equal(fit.completed[:, :, 0], np.broadcast_to(cluster, (2, len(data))))
+    np.testing.assert_array_equal(fit.completed[:, 2, 1], 0)
+    with pytest.raises(ValueError, match="explicit predictor_matrix"):
+        mice_impute(data, **{**steps, "predictor_matrix": None})
+    with pytest.raises(ValueError, match="one complete cluster"):
+        mice_impute(data, **{**steps, "predictor_matrix": np.zeros((3, 3))})
+    with pytest.raises(ValueError, match="0/1 indicators"):
+        mice_impute(data, **{**steps, "predictor_matrix": [[0, 2, 0], [0, 0, 0], [-2, 1, 0]]})
 
 
 @pytest.mark.skipif(os.environ.get("BIOMED_R_PARITY") != "1", reason="live R parity is opt-in")
