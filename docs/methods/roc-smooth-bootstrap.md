@@ -1,6 +1,6 @@
 # 平滑 ROC 的 Bootstrap 区间
 
-`biomed_parity.roc_smooth_bootstrap` 使用 Bootstrap 对单条平滑二分类 ROC 计算完整或部分 AUC 的分位数区间，也可在固定特异度上计算灵敏度的逐点区间。每个重抽样重新拟合双正态、核密度或按类拟合分布的参数化曲线。区间口径对应 pROC 1.19.1 的 `ci.auc()` 和 `ci.se()`。[pROC AUC 区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.auc) · [pROC 灵敏度区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.se)
+`biomed_parity.roc_smooth_bootstrap` 使用 Bootstrap 对单条平滑二分类 ROC 计算完整或部分 AUC 的分位数区间与固定特异度上的灵敏度区间，也可比较同一批受试者上两条平滑曲线的 AUC。每个重抽样重新拟合双正态、核密度或按类拟合分布的参数化曲线。区间口径对应 pROC 1.19.1 的 `ci.auc()` 和 `ci.se()`。[pROC AUC 区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.auc) · [pROC 灵敏度区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.se)
 
 ## 接口
 
@@ -55,4 +55,27 @@ R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 python -m pytest -q -W error tests/t
 R_LIBS_USER="$PWD/.r-lib" Rscript --vanilla validation/roc_smooth_bootstrap/oracle.R validation/roc_smooth_bootstrap/cases.json
 ```
 
-小样本重抽样可能产生水平的双正态拟合。Python 沿用原平滑模块的确定性端点。pROC 的曲线取点依赖理论零斜率处的浮点舍入，有时会报错或得到不同的点坐标。此时两端的有效抽样计数或区间可能不同。仅有一笔有效抽样时 Python 仍保留结果维度。两端随机数流各自独立。此接口覆盖单条曲线与逐点区间，同时置信带、两条平滑曲线的推断、多分类与其他平滑模型属于独立范围。
+小样本重抽样可能产生水平的双正态拟合。Python 沿用原平滑模块的确定性端点。pROC 的曲线取点依赖理论零斜率处的浮点舍入，有时会报错或得到不同的点坐标。此时两端的有效抽样计数、区间或部分 AUC 检验统计量可能不同。仅有一笔有效抽样时 Python 仍保留区间结果维度。两端随机数流各自独立。单曲线推断支持 AUC 分位数区间与灵敏度逐点区间。
+
+## 配对平滑 AUC 检验
+
+`bootstrap_smooth_paired_test(labels, scores_1, scores_2, ...)` 比较同一批受试者上两个评分的完整或部分 AUC。两组评分须按受试者一一对齐。两条曲线使用相同的平滑和 AUC 设置。`direction="auto"` 分别用两组原始评分确定方向，并在重抽样时固定。每次用同一行受试者索引重新拟合两条曲线，任一条曲线的 AUC 不可估计时丢弃整行。[pROC 配对 Bootstrap 检验手册](https://search.r-project.org/CRAN/refmans/pROC/html/roc.test.html)
+
+```python
+from biomed_parity.roc_smooth_bootstrap import bootstrap_smooth_paired_test
+
+result = bootstrap_smooth_paired_test(
+    labels, scores, [0.1, 0.3, 0.4, 0.6, 0.3, 0.45, 0.8, 0.95],
+    method="density", partial_auc=(0.65, 1.0), random_state=24,
+)
+```
+
+结果的 `difference` 为 `auc_1 - auc_2`，`standard_error` 为有效重抽样 AUC 差值的样本标准差。`statistic` 用原样本差值除以标准误，`p_value` 按标准正态分布和 `alternative="two.sided"`、`"less"` 或 `"greater"` 计算。有效重抽样少于两次时，标准误、统计量和 p 值为 `NaN`。`percent=True` 同时缩放 AUC、差值及标准误。校正后的部分 AUC 在重抽样中保留低于机会水平的值。[pROC 计算口径](https://search.r-project.org/CRAN/refmans/pROC/html/roc.test.html#details)
+
+6 个场景使用 283 次固定抽样，覆盖三种平滑方法、相反的自动方向、分层和普通抽样、三种备择、部分 AUC 的两种轴、McClish 校正、百分制、相同评分的零差值及单条曲线拟合失败的抽样。R 参考逐次重拟合两条曲线，以相同种子交叉核对公开 `roc.test(method="bootstrap", paired=TRUE)`，覆盖从原 ROC 重用部分 AUC 设置和从检验调用重新指定两种用法。[对照用例](../../validation/roc_smooth_paired/cases.json) · [R 参考脚本](../../validation/roc_smooth_paired/oracle.R) · [R 4.5.3 / pROC 1.19.1 / MASS 7.3-65 快照](../../validation/roc_smooth_paired/expected.json)
+
+对照中两端均丢弃 12 行抽样。按 0–1 尺度比较时，AUC 与 AUC 差的最大绝对偏差为 `8.9e-16`，检验统计量和 p 值的最大绝对偏差分别为 `1.1e-14` 和 `6.7e-15`。
+
+```sh
+R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 python -m pytest -q -W error tests/test_roc_smooth_paired.py
+```

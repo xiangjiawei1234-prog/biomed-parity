@@ -167,6 +167,19 @@ def _finite_bootstrap(values):
     return kept
 
 
+def _paired_auc_statistic(difference, differences):
+    standard_error, statistic = nan, nan
+    if differences.size >= 2:
+        standard_error = float(differences.std(ddof=1)) if np.ptp(differences) else 0.0
+        if standard_error:
+            statistic = difference / standard_error
+        elif np.isfinite(difference) and difference != 0:
+            statistic = copysign(inf, difference)
+        elif difference == 0 and (differences == 0).all():
+            statistic = 0.0
+    return standard_error, statistic
+
+
 def roc_auc(
     labels: ArrayLike,
     scores: ArrayLike,
@@ -246,15 +259,7 @@ def bootstrap_paired_test(
         - spec.auc(second, sample, allow_below_chance=True)
         for sample in draws
     ), float, n_draws))
-    standard_error, statistic = nan, nan
-    if differences.size >= 2:
-        standard_error = float(differences.std(ddof=1)) if np.ptp(differences) else 0.0
-        if standard_error:
-            statistic = difference / standard_error
-        elif np.isfinite(difference) and difference != 0:
-            statistic = copysign(inf, difference)
-        elif difference == 0 and (differences == 0).all():
-            statistic = 0.0
+    standard_error, statistic = _paired_auc_statistic(difference, differences)
     return BootstrapPairedResult(
         auc_1, auc_2, difference, standard_error, statistic,
         _p_value(statistic, norm, alternative), differences.size,
