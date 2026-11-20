@@ -57,19 +57,19 @@ def _logistic_fit(x, y):
         raise np.linalg.LinAlgError("the logistic design matrix is rank deficient")
     signed = 2 * y - 1
     coefficients = np.r_[logit(y.mean()), np.zeros(x.shape[1])]
-    lp = design @ coefficients
+    lp = np.einsum("ij,j->i", design, coefficients)
     deviance = _deviance(signed, lp)
     for _ in range(80):
         weights = expit(lp) * expit(-lp)
-        score = design.T @ (signed * expit(-signed * lp))
-        information = design.T @ (weights[:, None] * design)
+        score = np.einsum("ij,i->j", design, signed * expit(-signed * lp))
+        information = np.einsum("ij,ik,i->jk", design, design, weights)
         delta = np.linalg.solve(information, score)
         if np.max(np.abs(delta)) <= 1e-9:
             slopes = coefficients[1:] / spread
-            return np.r_[coefficients[0] - center @ slopes, slopes]
+            return np.r_[coefficients[0] - np.sum(center * slopes), slopes]
         for half in range(25):
             updated = coefficients + delta * 0.5**half
-            fitted = design @ updated
+            fitted = np.einsum("ij,j->i", design, updated)
             candidate = _deviance(signed, fitted)
             if candidate <= deviance + np.finfo(float).eps * deviance:
                 coefficients, lp, deviance = updated, fitted, candidate
