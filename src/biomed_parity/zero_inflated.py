@@ -1,17 +1,31 @@
-"""Laplace likelihood for a zero-inflated Poisson random-intercept model."""
+"""Laplace likelihoods for zero-inflated count random-intercept models."""
 
 from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy.optimize import minimize
-from scipy.special import expit, gammaln, logit
+from scipy.special import betaln, expit, gammaln, logit
 
 
 @dataclass(frozen=True)
 class ZeroInflatedPoissonResult:
     count_coefficients: tuple[float, ...]
     inflation_coefficients: tuple[float, ...]
+    random_intercept_sd: float
+    log_likelihood: float
+    converged: bool
+    iterations: int
+    message: str
+
+
+@dataclass(frozen=True)
+class ZeroInflatedNegativeBinomialResult:
+    """NB2 fit with log-shape dispersion coefficients."""
+
+    count_coefficients: tuple[float, ...]
+    inflation_coefficients: tuple[float, ...]
+    dispersion_coefficients: tuple[float, ...]
     random_intercept_sd: float
     log_likelihood: float
     converged: bool
@@ -29,7 +43,8 @@ class _ZipData:
     group_count: int
 
     def likelihood(
-        self, count_coefficients: NDArray, inflation_coefficients: NDArray, sd: float
+        self, count_coefficients: NDArray, inflation_coefficients: NDArray, sd: float,
+        log_shape: NDArray | None = None,
     ) -> float:
         with np.errstate(over="ignore", invalid="ignore"):
             fixed_count = np.einsum("ij,j->i", self.count_design, count_coefficients) + self.offset
@@ -39,20 +54,42 @@ class _ZipData:
         log_zi = -np.logaddexp(0, -logit_zi)
         log_count = -np.logaddexp(0, logit_zi)
         zero = self.counts == 0
-        constants = gammaln(1 + self.counts)
+        if log_shape is None:
+            constants = -gammaln(1 + self.counts)
+        else:
+            if not np.isfinite(log_shape).all() or (abs(log_shape) > 35).any():
+                raise ValueError("log dispersion predictor exceeds the supported numerical range")
+            shape = np.exp(log_shape)
+            count_size = self.counts + shape
+            constants = -betaln(self.counts + 1, shape) - np.log(count_size)
 
-        def conditional(mode):
-            eta = fixed_count + sd * mode[self.groups]
+        def poisson(eta):
             # At higher points exp(eta) would overflow. The bounded value only
             # affects trial evaluations far outside the supported fit range.
             mu = np.exp(np.minimum(eta, 340.0))
-            active = expit(-logit_zi[zero] - mu[zero])
-            ll = log_count + self.counts * eta - mu - constants
+            return constants + self.counts * eta - mu, self.counts - mu, -mu
+
+        def negative_binomial(eta):
+            log_odds = eta - log_shape
+            q = expit(log_odds)
+            chance = expit(-log_odds)
+            probability = (constants - self.counts * np.logaddexp(0, -log_odds)
+                           - shape * np.logaddexp(0, log_odds))
+            return probability, self.counts * chance - shape * q, -count_size * q * chance
+
+        count_distribution = poisson if log_shape is None else negative_binomial
+
+        def conditional(mode):
+            eta = fixed_count + sd * mode[self.groups]
+            ll, gradient, hessian = count_distribution(eta)
+            active = expit(ll[zero] - logit_zi[zero])
+            ll += log_count
             ll[zero] = np.logaddexp(log_zi[zero], ll[zero])
-            gradient = self.counts - mu
-            gradient[zero] *= active
-            hessian = -mu
-            hessian[zero] = gradient[zero] * (1 - mu[zero] * (1 - active))
+            active_gradient = gradient[zero]
+            gradient[zero] = active * active_gradient
+            hessian[zero] = active * (
+                hessian[zero] + (1 - active) * active_gradient**2
+            )
             return ll, gradient, hessian
 
         mode = np.zeros(self.group_count)
@@ -170,23 +207,8 @@ def fit_zip_random_intercept(
 ) -> ZeroInflatedPoissonResult:
     """Fit a ZIP model with a random intercept in the Poisson mean."""
     data = _prepare(counts, groups, count_design, inflation_design, offset)
-    positive = data.counts > 0
-    if not positive.any() or positive.all() or data.group_count < 2:
-        raise ValueError("fitting requires zeros, positive counts, and at least two groups")
-    p, q = data.count_design.shape[1], data.inflation_design.shape[1]
-    if np.linalg.matrix_rank(data.count_design) < p or np.linalg.matrix_rank(data.inflation_design) < q:
-        raise ValueError("both fixed-effect design matrices must have full column rank")
-    if not isinstance(max_iterations, int) or max_iterations < 1:
-        raise ValueError("max_iterations must be a positive integer")
-
-    initial_beta = np.linalg.lstsq(
-        data.count_design[positive], np.log(data.counts[positive]) - data.offset[positive], rcond=None
-    )[0]
-    estimated_excess = np.clip(np.mean(~positive) - np.exp(-data.counts.mean()), 0.02, 0.9)
-    initial_gamma = np.linalg.lstsq(
-        data.inflation_design, np.full(data.counts.size, logit(estimated_excess)), rcond=None
-    )[0]
-    initial = np.concatenate((initial_beta, initial_gamma, [np.log(0.5)]))
+    p, q, initial = _count_model_start(data, max_iterations)
+    lower_log_sd, upper_log_sd = -12.0, 3.0
 
     def objective(parameters):
         try:
@@ -195,7 +217,6 @@ def fit_zip_random_intercept(
             return 1e30
         return -value if np.isfinite(value) else 1e30
 
-    lower_log_sd, upper_log_sd = -12.0, 3.0
     result = minimize(
         objective, initial, method="L-BFGS-B",
         bounds=[(None, None)] * (p + q) + [(lower_log_sd, upper_log_sd)],
@@ -217,4 +238,109 @@ def fit_zip_random_intercept(
         converged=bool(result.success and not at_boundary),
         iterations=int(result.nit),
         message=message,
+    )
+
+
+def _count_model_start(data, max_iterations):
+    positive = data.counts > 0
+    if not positive.any() or positive.all() or data.group_count < 2:
+        raise ValueError("fitting requires zeros, positive counts, and at least two groups")
+    p, q = data.count_design.shape[1], data.inflation_design.shape[1]
+    if np.linalg.matrix_rank(data.count_design) < p or np.linalg.matrix_rank(data.inflation_design) < q:
+        raise ValueError("both fixed-effect design matrices must have full column rank")
+    if not isinstance(max_iterations, int) or max_iterations < 1:
+        raise ValueError("max_iterations must be a positive integer")
+
+    initial_beta = np.linalg.lstsq(
+        data.count_design[positive], np.log(data.counts[positive]) - data.offset[positive], rcond=None
+    )[0]
+    estimated_excess = np.clip(np.mean(~positive) - np.exp(-data.counts.mean()), 0.02, 0.9)
+    initial_gamma = np.linalg.lstsq(
+        data.inflation_design, np.full(data.counts.size, logit(estimated_excess)), rcond=None
+    )[0]
+    initial = np.concatenate((initial_beta, initial_gamma, [np.log(0.5)]))
+    return p, q, initial
+
+
+def zinb2_random_intercept_loglikelihood(
+    counts: ArrayLike,
+    groups: ArrayLike,
+    count_coefficients: ArrayLike,
+    inflation_coefficients: ArrayLike,
+    dispersion_coefficients: ArrayLike,
+    random_intercept_sd: float,
+    *,
+    count_design: ArrayLike | None = None,
+    inflation_design: ArrayLike | None = None,
+    dispersion_design: ArrayLike | None = None,
+    offset: ArrayLike | None = None,
+) -> float:
+    """Evaluate the Laplace likelihood with variance mu + mu**2 / shape."""
+    if not np.isfinite(random_intercept_sd) or random_intercept_sd < 0:
+        raise ValueError("random_intercept_sd must be finite and nonnegative")
+    data = _prepare(counts, groups, count_design, inflation_design, offset)
+    dispersion = _matrix(dispersion_design, len(data.counts), "dispersion_design")
+    beta = _coefficients(count_coefficients, data.count_design.shape[1], "count_coefficients")
+    gamma = _coefficients(
+        inflation_coefficients, data.inflation_design.shape[1], "inflation_coefficients",
+    )
+    delta = _coefficients(dispersion_coefficients, dispersion.shape[1], "dispersion_coefficients")
+    log_shape = np.einsum("ij,j->i", dispersion, delta)
+    return data.likelihood(beta, gamma, random_intercept_sd, log_shape)
+
+
+def fit_zinb2_random_intercept(
+    counts: ArrayLike,
+    groups: ArrayLike,
+    *,
+    count_design: ArrayLike | None = None,
+    inflation_design: ArrayLike | None = None,
+    dispersion_design: ArrayLike | None = None,
+    offset: ArrayLike | None = None,
+    max_iterations: int = 400,
+) -> ZeroInflatedNegativeBinomialResult:
+    """Fit a ZINB2 model with log-mean, logit-inflation and log-shape predictors."""
+    data = _prepare(counts, groups, count_design, inflation_design, offset)
+    dispersion = _matrix(dispersion_design, len(data.counts), "dispersion_design")
+    p, q, initial = _count_model_start(data, max_iterations)
+    r = dispersion.shape[1]
+    if np.linalg.matrix_rank(dispersion) != r:
+        raise ValueError("dispersion_design must have full column rank")
+    split = p + q
+
+    def likelihood(parameters):
+        log_shape = np.einsum("ij,j->i", dispersion, parameters[split:-1])
+        return data.likelihood(
+            parameters[:p], parameters[p:split], float(np.exp(parameters[-1])), log_shape,
+        )
+
+    def objective(parameters):
+        try:
+            value = likelihood(parameters)
+        except ValueError:
+            return 1e30
+        return -value if np.isfinite(value) else 1e30
+
+    lower_log_sd, upper_log_sd = -12.0, 3.0
+    fits = []
+    for shape in (0.7, 4.0, 15.0):
+        initial_dispersion = np.linalg.lstsq(
+            dispersion, np.full(len(dispersion), np.log(shape)), rcond=None,
+        )[0]
+        start = np.r_[initial[:-1], initial_dispersion, initial[-1]]
+        fits.append(minimize(
+            objective, start, method="L-BFGS-B",
+            bounds=[(None, None)] * (p + q + r) + [(lower_log_sd, upper_log_sd)],
+            options={"maxiter": max_iterations, "ftol": 1e-12, "gtol": 1e-6},
+        ))
+    result = min(fits, key=lambda fit: fit.fun)
+    at_boundary = result.x[-1] <= lower_log_sd + 1e-6 or result.x[-1] >= upper_log_sd - 1e-6
+    return ZeroInflatedNegativeBinomialResult(
+        count_coefficients=tuple(map(float, result.x[:p])),
+        inflation_coefficients=tuple(map(float, result.x[p:split])),
+        random_intercept_sd=float(np.exp(result.x[-1])), log_likelihood=likelihood(result.x),
+        converged=bool(result.success and not at_boundary), iterations=int(result.nit),
+        message=("random-intercept SD reached a numerical fitting boundary"
+                 if at_boundary else str(result.message)),
+        dispersion_coefficients=tuple(map(float, result.x[split:-1])),
     )
