@@ -1,0 +1,589 @@
+{
+  "versions": {
+    "R": "4.5.3",
+    "pROC": "1.19.1"
+  },
+  "results": {
+    "single_default": {
+      "auc": 0.768518518518518,
+      "levels": ["a", "b", "c"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": 0.708333333333333,
+          "component_aucs": [0.708333333333333],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 0.875,
+          "component_aucs": [0.875],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 0.722222222222222,
+          "component_aucs": [0.722222222222222],
+          "directions": ["<"]
+        }
+      ],
+      "warnings": []
+    },
+    "single_fixed_high_case": {
+      "auc": 0.768518518518518,
+      "levels": ["a", "b", "c"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": 0.708333333333333,
+          "component_aucs": [0.708333333333333],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 0.875,
+          "component_aucs": [0.875],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 0.722222222222222,
+          "component_aucs": [0.722222222222222],
+          "directions": ["<"]
+        }
+      ],
+      "warnings": []
+    },
+    "single_fixed_low_case_percent": {
+      "auc": 23.1481481481481,
+      "levels": ["a", "b", "c"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": 29.1666666666667,
+          "component_aucs": [29.1666666666667],
+          "directions": [">"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 12.5,
+          "component_aucs": [12.5],
+          "directions": [">"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 27.7777777777778,
+          "component_aucs": [27.7777777777778],
+          "directions": [">"]
+        }
+      ],
+      "warnings": []
+    },
+    "single_partial_specificity": {
+      "auc": 0.182253703703704,
+      "levels": ["a", "b", "c"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": 0.138266666666667,
+          "component_aucs": [0.138266666666667],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 0.254933333333333,
+          "component_aucs": [0.254933333333333],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 0.153561111111111,
+          "component_aucs": [0.153561111111111],
+          "directions": ["<"]
+        }
+      ],
+      "warnings": []
+    },
+    "single_partial_sensitivity_percent": {
+      "auc": 21.637037037037,
+      "levels": ["a", "b", "c"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": 18.2816666666667,
+          "component_aucs": [18.2816666666667],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 26.365,
+          "component_aucs": [26.365],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 20.2644444444444,
+          "component_aucs": [20.2644444444444],
+          "directions": ["<"]
+        }
+      ],
+      "warnings": []
+    },
+    "single_partial_corrected_percent": {
+      "auc": 74.5624745624745,
+      "levels": ["a", "b", "c"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": 67.9487179487179,
+          "component_aucs": [67.9487179487179],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 86.2637362637363,
+          "component_aucs": [86.2637362637363],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 69.4749694749695,
+          "component_aucs": [69.4749694749695],
+          "directions": ["<"]
+        }
+      ],
+      "warnings": []
+    },
+    "single_partial_below_chance": {
+      "auc": null,
+      "levels": ["a", "b", "c"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": null,
+          "component_aucs": [null],
+          "directions": [">"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": null,
+          "component_aucs": [null],
+          "directions": [">"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": null,
+          "component_aucs": [null],
+          "directions": [">"]
+        }
+      ],
+      "warnings": ["Partial AUC correction not defined for ROC curves below the diagonal.", "Partial AUC correction not defined for ROC curves below the diagonal.", "Partial AUC correction not defined for ROC curves below the diagonal.", "Partial AUC correction not defined for ROC curves below the diagonal.", "Partial AUC correction not defined for ROC curves below the diagonal.", "Partial AUC correction not defined for ROC curves below the diagonal."]
+    },
+    "single_explicit_subset": {
+      "auc": 0.666666666666667,
+      "levels": [20, 10, 2],
+      "pairs": [
+        {
+          "classes": [20, 10],
+          "auc": 0.333333333333333,
+          "component_aucs": [0.333333333333333],
+          "directions": ["<"]
+        },
+        {
+          "classes": [20, 2],
+          "auc": 1,
+          "component_aucs": [1],
+          "directions": ["<"]
+        },
+        {
+          "classes": [10, 2],
+          "auc": 0.666666666666667,
+          "component_aucs": [0.666666666666667],
+          "directions": ["<"]
+        }
+      ],
+      "warnings": []
+    },
+    "single_numeric_natural_order": {
+      "auc": 0.768518518518518,
+      "levels": [2, 4, 10, 20],
+      "pairs": [
+        {
+          "classes": [2, 4],
+          "auc": 0.944444444444444,
+          "component_aucs": [0.944444444444444],
+          "directions": [">"]
+        },
+        {
+          "classes": [2, 10],
+          "auc": 0.666666666666667,
+          "component_aucs": [0.666666666666667],
+          "directions": [">"]
+        },
+        {
+          "classes": [2, 20],
+          "auc": 1,
+          "component_aucs": [1],
+          "directions": [">"]
+        },
+        {
+          "classes": [4, 10],
+          "auc": 0.666666666666667,
+          "component_aucs": [0.666666666666667],
+          "directions": [">"]
+        },
+        {
+          "classes": [4, 20],
+          "auc": 0.666666666666667,
+          "component_aucs": [0.666666666666667],
+          "directions": [">"]
+        },
+        {
+          "classes": [10, 20],
+          "auc": 0.666666666666667,
+          "component_aucs": [0.666666666666667],
+          "directions": ["<"]
+        }
+      ],
+      "warnings": []
+    },
+    "single_equal_medians": {
+      "auc": 0.5,
+      "levels": ["A", "B", "C"],
+      "pairs": [
+        {
+          "classes": ["A", "B"],
+          "auc": 0.5,
+          "component_aucs": [0.5],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["A", "C"],
+          "auc": 0.5,
+          "component_aucs": [0.5],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["B", "C"],
+          "auc": 0.5,
+          "component_aucs": [0.5],
+          "directions": ["<"]
+        }
+      ],
+      "warnings": []
+    },
+    "single_all_ties": {
+      "auc": 0.5,
+      "levels": ["a", "b", "c", "d"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": 0.5,
+          "component_aucs": [0.5],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 0.5,
+          "component_aucs": [0.5],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["a", "d"],
+          "auc": 0.5,
+          "component_aucs": [0.5],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 0.5,
+          "component_aucs": [0.5],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["b", "d"],
+          "auc": 0.5,
+          "component_aucs": [0.5],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["c", "d"],
+          "auc": 0.5,
+          "component_aucs": [0.5],
+          "directions": ["<"]
+        }
+      ],
+      "warnings": []
+    },
+    "single_missing_scores": {
+      "auc": 0.944444444444444,
+      "levels": ["a", "b", "c"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": 1,
+          "component_aucs": [1],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 1,
+          "component_aucs": [1],
+          "directions": ["<"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 0.833333333333333,
+          "component_aucs": [0.833333333333333],
+          "directions": [">"]
+        }
+      ],
+      "warnings": []
+    },
+    "matrix_column_order": {
+      "auc": 0.701388888888889,
+      "levels": ["b", "a", "c"],
+      "pairs": [
+        {
+          "classes": ["b", "a"],
+          "auc": 0.645833333333333,
+          "component_aucs": [0.5, 0.791666666666667],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 0.666666666666667,
+          "component_aucs": [0.388888888888889, 0.944444444444444],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 0.791666666666667,
+          "component_aucs": [0.708333333333333, 0.875],
+          "directions": [">", ">"]
+        }
+      ],
+      "warnings": []
+    },
+    "matrix_fixed_direction": {
+      "auc": 0.298611111111111,
+      "levels": ["b", "a", "c"],
+      "pairs": [
+        {
+          "classes": ["b", "a"],
+          "auc": 0.354166666666667,
+          "component_aucs": [0.5, 0.208333333333333],
+          "directions": ["<", "<"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 0.333333333333333,
+          "component_aucs": [0.611111111111111, 0.0555555555555556],
+          "directions": ["<", "<"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 0.208333333333333,
+          "component_aucs": [0.291666666666667, 0.125],
+          "directions": ["<", "<"]
+        }
+      ],
+      "warnings": []
+    },
+    "matrix_partial_corrected_sensitivity": {
+      "auc": 0.684045215177513,
+      "levels": ["b", "a", "c"],
+      "pairs": [
+        {
+          "classes": ["b", "a"],
+          "auc": 0.618264804352375,
+          "component_aucs": [0.435028248587571, 0.801501360117179],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 0.615662272441933,
+          "component_aucs": [0.260654251238055, 0.970670293645811],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 0.81820856873823,
+          "component_aucs": [0.706620108809374, 0.929797028667085],
+          "directions": [">", ">"]
+        }
+      ],
+      "warnings": []
+    },
+    "matrix_partial_specificity_percent": {
+      "auc": 30.3194560185185,
+      "levels": ["b", "a", "c"],
+      "pairs": [
+        {
+          "classes": ["b", "a"],
+          "auc": 26.7676041666667,
+          "component_aucs": [18.221875, 35.3133333333333],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 31.0622222222222,
+          "component_aucs": [16.3333333333333, 45.7911111111111],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 33.1285416666667,
+          "component_aucs": [27.4066666666667, 38.8504166666667],
+          "directions": [">", ">"]
+        }
+      ],
+      "warnings": []
+    },
+    "matrix_numeric_default": {
+      "auc": 0.981481481481482,
+      "levels": [10, 4, 2, 20],
+      "pairs": [
+        {
+          "classes": [10, 4],
+          "auc": 1,
+          "component_aucs": [1, 1],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": [10, 2],
+          "auc": 0.972222222222222,
+          "component_aucs": [0.944444444444444, 1],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": [10, 20],
+          "auc": 1,
+          "component_aucs": [1, 1],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": [4, 2],
+          "auc": 0.916666666666667,
+          "component_aucs": [0.888888888888889, 0.944444444444444],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": [4, 20],
+          "auc": 1,
+          "component_aucs": [1, 1],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": [2, 20],
+          "auc": 1,
+          "component_aucs": [1, 1],
+          "directions": [">", ">"]
+        }
+      ],
+      "warnings": []
+    },
+    "matrix_numeric_subset": {
+      "auc": 100,
+      "levels": [10, 20],
+      "pairs": [
+        {
+          "classes": [10, 20],
+          "auc": 100,
+          "component_aucs": [100, 100],
+          "directions": [">", ">"]
+        }
+      ],
+      "warnings": ["The following classes were not found in 'response': 4,2."]
+    },
+    "matrix_all_ties": {
+      "auc": 0.5,
+      "levels": ["a", "b", "c", "d"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": 0.5,
+          "component_aucs": [0.5, 0.5],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 0.5,
+          "component_aucs": [0.5, 0.5],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["a", "d"],
+          "auc": 0.5,
+          "component_aucs": [0.5, 0.5],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 0.5,
+          "component_aucs": [0.5, 0.5],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["b", "d"],
+          "auc": 0.5,
+          "component_aucs": [0.5, 0.5],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["c", "d"],
+          "auc": 0.5,
+          "component_aucs": [0.5, 0.5],
+          "directions": [">", ">"]
+        }
+      ],
+      "warnings": []
+    },
+    "matrix_missing_scores": {
+      "auc": 0.868055555555555,
+      "levels": ["a", "b", "c"],
+      "pairs": [
+        {
+          "classes": ["a", "b"],
+          "auc": 0.9375,
+          "component_aucs": [1, 0.875],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["a", "c"],
+          "auc": 0.833333333333333,
+          "component_aucs": [0.666666666666667, 1],
+          "directions": [">", ">"]
+        },
+        {
+          "classes": ["b", "c"],
+          "auc": 0.833333333333333,
+          "component_aucs": [1, 0.666666666666667],
+          "directions": [">", ">"]
+        }
+      ],
+      "warnings": []
+    },
+    "matrix_missing_and_extra_columns": {
+      "auc": 1,
+      "levels": ["c", "a"],
+      "pairs": [
+        {
+          "classes": ["c", "a"],
+          "auc": 1,
+          "component_aucs": [1, 1],
+          "directions": [">", ">"]
+        }
+      ],
+      "warnings": ["You did not provide decision values for the following classes: b.", "The following classes were not found in 'response': unknown."]
+    },
+    "matrix_two_of_four_columns": {
+      "error": "Could not find any decision values in 'predictor' matching the 'response' levels. Could not find the following classes: c,d. Check your column names!",
+      "warnings": []
+    },
+    "matrix_auto_direction_error": {
+      "error": "'direction=\"auto\"' not available for multivariate multiclass.roc",
+      "warnings": []
+    }
+  }
+}
