@@ -12,13 +12,14 @@ from scipy.special import expit
 
 from ._contrasts import _factor_contrasts
 from .categorical_imputation import augment_categorical, categorical_probabilities
+from .multilevel_binary import TwoLevelBinaryOptions, _draw_binary_for_chain
 from .multilevel_imputation import TwoLevelOptions, _draw_for_chain
 
 
 PassiveImputation = Callable[[NDArray[np.float64]], ArrayLike]
 ImputationMethod = str | PassiveImputation | None
 _CATEGORICAL_METHODS = {"polyreg", "polr"}
-_TWO_LEVEL_METHODS = {"2l.pan", "2l.norm"}
+_TWO_LEVEL_METHODS = {"2l.pan", "2l.norm", "2l.bin"}
 _MNAR_METHODS = {"mnar.norm", "mnar.logreg"}
 _METHODS = (
     {"pmm", "norm", "norm.predict", "mean", "logreg"}
@@ -126,15 +127,16 @@ def _predictor_codes(raw, predictor_matrix, multilevel):
 
 
 def _two_level_settings(methods, options):
-    multilevel = {column: TwoLevelOptions() for column, method in enumerate(methods)
+    multilevel = {column: (TwoLevelBinaryOptions() if method == "2l.bin" else TwoLevelOptions())
+                  for column, method in enumerate(methods)
                   if isinstance(method, str) and method in _TWO_LEVEL_METHODS}
     if options is not None:
         if not isinstance(options, Mapping):
-            raise ValueError("two_level_options must map the two-level outcome columns to TwoLevelOptions")
+            raise ValueError("two_level_options must map two-level outcome columns to sampler settings")
         for column, settings in options.items():
             column = _positive_integer(column, "two_level_options column", 0)
-            if column not in multilevel or not isinstance(settings, TwoLevelOptions):
-                raise ValueError("two_level_options must map the two-level outcome columns to TwoLevelOptions")
+            if column not in multilevel or not isinstance(settings, type(multilevel[column])):
+                raise ValueError("two_level_options must match the two-level method selected for each column")
             multilevel[column] = settings
     return multilevel
 
@@ -352,6 +354,10 @@ def _visit_column(
         repeats = [contrasts[j].shape[1] if j in contrasts else 1 for j in np.flatnonzero(chosen)]
         types = np.r_[-2, np.repeat(codes[chosen], np.asarray(repeats, dtype=int))]
         predictors = np.column_stack((raw[:, codes == -2], x))
+        if method == "2l.bin":
+            return _draw_binary_for_chain(
+                raw[:, column], predictors, types, train, target, options, rng,
+            )
         return _draw_for_chain(
             raw[:, column], predictors, types, train, target, method, options, rng,
         )
@@ -379,7 +385,7 @@ def mice_impute(
     methods: Sequence[ImputationMethod] | None = None,
     category_levels: Mapping[int, Sequence[float]] | None = None,
     predictor_matrix: ArrayLike | None = None,
-    two_level_options: Mapping[int, TwoLevelOptions] | None = None,
+    two_level_options: Mapping[int, TwoLevelOptions | TwoLevelBinaryOptions] | None = None,
     mnar_offsets: Mapping[int, ArrayLike | PassiveImputation] | None = None,
     visit_sequence: Sequence[int] | None = None,
     where: ArrayLike | None = None,
@@ -401,7 +407,7 @@ def mice_impute(
     Category predictors use treatment contrasts or orthogonal polynomials for
     ``"polr"`` columns. A callable passive method receives the current data and
     returns one value per row. Predictor rows index outcomes and columns index
-    input variables. Rows for ``"2l.pan"`` and ``"2l.norm"`` require cluster code
+    input variables. Rows for ``"2l.pan"``, ``"2l.norm"``, and ``"2l.bin"`` require cluster code
     -2 and use the effect codes of ``impute_two_level_normal``. Inner sampler
     settings can be supplied per outcome in ``two_level_options``. For
     ``mnar.norm`` and ``mnar.logreg``, provide a sensitivity offset for the
