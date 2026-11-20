@@ -1,0 +1,78 @@
+[
+  {
+    "id": "binding_integer_bounds",
+    "kind": "crossing",
+    "sample_sizes": [12, 24, 36],
+    "lower": [-1, 0, 11],
+    "upper": [5, 9, 12],
+    "probabilities": [0.025, 0.1, 0.2, 0.5, 0.85]
+  },
+  {
+    "id": "nonbinding_lower",
+    "kind": "crossing",
+    "sample_sizes": [12, 24, 36],
+    "lower": [-1, 0, 11],
+    "upper": [5, 9, 12],
+    "probabilities": [0.1, 0.2, 0.4],
+    "respect_lower": false
+  },
+  {
+    "id": "conditional_future_counts",
+    "kind": "conditional",
+    "sample_sizes": [12, 24, 36, 50],
+    "lower": [-1, 2, 6, 10],
+    "upper": [7, 10, 14, 18],
+    "probabilities": [0.1, 0.2, 0.4],
+    "look": 0,
+    "successes": 2
+  },
+  {
+    "id": "conditional_after_crossing",
+    "kind": "conditional",
+    "sample_sizes": [12, 24, 36, 50],
+    "lower": [-1, 2, 6, 10],
+    "upper": [7, 10, 14, 18],
+    "probabilities": [0.1, 0.2, 0.4],
+    "look": 0,
+    "successes": 7,
+    "respect_lower": false
+  },
+  {
+    "id": "exclusive_selective_harm",
+    "kind": "harm",
+    "sample_sizes": [18, 28, 44, 60],
+    "efficacy": [3, 7, 13, 23],
+    "futility": [12, 16, 25, 31],
+    "harm": [16, 18, 27, 34],
+    "test_futility": [true, true, false, true],
+    "test_harm": [false, true, true, true],
+    "probabilities": [0.2, 0.4, 0.55, 0.7]
+  },
+  {
+    "id": "hsd_spending_efficacy",
+    "kind": "calibration",
+    "sample_sizes": [25, 50, 80],
+    "null_probability": 0.5,
+    "options": {"direction": "lower"}
+  },
+  {
+    "id": "ldof_spending_efficacy",
+    "kind": "calibration",
+    "sample_sizes": [20, 40, 55, 76],
+    "null_probability": 0.6,
+    "options": {"direction": "lower", "alpha": 0.04, "spending": "ldof"}
+  },
+  {
+    "id": "partial_spending_efficacy",
+    "kind": "calibration",
+    "sample_sizes": [25, 50, 72],
+    "null_probability": 0.6,
+    "options": {"direction": "upper", "alpha": 0.03, "parameter": 0, "spending_times": [0.25, 0.5, 0.9]}
+  },
+  {"id": "default_sprt", "kind": "sprt"},
+  {
+    "id": "truncated_sprt",
+    "kind": "sprt",
+    "options": {"p0": 0.2, "p1": 0.45, "alpha": 0.05, "beta": 0.2, "min_sample_size": 2, "max_sample_size": 22}
+  }
+]
