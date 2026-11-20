@@ -19,7 +19,11 @@ PassiveImputation = Callable[[NDArray[np.float64]], ArrayLike]
 ImputationMethod = str | PassiveImputation | None
 _CATEGORICAL_METHODS = {"polyreg", "polr"}
 _TWO_LEVEL_METHODS = {"2l.pan", "2l.norm"}
-_METHODS = {"pmm", "norm", "norm.predict", "mean", "logreg"} | _CATEGORICAL_METHODS | _TWO_LEVEL_METHODS
+_MNAR_METHODS = {"mnar.norm", "mnar.logreg"}
+_METHODS = (
+    {"pmm", "norm", "norm.predict", "mean", "logreg"}
+    | _CATEGORICAL_METHODS | _TWO_LEVEL_METHODS | _MNAR_METHODS
+)
 
 
 @dataclass(frozen=True)
@@ -135,6 +139,29 @@ def _two_level_settings(methods, options):
     return multilevel
 
 
+def _mnar_settings(methods, offsets, n_rows):
+    columns = {column for column, method in enumerate(methods)
+               if isinstance(method, str) and method in _MNAR_METHODS}
+    offsets = {} if offsets is None else offsets
+    if not isinstance(offsets, Mapping):
+        raise ValueError("mnar_offsets must map MNAR outcome columns to sensitivity offsets")
+    for index in offsets:
+        _positive_integer(index, "mnar_offsets column", 0)
+    if set(offsets) != columns:
+        raise ValueError("mnar_offsets must specify each mnar.norm or mnar.logreg column")
+    settings = {}
+    for column, value in offsets.items():
+        if callable(value):
+            settings[column] = value
+            continue
+        array = np.asarray(value)
+        if (array.shape not in ((), (n_rows,)) or array.dtype.kind not in "buif"
+                or not np.isfinite(array).all()):
+            raise ValueError("each MNAR offset must be a finite scalar, a finite row vector, or a callable")
+        settings[column] = array.astype(float)
+    return settings
+
+
 def _encode_predictors(current, chosen, levels, contrasts):
     if not levels:
         return current[:, chosen]
@@ -209,7 +236,7 @@ def _pmm_donors(observed, predicted_observed, predicted_target, donors, rng):
     return draws
 
 
-def _continuous_draw(method, design, y, train, target, donors, match_type, rng):
+def _continuous_draw(method, design, y, train, target, donors, match_type, rng, offset=0):
     observed_design = design[train]
     coef, triangular, residual = _normal_fit(observed_design, y)
     target_design = design[target]
@@ -221,14 +248,14 @@ def _continuous_draw(method, design, y, train, target, donors, match_type, rng):
     df = max(1, len(y) - len(coef))
     sigma = np.linalg.norm(residual) / np.sqrt(rng.chisquare(df))
     draw = coef + sigma * solve_triangular(triangular, rng.standard_normal(len(coef)))
-    if method == "norm":
-        return target_design @ draw + sigma * rng.standard_normal(target.sum())
+    if method in ("norm", "mnar.norm"):
+        return target_design @ draw + offset + sigma * rng.standard_normal(target.sum())
 
     donor_coef = draw if match_type == 2 else coef
     return _pmm_donors(y, observed_design @ donor_coef, target_design @ draw, donors, rng)
 
 
-def _logistic_draw(design, y, train, target, unignored, rng):
+def _logistic_draw(design, y, train, target, unignored, rng, offset=0):
     if len(np.unique(y)) != 2 or not np.all((y == 0) | (y == 1)):
         raise ValueError("logreg requires both observed binary classes coded 0 and 1")
     x, response, case_weights = augment_categorical(
@@ -247,7 +274,7 @@ def _logistic_draw(design, y, train, target, unignored, rng):
             draw = coefficients + solve_triangular(
                 factor.T, rng.standard_normal(len(coefficients)), lower=False,
             )
-            probabilities = expit(design[target] @ draw)
+            probabilities = expit(design[target] @ draw + offset)
             return rng.random(len(probabilities)) < probabilities
         loss = case_weights @ np.logaddexp(0, -signed * eta)
         for discount in 0.5 ** np.arange(30):
@@ -261,15 +288,15 @@ def _logistic_draw(design, y, train, target, unignored, rng):
     raise ValueError("logreg could not fit a finite logistic model")
 
 
-def _passive_values(function, data, target):
+def _callback_values(function, data, target, name):
     readonly = data.view()
     readonly.flags.writeable = False
     values = np.asarray(function(readonly))
     if values.shape != (len(data),) or values.dtype.kind not in "buif":
-        raise ValueError("passive methods must return one numeric value per row")
+        raise ValueError(f"{name} must return one numeric value per row")
     imputed = values[target].astype(float)
     if not np.isfinite(imputed).all():
-        raise ValueError("passive method returned missing or infinite values at target rows")
+        raise ValueError(f"{name} returned missing or infinite values at target rows")
     return imputed
 
 
@@ -296,7 +323,9 @@ def _initialize(raw, methods, requested, visit, ignore, initial, rng):
         for column in dict.fromkeys(visit):
             if callable(methods[column]):
                 targets = requested[:, column]
-                latest[targets, column] = _passive_values(methods[column], data, targets)
+                latest[targets, column] = _callback_values(
+                    methods[column], data, targets, "passive method",
+                )
                 missing_targets = targets & missing[:, column]
                 data[missing_targets, column] = latest[missing_targets, column]
     return data, latest
@@ -307,7 +336,7 @@ def _visit_column(
     donors, match_type, rng,
 ):
     if callable(method):
-        return _passive_values(method, current, target)
+        return _callback_values(method, current, target, "passive method")
     chosen = codes > 0
     available = np.isfinite(current[:, chosen]).all(axis=1)
     if np.any(target & ~available):
@@ -319,7 +348,7 @@ def _visit_column(
     if method == "mean":
         return np.full(target.sum(), y.mean())
     x = _encode_predictors(current, chosen, levels, contrasts)
-    if options is not None:
+    if method in _TWO_LEVEL_METHODS:
         repeats = [contrasts[j].shape[1] if j in contrasts else 1 for j in np.flatnonzero(chosen)]
         types = np.r_[-2, np.repeat(codes[chosen], np.asarray(repeats, dtype=int))]
         predictors = np.column_stack((raw[:, codes == -2], x))
@@ -327,15 +356,21 @@ def _visit_column(
             raw[:, column], predictors, types, train, target, method, options, rng,
         )
     design = _design(x, train)
-    if method == "logreg":
-        return _logistic_draw(design, y, train, target, available & ~ignore, rng)
+    offset = 0
+    if method in _MNAR_METHODS:
+        if callable(options):
+            offset = _callback_values(options, current, target, "MNAR offset callable")
+        else:
+            offset = options[target] if options.ndim else options
+    if method in ("logreg", "mnar.logreg"):
+        return _logistic_draw(design, y, train, target, available & ~ignore, rng, offset)
     if method in _CATEGORICAL_METHODS:
         classes, probabilities = categorical_probabilities(
             method, design, y, train, target, available & ~ignore, levels[column],
         )
         cumulative = np.cumsum(probabilities, axis=1)
         return classes[(rng.random(len(probabilities))[:, None] > cumulative[:, :-1]).sum(axis=1)]
-    return _continuous_draw(method, design, y, train, target, donors, match_type, rng)
+    return _continuous_draw(method, design, y, train, target, donors, match_type, rng, offset)
 
 
 def mice_impute(
@@ -345,6 +380,7 @@ def mice_impute(
     category_levels: Mapping[int, Sequence[float]] | None = None,
     predictor_matrix: ArrayLike | None = None,
     two_level_options: Mapping[int, TwoLevelOptions] | None = None,
+    mnar_offsets: Mapping[int, ArrayLike | PassiveImputation] | None = None,
     visit_sequence: Sequence[int] | None = None,
     where: ArrayLike | None = None,
     ignore: ArrayLike | None = None,
@@ -367,8 +403,10 @@ def mice_impute(
     returns one value per row. Predictor rows index outcomes and columns index
     input variables. Rows for ``"2l.pan"`` and ``"2l.norm"`` require cluster code
     -2 and use the effect codes of ``impute_two_level_normal``. Inner sampler
-    settings can be supplied per outcome in ``two_level_options``. Column
-    and visit indices are zero-based.
+    settings can be supplied per outcome in ``two_level_options``. For
+    ``mnar.norm`` and ``mnar.logreg``, provide a sensitivity offset for the
+    outcome in ``mnar_offsets``. Offsets can be a scalar, a row vector, or a
+    callable of the current data. Column and visit indices are zero-based.
     """
     raw = _numeric_matrix(data, "data")
     n_rows, n_columns = raw.shape
@@ -376,6 +414,7 @@ def mice_impute(
     levels = _factor_levels(raw, methods, category_levels)
     multilevel = _two_level_settings(methods, two_level_options)
     predictors = _predictor_codes(raw, predictor_matrix, multilevel)
+    options = multilevel | _mnar_settings(methods, mnar_offsets, n_rows)
     contrasts = {
         column: _factor_contrasts(len(labels), ordered=methods[column] == "polr")
         for column, labels in levels.items() if len(labels)
@@ -421,7 +460,7 @@ def mice_impute(
                 try:
                     values = _visit_column(
                         raw, current, column, predictors[column], methods[column], target,
-                        excluded, levels, contrasts, multilevel.get(column), donors, match_type, rng,
+                        excluded, levels, contrasts, options.get(column), donors, match_type, rng,
                     )
                     if not np.isfinite(values).all():
                         raise ValueError("imputed values are not finite")
