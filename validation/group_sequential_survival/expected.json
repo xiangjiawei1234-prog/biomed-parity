@@ -1,0 +1,418 @@
+{
+  "versions": {
+    "R": "4.5.3",
+    "gsDesign": "3.11.0"
+  },
+  "cases": [
+    {
+      "id": "piecewise_stratified_calendar",
+      "counts": [
+        {
+          "control_events": [0.114964699463592, 0.108358164005493],
+          "experimental_events": [0.116663224948457, 0.110211192175706],
+          "control_enrollment": [2, 2.8],
+          "experimental_enrollment": [3, 4.2]
+        },
+        {
+          "control_events": [4.30842155217972, 4.39448908979352],
+          "experimental_events": [4.53594583503675, 4.68850807896982],
+          "control_enrollment": [18, 26.4],
+          "experimental_enrollment": [27, 39.6]
+        },
+        {
+          "control_events": [14.7060017197554, 17.3655595521243],
+          "experimental_events": [15.8016500004418, 19.1972829314528],
+          "control_enrollment": [41.2, 61.2],
+          "experimental_enrollment": [61.8, 91.8]
+        },
+        {
+          "control_events": [25.8182752857547, 33.296218624419],
+          "experimental_events": [28.0916577825924, 37.4762787633207],
+          "control_enrollment": [60.4, 90],
+          "experimental_enrollment": [90.6, 135]
+        },
+        {
+          "control_events": [39.6354658208383, 59.5334302926267],
+          "experimental_events": [45.0544132968524, 69.6704937065165],
+          "control_enrollment": [60.4, 90],
+          "experimental_enrollment": [90.6, 135]
+        },
+        {
+          "control_events": [45.4994160003394, 70.3040503646176],
+          "experimental_events": [54.3078405245957, 84.6765479427239],
+          "control_enrollment": [60.4, 90],
+          "experimental_enrollment": [90.6, 135]
+        }
+      ],
+      "event_time": 19.8143024584104
+    },
+    {
+      "id": "fixed_lachin_foulkes",
+      "counts": {
+        "control_events": 91.3506748089242,
+        "experimental_events": 69.1324904561316,
+        "control_enrollment": 125.224593591,
+        "experimental_enrollment": 125.224593591
+      },
+      "analysis_time": 18,
+      "minimum_followup": 6,
+      "power": 0.9,
+      "accrual_durations": 12,
+      "accrual_rates": [
+        [20.8707655985]
+      ]
+    },
+    {
+      "id": "fixed_stratified_lachin_foulkes",
+      "counts": {
+        "control_events": [89.3088528195468, 139.359592818422],
+        "experimental_events": [132.449323555926, 247.847820732725],
+        "control_enrollment": [133.946382251402, 199.172446652084],
+        "experimental_enrollment": [227.708849827383, 338.593159308543]
+      },
+      "analysis_time": 23,
+      "minimum_followup": 8,
+      "power": 0.85,
+      "accrual_durations": [4, 11],
+      "accrual_rates": [
+        [12.5793124201316, 22.0137967352304],
+        [28.3034529452962, 40.8827653654278]
+      ]
+    },
+    {
+      "id": "fixed_schoenfeld",
+      "counts": {
+        "control_events": 107.051450305209,
+        "experimental_events": 128.870328113933,
+        "control_enrollment": 145.758185405778,
+        "experimental_enrollment": 218.637278108668
+      },
+      "analysis_time": 23,
+      "minimum_followup": 5,
+      "power": 0.9,
+      "accrual_durations": [4, 14],
+      "accrual_rates": [
+        [6.07325772524076],
+        [24.2930309009631]
+      ]
+    },
+    {
+      "id": "fixed_freedman_power",
+      "counts": {
+        "control_events": 178.903503412541,
+        "experimental_events": 262.523446096113,
+        "control_enrollment": 222.222222222222,
+        "experimental_enrollment": 377.777777777778
+      },
+      "analysis_time": 26,
+      "minimum_followup": 6,
+      "power": 0.963483562826063,
+      "accrual_durations": 20,
+      "accrual_rates": [
+        [30]
+      ]
+    },
+    {
+      "id": "fixed_bernstein_lagakos",
+      "counts": {
+        "control_events": 209.230742156174,
+        "experimental_events": 389.762135832125,
+        "control_enrollment": 286.815994605994,
+        "experimental_enrollment": 573.631989211987
+      },
+      "analysis_time": 18,
+      "minimum_followup": 6,
+      "power": 0.9,
+      "accrual_durations": 12,
+      "accrual_rates": [
+        [71.7039986514984]
+      ]
+    },
+    {
+      "id": "fixed_accrual_duration",
+      "counts": {
+        "control_events": 149.020818594812,
+        "experimental_events": 189.60635821358,
+        "control_enrollment": 192.844502552915,
+        "experimental_enrollment": 289.266753829372
+      },
+      "analysis_time": 22.0703752127429,
+      "minimum_followup": 6,
+      "power": 0.9,
+      "accrual_durations": 16.0703752127429,
+      "accrual_rates": [
+        [30]
+      ]
+    },
+    {
+      "id": "fixed_followup_duration",
+      "counts": {
+        "control_events": 140.256632639915,
+        "experimental_events": 186.835555624561,
+        "control_enrollment": 160.000000000024,
+        "experimental_enrollment": 240.000000000036
+      },
+      "analysis_time": 29.9581478864093,
+      "minimum_followup": 9.95814788640933,
+      "power": 0.9,
+      "accrual_durations": 20,
+      "accrual_rates": [
+        [20]
+      ]
+    },
+    {
+      "id": "sequential_single_look",
+      "counts": {
+        "control_events": [
+          [193.215783685544]
+        ],
+        "experimental_events": [
+          [166.779601049295]
+        ],
+        "control_enrollment": [
+          [240]
+        ],
+        "experimental_enrollment": [
+          [240]
+        ]
+      },
+      "analysis_times": 26,
+      "minimum_followup": 6,
+      "power": 0.92273766937209,
+      "accrual_rates": [
+        [24]
+      ],
+      "accrual_durations": 20,
+      "event_targets": 359.99538473484,
+      "fixed_events": 359.99538473484,
+      "upper_boundaries": 1.95996398454005,
+      "lower_boundaries": null,
+      "alternative_effect": 3.38369393148491
+    },
+    {
+      "id": "sequential_efficacy",
+      "counts": {
+        "control_events": [
+          [69.7125038121809],
+          [139.500341401005],
+          [204.042218884524]
+        ],
+        "experimental_events": [
+          [55.4720386505545],
+          [114.662214510748],
+          [175.304879487398]
+        ],
+        "control_enrollment": [
+          [168.19483355277],
+          [264.367032472103],
+          [275.540338227421]
+        ],
+        "experimental_enrollment": [
+          [168.19483355277],
+          [264.367032472103],
+          [275.540338227421]
+        ]
+      },
+      "analysis_times": [13.5069697740559, 19.3241578935897, 26],
+      "minimum_followup": 6,
+      "power": 0.899999999999098,
+      "accrual_rates": [
+        [14.6954847054625],
+        [33.0648405872905]
+      ],
+      "accrual_durations": [6, 14],
+      "event_targets": [125.184542462734, 254.162555909188, 379.347098371922],
+      "fixed_events": 373.636382523187,
+      "upper_boundaries": [3.01624662715535, 2.54012170261152, 1.99957241054514],
+      "lower_boundaries": null,
+      "alternative_effect": 3.26619352291104
+    },
+    {
+      "id": "sequential_symmetric",
+      "counts": {
+        "control_events": [
+          [38.7543925337037],
+          [66.6793291277408],
+          [92.6478483096911]
+        ],
+        "experimental_events": [
+          [26.350413675404],
+          [47.2540817430143],
+          [70.1141672182277]
+        ],
+        "control_enrollment": [
+          [99.4169167533857],
+          [127.002774483373],
+          [127.002774483373]
+        ],
+        "experimental_enrollment": [
+          [99.4169167533857],
+          [127.002774483373],
+          [127.002774483373]
+        ]
+      },
+      "analysis_times": [9.39351920376211, 13.1267889164082, 18],
+      "minimum_followup": 6,
+      "power": 0.900000000001443,
+      "accrual_rates": [
+        [21.1671290805621]
+      ],
+      "accrual_durations": 12,
+      "event_targets": [65.1048062111675, 113.933410869543, 162.762015527919],
+      "fixed_events": 160.483165265056,
+      "upper_boundaries": [3.35686935609099, 2.44454188159943, 2.00053897939916],
+      "lower_boundaries": [-3.35686935609099, -2.44454188159943, -2.00053897939916],
+      "alternative_effect": 3.26444907593897
+    },
+    {
+      "id": "sequential_binding",
+      "counts": {
+        "control_events": [
+          [30.1227761307958],
+          [59.1832805002941],
+          [95.3808590115681]
+        ],
+        "experimental_events": [
+          [20.1462192276745],
+          [41.3547102171043],
+          [72.1824588499996]
+        ],
+        "control_enrollment": [
+          [86.9057323030714],
+          [129.641415082172],
+          [130.749218120907]
+        ],
+        "experimental_enrollment": [
+          [86.9057323030714],
+          [129.641415082172],
+          [130.749218120907]
+        ]
+      },
+      "analysis_times": [7.9760996098079, 11.8983272201862, 18],
+      "minimum_followup": 6,
+      "power": 0.900000000427971,
+      "accrual_rates": [
+        [21.7915363534845]
+      ],
+      "accrual_durations": 12,
+      "event_targets": [50.2689953584703, 100.537990716941, 167.563317861568],
+      "fixed_events": 160.483165265056,
+      "upper_boundaries": [3.06669954932178, 2.65488444396925, 1.96381991225737],
+      "lower_boundaries": [-0.41599122537774, 0.675743950370283, 1.96381991225737],
+      "alternative_effect": 3.31224798159929
+    },
+    {
+      "id": "sequential_stratified_nonbinding",
+      "counts": {
+        "control_events": [
+          [16.8087064584098, 30.3066400250976],
+          [35.0516176009368, 59.0745957664701],
+          [53.2490808690375, 83.0910933640399]
+        ],
+        "experimental_events": [
+          [21.1068056091706, 38.8448550094024],
+          [45.2686026433835, 77.9836529778316],
+          [72.419783609169, 115.685518224664]
+        ],
+        "control_enrollment": [
+          [52.2172929759574, 78.8201440146933],
+          [79.8635467307091, 118.753621660446],
+          [79.863546730709, 118.753621660446]
+        ],
+        "experimental_enrollment": [
+          [88.7693980591276, 133.994244824979],
+          [135.768029442205, 201.881156822758],
+          [135.768029442205, 201.881156822758]
+        ]
+      },
+      "analysis_times": [10.5767343008517, 15.4832932559575, 23],
+      "minimum_followup": 8,
+      "power": 0.90000000134388,
+      "accrual_rates": [
+        [7.5002287364492, 13.1254002887861],
+        [16.8755146570107, 24.3757433934599]
+      ],
+      "accrual_durations": [4, 11],
+      "event_targets": [107.06700710208, 217.37846896483, 324.44547606691],
+      "fixed_events": 295.868095276856,
+      "upper_boundaries": [2.84575187407153, 2.45417693257011, 2.02508872339229],
+      "lower_boundaries": [-0.13809515415916, 1.03064394156499, 2.02508872339229],
+      "alternative_effect": 3.39445380581876
+    },
+    {
+      "id": "sequential_accrual_duration",
+      "counts": {
+        "control_events": [
+          [53.1403528352561],
+          [105.70825721964],
+          [153.467835416786]
+        ],
+        "experimental_events": [
+          [62.1628367926162],
+          [128.392158087523],
+          [195.935769519132]
+        ],
+        "control_enrollment": [
+          [124.306636736517],
+          [192.641000846106],
+          [197.30622725674]
+        ],
+        "experimental_enrollment": [
+          [186.459955104776],
+          [288.961501269159],
+          [295.95934088511]
+        ]
+      },
+      "analysis_times": [12.8588863947098, 18.5534167371755, 24.9421856047283],
+      "minimum_followup": 6,
+      "power": 0.899999999998775,
+      "accrual_rates": [
+        [15],
+        [30]
+      ],
+      "accrual_durations": [5, 13.9421856047283],
+      "event_targets": [115.303189627872, 234.100415305073, 349.403604932945],
+      "fixed_events": 344.143660378968,
+      "upper_boundaries": [3.01624662715535, 2.54012170261152, 1.99957241054514],
+      "lower_boundaries": null,
+      "alternative_effect": 3.2661935229092
+    },
+    {
+      "id": "sequential_followup_duration",
+      "counts": {
+        "control_events": [
+          [52.05699167483],
+          [102.962439364788],
+          [146.300030319848]
+        ],
+        "experimental_events": [
+          [61.8375049781678],
+          [128.277902325232],
+          [198.834808022781]
+        ],
+        "control_enrollment": [
+          [106.410440020572],
+          [160],
+          [160]
+        ],
+        "experimental_enrollment": [
+          [159.615660030858],
+          [240],
+          [240]
+        ]
+      },
+      "analysis_times": [13.3013050025715, 20.7748826232089, 33.1213201155139],
+      "minimum_followup": 13.1213201155139,
+      "power": 0.899999999998724,
+      "accrual_rates": [
+        [20]
+      ],
+      "accrual_durations": 20,
+      "event_targets": [113.894496653067, 231.240341689561, 345.134838342629],
+      "fixed_events": 339.939156078116,
+      "upper_boundaries": [3.01624662715535, 2.54012170261152, 1.99957241054514],
+      "lower_boundaries": null,
+      "alternative_effect": 3.26619352290891
+    }
+  ]
+}
