@@ -1,0 +1,51 @@
+[
+  {"id": "hsd_final", "information": [0.33, 0.67, 1], "z": [1.5, 1.9, 2.2]},
+  {"id": "earlier_signal_stronger", "information": [0.25, 0.5], "z": [2.95, 0.8]},
+  {
+    "id": "ldof_actual_information",
+    "information": [100, 160],
+    "z": [1.5, 2],
+    "options": {"spending": "ldof", "planned_final_information": 218.5515}
+  },
+  {
+    "id": "ldof_independent_spending_clock",
+    "information": [100, 160, 190, 230],
+    "z": [1.5, 2, 2.5, 3],
+    "options": {"spending": "ldof", "spending_times": [0.5, 0.65, 0.8, 1], "planned_final_information": 218.5515}
+  },
+  {
+    "id": "hsd_extended_final",
+    "information": [110, 176, 258],
+    "z": [1.1, 1.4, 1.9],
+    "options": {"parameter": 1, "planned_final_information": 220}
+  },
+  {
+    "id": "custom_minimum",
+    "information": [1],
+    "z": [7],
+    "options": {"search_interval": [0.00002, 0.99]}
+  },
+  {
+    "id": "custom_maximum",
+    "information": [0.01],
+    "z": [0.8],
+    "options": {"search_interval": [0.00002, 0.99]}
+  },
+  {"id": "single_negative", "information": [1], "z": [-1.4]},
+  {
+    "id": "one_sided_intervals",
+    "kind": "interval",
+    "fractions": [0.3, 0.6, 1],
+    "estimates": [0.30, 0.18, 0.26],
+    "standard_errors": [0.13, 0.09, 0.075],
+    "options": {"alpha": 0.02, "parameter": -2}
+  },
+  {
+    "id": "symmetric_intervals",
+    "kind": "interval",
+    "fractions": [0.4, 0.7, 1],
+    "estimates": [0.30, 0.18, 0.26],
+    "standard_errors": [0.13, 0.09, 0.075],
+    "options": {"spending": "ldof", "parameter": 1.3, "alternative": "two-sided"}
+  }
+]

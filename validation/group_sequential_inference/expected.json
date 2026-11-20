@@ -1,0 +1,58 @@
+{
+  "versions": {
+    "R": "4.5.3",
+    "gsDesign": "3.11.0"
+  },
+  "cases": [
+    {
+      "id": "hsd_final",
+      "repeated": [0.9999, 0.124960964008137, 0.0154579903463671],
+      "sequential": 0.0154579903463671
+    },
+    {
+      "id": "earlier_signal_stronger",
+      "repeated": [0.0495602306897877, 0.9999],
+      "sequential": 0.0495602306897877
+    },
+    {
+      "id": "ldof_actual_information",
+      "repeated": [0.215021374889957, 0.0536337459744841],
+      "sequential": 0.0536337104451555
+    },
+    {
+      "id": "ldof_independent_spending_clock",
+      "repeated": [0.194939426108241, 0.0780579618749759, 0.0159163238165183, 0.0014526782880161],
+      "sequential": 0.00145268426569788
+    },
+    {
+      "id": "hsd_extended_final",
+      "repeated": [0.217958087909378, 0.142727377977743, 0.0776434687046672],
+      "sequential": 0.0776434687046672
+    },
+    {
+      "id": "custom_minimum",
+      "repeated": 2e-05,
+      "sequential": 2e-05
+    },
+    {
+      "id": "custom_maximum",
+      "repeated": 0.99,
+      "sequential": 0.99
+    },
+    {
+      "id": "single_negative",
+      "repeated": 0.919243340766229,
+      "sequential": 0.919243340766229
+    },
+    {
+      "id": "one_sided_intervals",
+      "lower": [-0.0636989222004699, -0.0488717710516893, 0.0991286220461402],
+      "upper": null
+    },
+    {
+      "id": "symmetric_intervals",
+      "lower": [-0.207193858401808, -0.0537460716630418, 0.111624492951074],
+      "upper": [0.807193858401808, 0.413746071663042, 0.408375507048926]
+    }
+  ]
+}
