@@ -50,6 +50,8 @@ class MetaMultilevelResult:
     confidence_level: float
     _design: Array = field(repr=False)
     _tested: NDArray[np.intp] = field(repr=False)
+    _random_variance: Array | None = field(default=None, repr=False)
+    _estimated_variances: int | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -431,10 +433,11 @@ def meta_multilevel(
             ).items()
         }
     log_likelihood = -nll - 0.5 * len(objective.y) * (np.log(2 * np.pi) + np.log(scale))
+    random_variance = (fitted * scale) @ np.diagonal(components, axis1=1, axis2=2)
     return MetaMultilevelResult(
         beta, inference, dict(zip(names, map(float, fitted * scale), strict=True)), intervals,
         marginal_scaled * scale, residual, float(log_likelihood), heterogeneity, omnibus,
-        method, float(confidence_level), design, tested,
+        method, float(confidence_level), design, tested, random_variance, int(free.sum()),
     )
 
 

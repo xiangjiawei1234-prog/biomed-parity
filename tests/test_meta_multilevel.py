@@ -63,7 +63,7 @@ def _check_fixture(case, reference):
     fit = meta_multilevel(data["effects"], V, **options)
     actual = asdict(fit)
     actual.update(actual.pop("inference"))
-    exclude = {"method", "confidence_level", "_design", "_tested"}
+    exclude = {"method", "confidence_level", "_design", "_tested", "_random_variance", "_estimated_variances"}
     if not case.get("profile"):
         exclude.add("variance_intervals")
     actual = {name: value for name, value in actual.items() if name not in exclude}
