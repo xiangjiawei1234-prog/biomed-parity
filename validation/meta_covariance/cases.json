@@ -1,0 +1,68 @@
+[
+  {
+    "id": "independent-studies",
+    "vi": [0.04, 0.09, 0.16], "cluster": [3, 1, 9]
+  },
+  {
+    "id": "instruments-with-independent-subgroups",
+    "vi": [0.04, 0.13, 0.09, 0.16, 0.06, 0.035], "cluster": [2, 1, 1, 2, 1, 2],
+    "subgroup": ["a", "c", "b", "a", "c", "b"],
+    "obs": ["A", "A", "C", "B", "B", "C"], "rho": 0.52
+  },
+  {
+    "id": "outcomes-and-instruments",
+    "vi": [0.04, 0.13, 0.09, 0.16], "cluster": [1, 1, 1, 1],
+    "type": ["mood", "mood", "anxiety", "quality"], "obs": ["one", "two", "one", "three"],
+    "rho": [0.61, 0.29]
+  },
+  {
+    "id": "named-correlation",
+    "vi": [0.04, 0.13, 0.09, 0.16, 0.06, 0.035], "cluster": [1, 1, 1, 1, 2, 2],
+    "type": ["sleep", "mood", "pain", "function", "function", "mood"],
+    "rho": {"levels": ["pain", "function", "sleep", "mood"],
+            "matrix": [[1, 0.35, 0.2, 0.15], [0.35, 1, 0.3, 0.3],
+                       [0.2, 0.3, 1, 0.22], [0.15, 0.3, 0.22, 1]]}
+  },
+  {
+    "id": "fractional-time",
+    "vi": [0.04, 0.13, 0.09, 0.16], "cluster": [1, 1, 1, 1],
+    "time1": [0, 0.5, 1.9, 6], "phi": 0.78
+  },
+  {
+    "id": "negative-lag-with-integer-time",
+    "vi": [0.04, 0.13, 0.09, 0.16], "cluster": [1, 1, 1, 1],
+    "time1": [0, 1, 4, 6], "phi": -0.43
+  },
+  {
+    "id": "weighted-shared-arms",
+    "vi": [0.04, 0.13, 0.09, 0.16, 0.2], "cluster": [1, 1, 1, 2, 2],
+    "grp1": ["Tx1", "Tx2", "Ctl", "B", "D"], "grp2": ["Ctl", "Ctl", "Tx3", "C", "E"],
+    "w1": [20, 36, 42, 45, 46], "w2": [42, 42, 11, 19, 16],
+    "time1": [1, 3, 5, 1, 1], "time2": [2, 3, 4, 1, 1], "phi": 0.7
+  },
+  {
+    "id": "before-after-same-arm",
+    "vi": [0.04, 0.13, 0.09, 0.16], "cluster": [1, 1, 1, 1],
+    "grp1": ["Tx1", "Tx1", "Tx1", "Ctl"], "grp2": ["Tx1", "Tx1", "Tx1", "Ctl"],
+    "time1": [2, 4, 6, 3], "time2": [0, 2, 2, 0], "phi": 0.72,
+    "obs": ["one", "one", "two", "two"], "rho": 0.5
+  },
+  {
+    "id": "per-study-correlation-data",
+    "vi": [0.04, 0.13, 0.09, 0.16, 0.06, 0.035], "cluster": [1, 1, 2, 2, 2, 3],
+    "rvars": [[1, null, null], [0.6, 1, null], [1, null, null],
+              [0.14, 1, null], [0.33, 0.21, 1], [1, null, null]]
+  },
+  {
+    "id": "non-positive-definite-block",
+    "vi": [0.04, 0.13, 0.09], "cluster": [1, 1, 1],
+    "obs": ["one", "two", "three"], "rho": -0.7
+  },
+  {
+    "id": "nearest-positive-definite-block",
+    "vi": [0.04, 0.13, 0.09], "cluster": [1, 1, 1],
+    "obs": ["one", "two", "three"], "nearpd": true,
+    "rho": {"levels": ["one", "two", "three"],
+            "matrix": [[1, -0.5, -0.8], [-0.5, 1, -0.65], [-0.8, -0.65, 1]]}
+  }
+]
