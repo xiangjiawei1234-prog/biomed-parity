@@ -1,4 +1,4 @@
-"""Linear and raking calibration of survey weights against known totals."""
+"""Linear, raking, and logit calibration of survey weights against known totals."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from numbers import Integral
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from scipy.special import expit
 
 from ._survival_inputs import _encode_labels
 from .survey_cox import _survey_covariance
@@ -89,12 +90,40 @@ def _calibration_basis(weights, matrix, sigma2):
     return standardized, scales, singular_values[keep], vectors[keep]
 
 
-def _raking(weights, matrix, basis, population, scales, sigma2, limits, maxit):
+def _calibration_bounds(bounds, size, calfun):
+    if bounds is None:
+        if calfun == "logit":
+            raise ValueError("logit calibration requires finite bounds with lower < 1 < upper")
+        return None
+    try:
+        lower, upper = (np.asarray(side) for side in bounds)
+    except (TypeError, ValueError) as error:
+        raise ValueError("bounds must contain lower and upper multiplier limits") from error
+    for side in (lower, upper):
+        if side.shape not in ((), (1,), (size,)) or side.dtype.kind not in "buif" or np.isnan(side).any():
+            raise ValueError("each bound must be a number or have one value per weight")
+    lower, upper = (np.broadcast_to(side.astype(float), (size,)) for side in (lower, upper))
+    if np.isposinf(lower).any() or np.isneginf(upper).any() or np.any(lower > upper):
+        raise ValueError("lower bounds must not exceed upper bounds and must admit finite multipliers")
+    if calfun == "logit" and (
+        not (np.isfinite(lower).all() and np.isfinite(upper).all()) or np.any((lower >= 1) | (upper <= 1))
+    ):
+        raise ValueError("logit calibration requires finite bounds with lower < 1 < upper")
+    if np.isneginf(lower).all() and np.isposinf(upper).all():
+        return None
+    return lower, upper
+
+
+def _initial_weight_scale(weights, matrix, population, scales):
     sample = matrix.T @ weights
     with np.errstate(divide="ignore", invalid="ignore"):
         ratios = population / (sample * scales)
     # survey rescales very small base weights before generalized raking.
-    initial_scale = ratios.mean() if np.isfinite(ratios).all() and np.all(ratios > 20) else 1.0
+    return ratios.mean() if np.isfinite(ratios).all() and np.all(ratios > 20) else 1.0
+
+
+def _raking(weights, matrix, basis, population, scales, sigma2, limits, maxit):
+    initial_scale = _initial_weight_scale(weights, matrix, population, scales)
     base = weights * initial_scale
     reduced = matrix @ basis.T
     total = population / scales
@@ -132,30 +161,80 @@ def _raking(weights, matrix, basis, population, scales, sigma2, limits, maxit):
     return multipliers * initial_scale, iteration
 
 
+def _bounded_distance(eta, bounds, calfun):
+    lower, upper = bounds
+    if calfun == "logit":
+        span = upper - lower
+        slope = span / ((upper - 1) * (1 - lower))
+        log_odds = slope * eta + np.log(1 - lower) - np.log(upper - 1)
+        probability = expit(log_odds)
+        return lower + span * probability, span * slope * probability * expit(-log_odds)
+
+    active = (eta > lower - 1) & (eta < upper - 1)
+    if calfun == "linear":
+        return np.clip(1 + eta, lower, upper), active.astype(float)
+    # The bounded raking derivative in survey 4.5 uses the same cutoffs as linear calibration.
+    with np.errstate(over="ignore"):
+        raw = np.exp(eta)
+    return np.clip(raw, lower, upper), np.where(active, raw, 0)
+
+
+def _bounded_calibration(weights, matrix, basis, population, scales, sigma2, limits, maxit, bounds, calfun):
+    initial_scale = _initial_weight_scale(weights, matrix, population, scales)
+    if initial_scale != 1:
+        warnings.warn(f"bounds are applied after rescaling weights by {initial_scale:.3g}", RuntimeWarning, stacklevel=3)
+    base = weights * initial_scale
+    reduced = matrix @ basis.T
+    total = population / scales
+    relative_scale = scales / (1 + np.abs(population))
+    coefficients = np.zeros(basis.shape[0])
+    multipliers, derivative = _bounded_distance(np.zeros(weights.size), bounds, calfun)
+    residual = total - matrix.T @ (base * multipliers)
+    iteration = 1
+    while True:
+        jacobian = reduced.T @ (reduced * (base * derivative / sigma2)[:, None])
+        step = np.linalg.lstsq(jacobian, basis @ residual, rcond=256 * np.finfo(float).eps)[0]
+        candidate = coefficients + step
+        multipliers, derivative = _bounded_distance((reduced @ candidate) / sigma2, bounds, calfun)
+        while iteration < maxit and not (np.isfinite(multipliers).all() and np.isfinite(derivative).all()):
+            iteration += 1
+            step *= 0.5
+            candidate = coefficients + step
+            multipliers, derivative = _bounded_distance((reduced @ candidate) / sigma2, bounds, calfun)
+        coefficients = candidate
+        residual = total - matrix.T @ (base * multipliers)
+        if np.all(np.abs(residual) * relative_scale < limits) or iteration == maxit:
+            return multipliers * initial_scale, iteration
+        iteration += 1
+
+
 def calibrate(
     weights: ArrayLike,
     variables: ArrayLike,
     population: ArrayLike,
     *,
     calfun: str = "linear",
+    bounds: tuple[ArrayLike, ArrayLike] | None = None,
     variance: ArrayLike | None = None,
     epsilon: ArrayLike = 1e-7,
     maxit: int = 50,
     force: bool = False,
 ) -> SurveyCalibrationResult:
-    """Calibrate existing sample weights using unbounded linear or raking distances.
+    """Calibrate existing sample weights using linear, raking, or logit distances.
 
     Supply one row per observation and one column per known population total.
     Include a column of ones to benchmark the population size. ``variance``
     specifies positive variance factors by row or coefficients evaluated on
-    ``variables``. Raking allows consistent redundant controls. A control
-    that is zero in the sample and in the population is redundant in either
-    method. Raking stops when each absolute residual divided by
+    ``variables``. Supply ``bounds=(lower, upper)`` as scalars or per-row
+    multiplier limits. Logit calibration requires finite bounds strictly
+    bracketing one. Iterative distances allow consistent redundant controls.
+    A control that is zero in the sample and in the population is redundant.
+    Iteration stops when each absolute residual divided by
     ``1 + abs(population)`` is below ``epsilon``. ``force`` returns the last
     iterate with diagnostics if the requested accuracy was not achieved.
     """
-    if calfun not in ("linear", "raking"):
-        raise ValueError("calfun must be 'linear' or 'raking'")
+    if calfun not in ("linear", "raking", "logit"):
+        raise ValueError("calfun must be 'linear', 'raking', or 'logit'")
     if not isinstance(maxit, Integral) or isinstance(maxit, (bool, np.bool_)) or maxit < 1:
         raise ValueError("maxit must be a positive integer")
     if not isinstance(force, (bool, np.bool_)):
@@ -163,22 +242,29 @@ def calibrate(
     weights, matrix, population, sigma2, limits = _calibration_inputs(
         weights, variables, population, variance, epsilon,
     )
+    bounds = _calibration_bounds(bounds, weights.size, calfun)
     informative = np.any(matrix != 0, axis=0) | (population != 0)
     multipliers = np.ones(weights.size)
+    if bounds is not None:
+        multipliers = np.clip(multipliers, *bounds)
     rank = iterations = 0
     if informative.any():
         controls = population[informative]
         work, scales, singular, basis = _calibration_basis(weights, matrix[:, informative], sigma2)
         rank = singular.size
-        if calfun == "linear" and rank != work.shape[1]:
+        if bounds is None and calfun == "linear" and rank != work.shape[1]:
             raise ValueError("linear calibration requires independent control columns with positive-weight support")
-        if rank < work.shape[1]:
+        if bounds is None and rank < work.shape[1]:
             normalized = controls / scales
             unsupported = (normalized - basis.T @ (basis @ normalized)) * scales
             if np.any(np.abs(unsupported) / (1 + np.abs(controls)) >= limits[informative]):
                 raise ValueError("population controls are inconsistent with the positive-weight sample")
 
-        if rank and calfun == "linear":
+        if bounds is not None:
+            multipliers, iterations = _bounded_calibration(
+                weights, work, basis, controls, scales, sigma2, limits[informative], maxit, bounds, calfun,
+            )
+        elif rank and calfun == "linear":
             discrepancy = controls / scales - work.T @ weights
             coefficients = basis.T @ ((basis @ discrepancy) / singular**2)
             multipliers = 1 + (work @ coefficients) / sigma2
@@ -208,31 +294,46 @@ def calibrate_replicates(
     population: ArrayLike,
     *,
     calfun: str = "linear",
+    bounds: tuple[ArrayLike, ArrayLike] | None = None,
     variance: ArrayLike | None = None,
     epsilon: ArrayLike = 1e-7,
     maxit: int = 50,
 ) -> SurveyReplicateDesign:
-    """Calibrate the full-sample weights and each replicate to the same totals."""
+    """Calibrate the full-sample weights and each replicate to the same totals.
+
+    When bounded full-sample calibration succeeds, replicates that miss the
+    tolerance keep their current weights and emit a numbered warning.
+    """
     if not isinstance(design, SurveyReplicateDesign):
         raise TypeError("design must be a SurveyReplicateDesign")
-    settings = dict(calfun=calfun, variance=variance, epsilon=epsilon, maxit=maxit)
+    settings = dict(calfun=calfun, bounds=bounds, variance=variance, epsilon=epsilon, maxit=maxit)
     sampling = calibrate(design.sampling_weights, variables, population, **settings)
     original = design.analysis_weights
     replicates = np.empty_like(original)
+    bounded = _calibration_bounds(bounds, original.shape[0], calfun) is not None
     for index, weights in enumerate(original.T):
         try:
-            replicates[:, index] = calibrate(weights, variables, population, **settings).weights
+            if bounded:
+                with warnings.catch_warnings(record=True) as messages:
+                    warnings.simplefilter("always", RuntimeWarning)
+                    fit = calibrate(weights, variables, population, force=True, **settings)
+                for message in messages:
+                    warnings.warn(f"replicate {index + 1}: {message.message}", message.category, stacklevel=2)
+            else:
+                fit = calibrate(weights, variables, population, **settings)
+            replicates[:, index] = fit.weights
         except (ValueError, RuntimeError) as error:
             raise type(error)(f"replicate {index + 1}: {error}") from error
 
     sampling.weights.setflags(write=False)
     replicates.setflags(write=False)
+    iterative = calfun != "linear" or bounded
     calibrated = replace(
         design, sampling_weights=sampling.weights, replicate_weights=replicates, combined_weights=True,
-        _df_override=design._df_override if calfun == "raking" else None,
+        _df_override=design._df_override if iterative else None,
     )
-    if calfun == "raking":
-        # survey retains the original full-design degrees of freedom for raking.
+    if iterative:
+        # survey retains the original full-design degrees of freedom for iterative calibration.
         # A later domain subset computes its own rank unless the user supplied df.
         calibrated.__dict__["design_df"] = design.design_df
     return calibrated
@@ -248,6 +349,7 @@ def calibrated_total(
     strata: ArrayLike | None = None,
     fpc: ArrayLike | None = None,
     calfun: str = "linear",
+    bounds: tuple[ArrayLike, ArrayLike] | None = None,
     variance: ArrayLike | None = None,
     epsilon: ArrayLike = 1e-7,
     maxit: int = 50,
@@ -258,7 +360,7 @@ def calibrated_total(
     row as appropriate. The default treats each row as its own PSU in one
     stratum, with a negligible first-stage sampling fraction.
     """
-    calibration = calibrate(weights, variables, population, calfun=calfun, variance=variance,
+    calibration = calibrate(weights, variables, population, calfun=calfun, bounds=bounds, variance=variance,
                             epsilon=epsilon, maxit=maxit)
     weights, controls, _, sigma2, _ = _calibration_inputs(weights, variables, population, variance, epsilon)
     n = weights.size
@@ -275,7 +377,8 @@ def calibrated_total(
 
     # R projects totals using the original design weights, with an additional
     # variance factor for unbounded linear calibration.
-    projection_weights = np.sqrt(weights / sigma2) if calfun == "linear" else np.sqrt(weights)
+    regression = calfun == "linear" and _calibration_bounds(bounds, n, calfun) is None
+    projection_weights = np.sqrt(weights / sigma2) if regression else np.sqrt(weights)
     scales = np.max(np.abs(controls[weights > 0]), axis=0)
     scaled_controls = controls / np.where(scales > 0, scales, 1)
     coefficients = np.linalg.lstsq(

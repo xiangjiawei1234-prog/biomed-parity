@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+from contextlib import nullcontext
 from pathlib import Path
 
 import numpy as np
@@ -26,10 +27,18 @@ def _assert_fields(result, expected):
 
 def _check_r_case(case, reference):
     options = {key: case[key] for key in ("calfun", "variance", "maxit") if key in case}
+    if "bounds" in case:
+        options["bounds"] = tuple(np.asarray(side, dtype=float) for side in case["bounds"])
     args = (OBS["weights"], case["variables"], case["population"])
     reference = reference[case["name"]]
+    rescale_warning = "bounds are applied after rescaling"
+    if case.get("strict_failure"):
+        with pytest.raises(RuntimeError, match="calibration failed to converge"):
+            calibrate(*args, epsilon=1e-12, **options)
     if reference["converged"]:
-        fit = calibrate(*args, epsilon=1e-12, **options)
+        warning = pytest.warns(RuntimeWarning, match=rescale_warning) if case.get("rescale_warning") else nullcontext()
+        with warning:
+            fit = calibrate(*args, epsilon=1e-12, **options)
         assert 0 < fit.iterations <= 50
         np.testing.assert_allclose(fit.control_totals, case["population"], rtol=1e-12)
     else:
@@ -37,10 +46,15 @@ def _check_r_case(case, reference):
             fit = calibrate(*args, epsilon=1e-12, force=True, **options)
         assert fit.iterations == case["maxit"]
     _assert_fields(fit, {key: value for key, value in reference.items() if key not in ("taylor_total", "replication")})
+    if "bounds" in options and not case.get("rescale_warning"):
+        lower, upper = options["bounds"]
+        assert np.all(fit.multipliers >= lower) and np.all(fit.multipliers <= upper)
 
     if "taylor_total" in reference:
-        total = calibrated_total(OBS["outcomes"], *args, psu=OBS["psu"], strata=OBS["strata"], fpc=OBS["fpc"],
-                                 epsilon=1e-12, **options)
+        warning = pytest.warns(RuntimeWarning, match=rescale_warning) if case.get("rescale_warning") else nullcontext()
+        with warning:
+            total = calibrated_total(OBS["outcomes"], *args, psu=OBS["psu"], strata=OBS["strata"], fpc=OBS["fpc"],
+                                     epsilon=1e-12, **options)
         _assert_fields(total, reference["taylor_total"])
         np.testing.assert_allclose(total.calibration.weights, fit.weights)
 
@@ -50,10 +64,18 @@ def _check_r_case(case, reference):
         if replication["combined_weights"]:
             factors = factors * np.asarray(OBS["weights"])[:, None]
         design = svrepdesign(factors, OBS["weights"], mse=True, **replication)
-        weighted = calibrate_replicates(design, case["variables"], case["population"], epsilon=1e-12, **options)
+        failures = reference["replication"].get("failures", 0)
+        warning = pytest.warns(RuntimeWarning, match=r"replicate \d+: calibration failed") if failures else nullcontext()
+        with warning as messages:
+            weighted = calibrate_replicates(design, case["variables"], case["population"], epsilon=1e-12, **options)
         achieved = np.asarray(case["variables"]).T @ weighted.analysis_weights
         target = np.broadcast_to(np.asarray(case["population"])[:, None], achieved.shape)
-        np.testing.assert_allclose(achieved, target, rtol=1e-12)
+        if failures:
+            assert len(messages) == failures
+            errors = np.abs(achieved - target) / (1 + np.abs(target))
+            assert np.sum(np.any(errors >= 1e-12, axis=0)) == failures
+        else:
+            np.testing.assert_allclose(achieved, target, rtol=1e-12)
         _assert_fields(weighted, {"analysis_weights": reference["replication"]["analysis_weights"],
                                   "design_df": reference["replication"]["df"]})
         _assert_fields(weighted.total(OBS["outcomes"]), reference["replication"]["total"])
@@ -115,6 +137,16 @@ def test_single_control_accepts_scalar_total_and_variance_coefficient():
     np.testing.assert_allclose(fit.weights, [2, 4, 6])
 
 
+@pytest.mark.parametrize("calfun", ["linear", "raking"])
+def test_explicit_infinite_bounds_preserve_unbounded_calibration(calfun):
+    case = CASES[0]
+    args = (OBS["weights"], case["variables"], case["population"])
+    default = calibrate(*args, calfun=calfun)
+    explicit = calibrate(*args, calfun=calfun, bounds=(-np.inf, np.inf))
+    np.testing.assert_array_equal(explicit.weights, default.weights)
+    assert explicit.iterations == default.iterations
+
+
 @pytest.mark.parametrize("additional,message", [
     ({"weights": [-1, 2]}, "nonnegative"),
     ({"weights": [0, 0]}, "at least one positive"),
@@ -122,7 +154,14 @@ def test_single_control_accepts_scalar_total_and_variance_coefficient():
     ({"population": [1, 2]}, "one total per control"),
     ({"variance": [0, 1]}, "strictly positive"),
     ({"epsilon": [1e-7, 1e-7]}, "per control"),
-    ({"calfun": "logit"}, "linear.*raking"),
+    ({"calfun": "poisson"}, "linear.*raking.*logit"),
+    ({"calfun": "logit"}, "logit calibration requires finite bounds"),
+    ({"calfun": "logit", "bounds": (1, 2)}, "lower < 1 < upper"),
+    ({"calfun": "logit", "bounds": (0.5, np.inf)}, "logit calibration requires finite bounds"),
+    ({"bounds": (0.5,)}, "lower and upper"),
+    ({"bounds": (0.5, [1, 2, 3])}, "one value per weight"),
+    ({"bounds": (np.nan, 2)}, "each bound"),
+    ({"bounds": ([0.5, 1.2], 1)}, "must not exceed"),
     ({"maxit": True}, "positive integer"),
 ])
 def test_invalid_inputs(additional, message):

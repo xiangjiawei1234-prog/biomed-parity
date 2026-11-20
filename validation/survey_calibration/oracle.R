@@ -27,9 +27,27 @@ results <- lapply(fixture$cases, function(case) {
     formula <- reformulate(colnames(matrix), intercept = FALSE)
     options <- list(formula = formula, population = population,
         calfun = default(case$calfun, "linear"), variance = unlist(case$variance), epsilon = 1e-12)
+    if (!is.null(case$bounds)) {
+        options$bounds <- setNames(lapply(case$bounds, function(side) as.numeric(unlist(side))), c("lower", "upper"))
+    }
+    if (!is.null(case$maxit)) options$maxit <- case$maxit
     linear <- survey::svydesign(ids = ~psu, strata = ~stratum, weights = ~w, fpc = ~fpc, data = d, nest = TRUE)
-    if (!is.null(case$maxit)) options <- c(options, list(maxit = case$maxit, force = TRUE))
-    calibrated <- suppressWarnings(do.call(survey::calibrate, c(list(design = linear), options)))
+    if (isTRUE(case$strict_failure)) {
+        error <- tryCatch(suppressWarnings(do.call(survey::calibrate, c(list(design = linear), options))),
+            error = conditionMessage)
+        if (!identical(error, "Calibration failed")) stop("Expected strict calibration failure")
+    }
+    if (!is.null(case$maxit)) options$force <- TRUE
+    messages <- character()
+    record_warning <- function(w) {
+        messages <<- c(messages, conditionMessage(w))
+        invokeRestart("muffleWarning")
+    }
+    calibrated <- withCallingHandlers(do.call(survey::calibrate, c(list(design = linear), options)),
+        warning = record_warning)
+    if (isTRUE(case$rescale_warning) && !any(grepl("after rescaling", messages, fixed = TRUE))) {
+        stop("Expected warning that bounds apply after rescaling")
+    }
     w <- weights(calibrated)
     achieved <- controls(w, matrix)
     relative_errors <- abs(achieved - population) / (1 + abs(population))
@@ -41,11 +59,18 @@ results <- lapply(fixture$cases, function(case) {
         combined <- case$replication$combined_weights
         rep_des <- survey::svrepdesign(data = d, repweights = if (combined) factors * d$w else factors,
             weights = d$w, type = "BRR", combined.weights = combined, degf = case$replication$degf, mse = TRUE)
-        rep_cal <- do.call(survey::calibrate, c(list(design = rep_des, compress = FALSE), options))
+        messages <- character()
+        rep_cal <- withCallingHandlers(do.call(survey::calibrate, c(list(design = rep_des, compress = FALSE), options)),
+            warning = record_warning)
         result$replication <- list(
             analysis_weights = unname(weights(rep_cal, type = "analysis")), df = survey::degf(rep_cal),
             total = pack_total(rep_cal, return_replicates = TRUE)
         )
+        failures <- sum(startsWith(messages, "Failed to converge"))
+        if (isTRUE(case$replicate_failure)) {
+            if (failures == 0) stop("Expected at least one failed replicate calibration")
+            result$replication$failures <- failures
+        } else if (failures > 0) stop("Unexpected replicate calibration failure")
     }
     result
 })
