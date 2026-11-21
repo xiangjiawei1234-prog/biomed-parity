@@ -14,7 +14,7 @@ bioc <- c("DESeq2", "variancePartition")
 packages <- c("jsonlite", "survival", "pROC", "logcondens", "survRM2", "gsDesign",
     "mice", "mitml", "lme4", "MASS", "nnet", "survey", "metafor", "clubSandwich", "rms", "Hmisc",
     "multcomp", "mvtnorm",
-    "riskRegression", "prodlim", "mstate", "glmmTMB", "icenReg")
+    "riskRegression", "prodlim", "mstate", "glmmTMB", "icenReg", "flexsurv")
 bioc_missing <- bioc[!vapply(bioc, available, logical(1))]
 if (length(bioc_missing)) packages <- c(packages, "BiocManager")
 missing <- packages[!vapply(packages, available, logical(1))]
