@@ -1,6 +1,6 @@
 # 本地验证记录
 
-2026-11-21 在 macOS arm64 本机运行。主要环境为 Python 3.12.7、NumPy 2.1.3、SciPy 1.14.1、pytest 9.2.0 和 R 4.5.3。在 `56a58ba` 的快照上开启实时 R 对照并将 Python 警告视为错误，**1,253 项测试全部通过**。默认 Python 套件有 1,194 项通过，59 个实时 R 测试按配置跳过。最低依赖环境 Python 3.11.15、NumPy 1.26.4、SciPy 1.12.0 得到同一默认套件结果。该快照的 wheel 和源码包构建成功，安装后核对了新增入口。下面列有后续方法的专项验证，参考输入使用人工构造数据。
+2026-11-21 在 macOS arm64 本机运行。主要环境为 Python 3.12.7、NumPy 2.1.3、SciPy 1.14.1、pytest 9.2.0 和 R 4.5.3。在 `e559585` 的快照上开启实时 R 对照并将 Python 警告视为错误，**1,303 项测试全部通过**。最低依赖环境 Python 3.11.15、NumPy 1.26.4、SciPy 1.12.0 的默认套件有 1,241 项通过，62 个实时 R 测试按配置跳过。该快照的 wheel 和源码包构建成功。下面列有后续方法的专项验证，参考输入使用人工构造数据。
 
 | 统计入口 | R 参考 | 覆盖 |
 | --- | --- | --- |
@@ -14,6 +14,7 @@
 | [平滑 ROC 的 Bootstrap 推断](methods/roc-smooth-bootstrap.md) | pROC 1.19.1、MASS 7.3-65 | 18 个场景和 780 次固定抽样，含 AUC 和指定特异度的灵敏度区间 |
 | [配对平滑 ROC 检验](methods/roc-smooth-bootstrap.md#配对平滑-auc-检验) | pROC 1.19.1 | 6 组与 283 次固定重抽样，核对完整与部分 AUC、标准误、检验与遗漏数 |
 | [独立样本平滑 ROC 检验](methods/roc-smooth-bootstrap.md#独立样本平滑-auc-检验) | pROC 1.19.1、MASS 7.3-65 | 5 组与 215 对独立重抽样，核对标准误、三种备择和 22 次联合遗漏 |
+| [对数凹平滑推断](methods/roc-smooth-bootstrap.md#对数凹密度推断) | pROC 1.19.1、logcondens 2.1.9 | 8 组、354 次固定抽样，含区间、两种样本设计和 38 次联合遗漏 |
 | [多分类 AUC](methods/roc-multiclass.md) | pROC 1.19.1 | 23 个场景，核对总体平均、类别对、方向和类别特异评分 |
 | [两臂 RMST](methods/rmst2.md) | survRM2 1.0-4 | 14 组未调整和协变量调整输入 |
 | [RMST 曲线数据](methods/rmst-curves.md) | survRM2 1.0-4、survival 3.8-6 | 14 组阶梯、阴影坐标及 Kaplan–Meier 点态区间 |
@@ -27,6 +28,7 @@
 | [预测网格与置信带](methods/rms-prediction.md) | rms 8.2-1、multcomp 1.4-31 | 12 组数值与名义因子、样条、参考归零、Cox 定中心、点态与同时区间 |
 | [列线图分值](methods/nomogram.md) | rms 8.2-1 | 2 组样条、分类交互及线性和结局轴分值 |
 | [二元惩罚似然拟合](methods/rms-logistic.md) | rms 8.2-1 | 13 组系数、惩罚、协方差、有效自由度、加权和偏移量 |
+| [惩罚网格选择](methods/rms-penalty.md) | rms 8.2-1 | 4 组共 25 个候选点，核对 AIC/BIC/AICc、所选行及 Gray 协方差 |
 | [标量及多参数合并](methods/mi-pooling.md) | mice 3.19.0，mitml 0.4-5 | 11 组标量推断、8 组总协方差及 D1/D2、4 组 D3/D4 嵌套似然 |
 | [链式插补](methods/chained-imputation.md) | mice 3.19.0、nnet 7.3-20、MASS 7.3-65 | 3 组确定性链逐值对照、5 组原条件模型分布及 6 组多分类概率 |
 | [两层条件插补](methods/multilevel-imputation.md) | mice 3.19.0、pan 2.0 | 8 组设计逐项、6 组独立抽样分布矩，以及两种模型在完整链式入口的均值 |
@@ -45,6 +47,7 @@
 | [多层模型影响诊断](methods/meta-influence.md) | metafor 5.0-1 | 4 组逐行或逐研究删除、Cook 距离、DFBETAS、残差与杠杆值 |
 | [多结局随机效应协方差](methods/meta-multivariate.md) | metafor 5.0-1 | 12 组，共八种结构，核对随机协方差、额外随机截距、系数、似然和 Wald 推断 |
 | [区间删失非参数生存](methods/interval-censoring.md) | icenReg 2.0.16 | 8 组开闭端点、最大交集、质量和似然 |
+| [区间删失半参数回归](methods/interval-regression.md) | icenReg 2.0.16 | 6 组比例风险和比例优势，核对权重、系数、似然及生存 |
 | [竞争风险评分](methods/competing-risk-scores.md) | riskRegression 2026.03.11 | 4 个边际 KM 和 5 个反向 Cox 方案。九组对照兼容模式的 AUC 区间与影响函数，包括两个非默认目标原因案例 |
 | [竞争风险交叉验证](methods/risk-cross-validation.md) | riskRegression 2026.03.11 | 3 折与 4 折真实重拟合，核对折外预测、评分和区间 |
 | [竞争风险校准](methods/competing-risk-calibration.md) | riskRegression 和 prodlim 2026.03.11 | 7 组分位数、近邻、局部风险和逐行伪值对照 |

@@ -937,7 +937,7 @@
         "lifelines.KaplanMeierFitter.fit_interval_censoring",
         "lifelines.CoxPHFitter.fit_interval_censoring"
       ],
-      "gap": "lifelines 提供闭区间 Turnbull 和给定参数基线的区间删失回归。原生接口已对照 icenReg 的四种端点组合及加权概率质量。待验收半参数比例风险、比例优势及基线生存。",
+      "gap": "lifelines 提供闭区间 Turnbull 和给定参数基线的区间删失回归。原生接口已对照 icenReg 的四种端点组合、加权概率质量、半参数比例风险和比例优势及基线生存。病例 Bootstrap 与区间仍待验证。",
       "validation_targets": [
         "最大交集、开闭端点、混合删失及病例权重",
         "半参数 PH/PO 系数、区间概率与基线生存",

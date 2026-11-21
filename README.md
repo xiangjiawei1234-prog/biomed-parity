@@ -21,6 +21,7 @@
 | 生存分析 | `rmst.rmst2` | survRM2 1.0-4 | 14 组；未调整与 1–2 个协变量的 RMST、RMTL 及差值/比值推断 |
 | 生存分析 | `rmst_curves.rmst_curve_data` | survRM2 1.0-4、survival 3.8-6 | 14 组 Kaplan–Meier 阶梯和限制平均生存时间阴影坐标 |
 | 生存分析 | `interval_censoring.turnbull` | icenReg 2.0.16 | 8 组区间删失概率质量，含四种端点组合、准确时间、全右删失及权重 |
+| 生存分析 | `interval_regression.fit_interval_regression` | icenReg 2.0.16 | 6 组区间删失 PH 和 PO，含分数权重及基线和协变量生存 |
 | 诊断准确性 | `roc.delong_auc`、`delong_paired_test`、`delong_unpaired_test` | pROC 1.19.1 | 28 个场景；AUC 方差、区间、配对与独立检验 |
 | 诊断准确性 | `roc_bootstrap.roc_auc`、`bootstrap_auc_ci`、`bootstrap_paired_test` | pROC 1.19.1 | 41 个完整/部分 AUC 场景；61 次指定分层重抽样与配对检验 |
 | 诊断准确性 | `roc_thresholds.roc_coords`、`bootstrap_roc_coords` | pROC 1.19.1 | 47 个坐标场景 + 13 个固定重抽样区间场景；8214 行快照，坐标字段逐位一致 |
@@ -29,6 +30,7 @@
 | 诊断准确性 | `roc_smooth_bootstrap.bootstrap_smooth_auc_ci`、`bootstrap_smooth_sensitivity_ci` | pROC 1.19.1、MASS 7.3-65 | 18 个场景与 780 次固定重抽样 |
 | 诊断准确性 | `roc_smooth_bootstrap.bootstrap_smooth_paired_test` | pROC 1.19.1 | 6 组配对平滑 AUC，核对 283 次固定重抽样 |
 | 诊断准确性 | `roc_smooth_bootstrap.bootstrap_smooth_unpaired_test` | pROC 1.19.1、MASS 7.3-65 | 5 组独立样本的平滑 AUC，核对 215 对固定重抽样 |
+| 诊断准确性 | `roc_smooth_bootstrap` 的对数凹方法 | pROC 1.19.1、logcondens 2.1.9 | 8 个区间和比较场景、354 次固定重抽样 |
 | 诊断准确性 | `roc_multiclass.multiclass_auc` | pROC 1.19.1 | 23 个情形，含共享分数、类别分数矩阵与 Hand–Till 成对分量 |
 | 临床试验设计 | `group_sequential.efficacy_boundaries`、`symmetric_boundaries`、`efficacy_futility_boundaries`、`crossing_probabilities`、`conditional_power` | gsDesign 3.11.0 | 13 个边界方案（HSD/LDOF、单侧/双侧、约束/非约束无效界）；25 组越界概率与条件把握度 |
 | 临床试验设计 | `group_sequential_survival.fixed_survival_design`、`group_sequential_survival_design` | gsDesign 3.11.0 | 15 组固定和组序贯设计，含分层入组、脱落、事件数量和分析日历 |
@@ -40,6 +42,7 @@
 | 临床预测 | `rms_prediction.datadist`、`prediction_grid`、`predict` | rms 8.2-1、multcomp 1.4-31 | 12 组数值与分类默认值、参考归零、点态及同时区间 |
 | 临床预测 | `nomogram.nomogram` | rms 8.2-1 | 2 组加性和交互模型的轴刻度与分值 |
 | 临床预测 | `rms_logistic.fit_penalized_logistic` | rms 8.2-1 | 13 组二元拟合，含惩罚矩阵、加权、偏移量和仅截距 |
+| 临床预测 | `rms_penalty.trace_logistic_penalties` | rms 8.2-1 | 4 组 25 个候选惩罚点，核对有效自由度、AIC/BIC/AICc 与 Gray 协方差 |
 | 竞争风险 | `risk_scores.score_competing_risks` | riskRegression 2026.03.11 | 4 组边际 KM + 5 组反向 Cox；AUC、Brier、影响函数、积分 Brier 与配对比较 |
 | 竞争风险 | `risk_cross_validation.cross_validate_competing_risks` | riskRegression 2026.03.11 | 3 折与 4 折校验，核对折外风险及汇总评分 |
 | 竞争风险 | `competing_calibration.calibrate_competing_risks`、`jackknife_cumulative_incidence` | riskRegression、prodlim 2026.03.11 | 7 组；分位数、近邻、局部风险与 Jackknife 伪值 |

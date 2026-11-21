@@ -27,7 +27,8 @@
         "Hand–Till 多分类完整及部分 AUC，单列及类别评分矩阵",
         "三种闭式参数分布的 fitdistr 平滑，以及平滑 AUC 与固定特异度灵敏度的 Bootstrap 区间",
         "配对与独立样本的平滑曲线完整及部分 AUC、Bootstrap 标准误与检验",
-        "普通及高斯卷积对数凹密度的 ROC 曲线、完整及部分 AUC"
+        "普通及高斯卷积对数凹密度的 ROC 曲线、完整及部分 AUC",
+        "两种对数凹平滑的 AUC 和灵敏度区间、配对及独立样本检验"
       ],
       "evidence": [
         "docs/methods/roc-delong.md",
@@ -39,7 +40,7 @@
         "docs/methods/roc-parametric.md"
       ],
       "remaining": [
-        "其他参数分布、函数型密度、对数凹平滑的重采样、两曲线逐坐标比较与绘图"
+        "其他参数分布、函数型密度、两曲线逐坐标比较与绘图"
       ]
     },
     "survrm2-rmst2": {
@@ -117,7 +118,8 @@
         "datadist 数值和名义因子、预测网格、参考归零及有限网格点态与同时置信带",
         "已有拟合模型的列线图分值、样条、分类交互和结局轴",
         "lrm 二元惩罚似然、连续与分类默认惩罚、自定义半正定矩阵及有效自由度",
-        "二元 lrm 病例权重、归一化权重、logit 偏移量及仅截距拟合"
+        "二元 lrm 病例权重、归一化权重、logit 偏移量及仅截距拟合",
+        "pentrace 无权重二元惩罚网格、信息准则和 Gray 协方差"
       ],
       "evidence": [
         "docs/methods/logistic-validation.md",
@@ -125,11 +127,12 @@
         "docs/methods/restricted-cubic-splines.md",
         "docs/methods/rms-prediction.md",
         "docs/methods/nomogram.md",
-        "docs/methods/rms-logistic.md"
+        "docs/methods/rms-logistic.md",
+        "docs/methods/rms-penalty.md"
       ],
       "remaining": [
         "公式、有序分类评分、列线图自动刻度与绘图、重采样区间",
-        "惩罚搜索、变量选择、整群重采样、其他结局"
+        "观测加权或含偏移量的惩罚搜索、变量选择、整群重采样、其他结局"
       ]
     },
     "metafor-meta-analysis": {
@@ -294,14 +297,17 @@
     "icenreg-interval-censoring": {
       "status": "native_validated",
       "covered": [
-        "加权 Turnbull 最大交集、端点精确识别、区间质量和生存概率界"
+        "加权 Turnbull 最大交集、端点精确识别、区间质量和生存概率界",
+        "ic_sp 固定设计比例风险及比例优势系数、分数权重、区间分布和预测"
       ],
       "evidence": [
         "docs/methods/interval-censoring.md",
-        "validation/interval_censoring/expected.json"
+        "validation/interval_censoring/expected.json",
+        "docs/methods/interval-regression.md",
+        "validation/interval_regression/expected.json"
       ],
       "remaining": [
-        "半参数 PH/PO、参数模型、重抽样推断、分层与截断"
+        "病例 Bootstrap 与回归区间、参数模型、分层与截断"
       ]
     },
     "flexsurv-parametric-spline": {
