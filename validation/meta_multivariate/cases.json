@@ -1,0 +1,10 @@
+[
+  {"id": "unstructured-reml", "structure": "UN", "method": "REML", "test": "z"},
+  {"id": "unstructured-ml-incomplete", "structure": "UN", "method": "ML", "test": "t", "incomplete": true},
+  {"id": "compound-symmetry", "structure": "CS", "method": "REML", "test": "z"},
+  {"id": "heterogeneous-compound-symmetry", "structure": "HCS", "method": "ML", "test": "knha"},
+  {"id": "diagonal-incomplete", "structure": "DIAG", "method": "REML", "test": "z", "incomplete": true},
+  {"id": "identity", "structure": "ID", "method": "ML", "test": "z"},
+  {"id": "negative-ar", "structure": "AR", "method": "REML", "test": "t", "dfs": "contain"},
+  {"id": "negative-har", "structure": "HAR", "method": "ML", "test": "adhoc", "incomplete": true, "dfs": "contain"}
+]

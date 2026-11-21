@@ -42,6 +42,7 @@ class _MetaFitInputs:
     intercept: bool
     test: str
     dfs: str | Array
+    reestimation_supported: bool = True
 
 
 @dataclass(frozen=True)
@@ -308,6 +309,38 @@ def _wald(beta, covariance, tested, denominator_df=None, *, htz_scale=None):
     return MetaWaldTest(statistic, count, denominator_df, float(f.sf(statistic, count, denominator_df)))
 
 
+def _variance_objective(y, sampling, components, x_scaled, method):
+    size, count = x_scaled.shape
+    basis, _ = qr(x_scaled, mode="full", check_finite=False)
+    q = basis[:, count:]
+    residual_projection = q.T.dot(y)
+    scale = max(float(np.max(sampling.diagonal())), float(np.mean(residual_projection**2)))
+    if not np.isfinite(scale) or not scale > 0:
+        raise ValueError("effects or sampling covariance exceed the supported numerical range")
+    if method == "REML":
+        projected = np.stack([q.T.dot(kernel).dot(q) for kernel in components]) if len(components) else (
+            np.empty((0, size - count, size - count))
+        )
+        return _VarianceObjective(
+            residual_projection / np.sqrt(scale), q.T.dot(sampling / scale).dot(q),
+            projected, None,
+        ), scale
+    return _VarianceObjective(y / np.sqrt(scale), sampling / scale, components, x_scaled), scale
+
+
+def _require_estimable(projected, components):
+    if not len(projected):
+        return
+    matrices = projected.reshape((len(projected), -1))
+    maxima = np.max(np.abs(matrices), axis=1, keepdims=True)
+    base_norms = np.max(np.abs(components), axis=(1, 2))[:, None]
+    if (
+        np.any(maxima <= 1e-12 * base_norms) or np.any(maxima == 0)
+        or np.linalg.matrix_rank(matrices / maxima, tol=1e-9) != len(matrices)
+    ):
+        raise ValueError("estimated variance components are not identifiable under this design")
+
+
 def meta_multilevel(
     effects: ArrayLike,
     sampling_covariance: ArrayLike,
@@ -377,35 +410,11 @@ def meta_multilevel(
                 raise ValueError("fixed variances must be finite and nonnegative")
             fixed[i] = value
 
-    basis, _ = qr(x_scaled, mode="full", check_finite=False)
-    q = basis[:, count:]
-    residual_projection = q.T.dot(y)
-    scale = max(float(np.max(sampling.diagonal())), float(np.mean(residual_projection**2)))
-    if not np.isfinite(scale) or not scale > 0:
-        raise ValueError("effects or sampling covariance exceed the supported numerical range")
+    objective, scale = _variance_objective(y, sampling, components, x_scaled, method)
     y_scaled = y / np.sqrt(scale)
     known = sampling / scale
-    if method == "REML":
-        projected_components = np.stack([q.T.dot(kernel).dot(q) for kernel in components]) if names else (
-            np.empty((0, size - count, size - count))
-        )
-        objective = _VarianceObjective(
-            residual_projection / np.sqrt(scale), q.T.dot(known).dot(q),
-            projected_components, None,
-        )
-    else:
-        objective = _VarianceObjective(y_scaled, known, components, x_scaled)
-
     free = np.isnan(fixed)
-    if np.any(free):
-        matrices = objective.components[free].reshape((free.sum(), -1))
-        maxima = np.max(np.abs(matrices), axis=1, keepdims=True)
-        base_norms = np.max(np.abs(components[free]), axis=(1, 2))[:, None]
-        if (
-            np.any(maxima <= 1e-12 * base_norms) or np.any(maxima == 0)
-            or np.linalg.matrix_rank(matrices / maxima, tol=1e-9) != len(matrices)
-        ):
-            raise ValueError("estimated variance components are not identifiable under this design")
+    _require_estimable(objective.components[free], components[free])
 
     fitted, nll = objective.fit(fixed / scale)
     if not np.isfinite(nll):

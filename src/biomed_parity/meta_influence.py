@@ -130,8 +130,8 @@ def meta_influence(
     if not isinstance(reestimate, (bool, np.bool_)):
         raise ValueError("reestimate must be boolean")
     inputs = fit._fit_inputs
-    if reestimate and inputs is None:
-        raise ValueError("re-estimation requires a fit created by meta_multilevel")
+    if reestimate and (inputs is None or not inputs.reestimation_supported):
+        raise ValueError("this model does not support case-deletion variance re-estimation; use reestimate=False")
     design = fit._design
     n, p = design.shape
     labels, codes = _cases(cluster, n)
