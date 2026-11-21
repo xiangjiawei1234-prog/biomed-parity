@@ -9,6 +9,7 @@
 | [部分 AUC 与 Bootstrap](methods/roc-bootstrap.md) | pROC 1.19.1 | 41 个完整/部分面积场景，61 次指定分层重抽样，含配对 Bootstrap 检验 |
 | [ROC 坐标与阈值区间](methods/roc-thresholds.md) | pROC 1.19.1 | 47 个坐标场景与 13 个固定重抽样区间场景；8214 行快照，坐标字段逐位一致 |
 | [平滑 ROC](methods/roc-smoothing.md) | pROC 1.19.1 | 37 个场景，含二正态、七种核密度、给定密度表、完整与部分 AUC |
+| [对数凹 ROC](methods/roc-smoothing.md#对数凹密度-roc) | pROC 1.19.1、logcondens 2.1.9 | 11 组，覆盖原估计和高斯卷积、完整与部分 AUC 及常数分数拒绝 |
 | [参数分布平滑 ROC](methods/roc-parametric.md) | pROC 1.19.1、MASS 7.3-65 | 17 个场景，含正态、对数正态、指数及混用分布 |
 | [平滑 ROC 的 Bootstrap 推断](methods/roc-smooth-bootstrap.md) | pROC 1.19.1、MASS 7.3-65 | 18 个场景和 780 次固定抽样，含 AUC 和指定特异度的灵敏度区间 |
 | [配对平滑 ROC 检验](methods/roc-smooth-bootstrap.md#配对平滑-auc-检验) | pROC 1.19.1 | 6 组与 283 次固定重抽样，核对完整与部分 AUC、标准误、检验与遗漏数 |
@@ -25,7 +26,7 @@
 | [限制性三次样条](methods/restricted-cubic-splines.md) | Hmisc 5.3-1，rms 8.2-1 | 19 组固定输入，并在 540 组随机输入上核对自动选结点 |
 | [预测网格与置信带](methods/rms-prediction.md) | rms 8.2-1、multcomp 1.4-31 | 12 组数值与名义因子、样条、参考归零、Cox 定中心、点态与同时区间 |
 | [列线图分值](methods/nomogram.md) | rms 8.2-1 | 2 组样条、分类交互及线性和结局轴分值 |
-| [二元惩罚似然拟合](methods/rms-logistic.md) | rms 8.2-1 | 6 组系数、惩罚矩阵、协方差、预测及有效自由度 |
+| [二元惩罚似然拟合](methods/rms-logistic.md) | rms 8.2-1 | 13 组系数、惩罚、协方差、有效自由度、加权和偏移量 |
 | [标量及多参数合并](methods/mi-pooling.md) | mice 3.19.0，mitml 0.4-5 | 11 组标量推断、8 组总协方差及 D1/D2、4 组 D3/D4 嵌套似然 |
 | [链式插补](methods/chained-imputation.md) | mice 3.19.0、nnet 7.3-20、MASS 7.3-65 | 3 组确定性链逐值对照、5 组原条件模型分布及 6 组多分类概率 |
 | [两层条件插补](methods/multilevel-imputation.md) | mice 3.19.0、pan 2.0 | 8 组设计逐项、6 组独立抽样分布矩，以及两种模型在完整链式入口的均值 |
@@ -43,6 +44,7 @@
 | [多层模型预测](methods/meta-prediction.md) | metafor 5.0-1 | 6 组平均效应和预测区间，含逐行自由度、Bonferroni 和新观测误差 |
 | [多层模型影响诊断](methods/meta-influence.md) | metafor 5.0-1 | 4 组逐行或逐研究删除、Cook 距离、DFBETAS、残差与杠杆值 |
 | [多结局随机效应协方差](methods/meta-multivariate.md) | metafor 5.0-1 | 12 组，共八种结构，核对随机协方差、额外随机截距、系数、似然和 Wald 推断 |
+| [区间删失非参数生存](methods/interval-censoring.md) | icenReg 2.0.16 | 8 组开闭端点、最大交集、质量和似然 |
 | [竞争风险评分](methods/competing-risk-scores.md) | riskRegression 2026.03.11 | 4 个边际 KM 和 5 个反向 Cox 方案。九组对照兼容模式的 AUC 区间与影响函数，包括两个非默认目标原因案例 |
 | [竞争风险交叉验证](methods/risk-cross-validation.md) | riskRegression 2026.03.11 | 3 折与 4 折真实重拟合，核对折外预测、评分和区间 |
 | [竞争风险校准](methods/competing-risk-calibration.md) | riskRegression 和 prodlim 2026.03.11 | 7 组分位数、近邻、局部风险和逐行伪值对照 |

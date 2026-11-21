@@ -920,6 +920,133 @@
           "url": "https://inmoose.readthedocs.io/en/stable/limma.html"
         }
       ]
+    },
+    {
+      "id": "icenreg-interval-censoring",
+      "category": "survival",
+      "priority": "P1",
+      "r_package": "icenReg",
+      "r_entry_points": [
+        "ic_np",
+        "ic_sp",
+        "getSCurves"
+      ],
+      "license": "LGPL (>= 2.0, < 3)",
+      "assessment": "workflow_gap",
+      "python_candidates": [
+        "lifelines.KaplanMeierFitter.fit_interval_censoring",
+        "lifelines.CoxPHFitter.fit_interval_censoring"
+      ],
+      "gap": "lifelines 提供闭区间 Turnbull 和给定参数基线的区间删失回归。原生接口已对照 icenReg 的四种端点组合及加权概率质量。待验收半参数比例风险、比例优势及基线生存。",
+      "validation_targets": [
+        "最大交集、开闭端点、混合删失及病例权重",
+        "半参数 PH/PO 系数、区间概率与基线生存",
+        "固定重抽样推断及分层比较"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/icenReg/index.html"
+        },
+        {
+          "label": "Turnbull 拟合",
+          "url": "https://search.r-project.org/CRAN/refmans/icenReg/html/ic_np.html"
+        },
+        {
+          "label": "半参数区间删失",
+          "url": "https://search.r-project.org/CRAN/refmans/icenReg/html/ic_sp.html"
+        },
+        {
+          "label": "Python Turnbull",
+          "url": "https://lifelines.readthedocs.io/en/latest/fitters/univariate/KaplanMeierFitter.html#lifelines.fitters.kaplan_meier_fitter.KaplanMeierFitter.fit_interval_censoring"
+        },
+        {
+          "label": "Python 区间删失回归",
+          "url": "https://lifelines.readthedocs.io/en/latest/fitters/regression/CoxPHFitter.html"
+        }
+      ]
+    },
+    {
+      "id": "flexsurv-parametric-spline",
+      "category": "survival",
+      "priority": "P1",
+      "r_package": "flexsurv",
+      "r_entry_points": [
+        "flexsurvspline",
+        "summary.flexsurvreg",
+        "standsurv"
+      ],
+      "license": "GPL-2.0-or-later",
+      "assessment": "compatibility_gap",
+      "python_candidates": [
+        "lifelines.SplineFitter",
+        "lifelines.CoxPHFitter(baseline_estimation_method='spline')"
+      ],
+      "gap": "lifelines 提供样条累积风险和 PH 样条基线。待验收的 R 组合包括共同结点下的比例优势或 probit 尺度、协变量在各个样条参数上的时间变化和标准化 RMST。",
+      "validation_targets": [
+        "相同结点和系数下的对数风险、密度与生存",
+        "分类型删失、左截断、样条调节项与拟合协方差",
+        "边际标准化生存及限制平均生存时间"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/flexsurv/index.html"
+        },
+        {
+          "label": "R 样条生存回归",
+          "url": "https://chjackson.github.io/flexsurv/reference/flexsurvspline.html"
+        },
+        {
+          "label": "R 标准化生存",
+          "url": "https://chjackson.github.io/flexsurv/reference/standsurv.html"
+        },
+        {
+          "label": "Python 样条基线",
+          "url": "https://lifelines.readthedocs.io/en/latest/fitters/regression/CoxPHFitter.html"
+        }
+      ]
+    },
+    {
+      "id": "jmbayes2-joint-model",
+      "category": "survival",
+      "priority": "P2",
+      "r_package": "JMbayes2",
+      "r_entry_points": [
+        "jm",
+        "predict.jm",
+        "tvROC",
+        "tvBrier"
+      ],
+      "license": "GPL-3.0-or-later",
+      "assessment": "workflow_gap",
+      "python_candidates": [
+        "jmstate"
+      ],
+      "gap": "jmstate 提供共享随机效应、连续纵向测量和多状态动态预测。核查到的文档未展示 JMbayes2 的混合测量类型、后验抽样和预测区间的整套对应输出。",
+      "validation_targets": [
+        "连续纵向与单事件的联合似然和风险积分",
+        "带重复观测历史的动态预测及后验区间",
+        "混合类型纵向数据、竞争结局及时间变化预测性能"
+      ],
+      "sources": [
+        {
+          "label": "CRAN 软件包",
+          "url": "https://cran.r-project.org/web/packages/JMbayes2/index.html"
+        },
+        {
+          "label": "R 动态预测示例",
+          "url": "https://drizopoulos.github.io/JMbayes2/articles/Dynamic_Predictions.html"
+        },
+        {
+          "label": "Python 多状态联合模型",
+          "url": "https://pypi.org/project/jmstate/"
+        },
+        {
+          "label": "Python 候选方法论文",
+          "url": "https://arxiv.org/abs/2510.07128"
+        }
+      ]
     }
   ]
 }

@@ -26,7 +26,8 @@
         "二正态、七种核及给定密度表的平滑 ROC，完整与部分 AUC",
         "Hand–Till 多分类完整及部分 AUC，单列及类别评分矩阵",
         "三种闭式参数分布的 fitdistr 平滑，以及平滑 AUC 与固定特异度灵敏度的 Bootstrap 区间",
-        "配对与独立样本的平滑曲线完整及部分 AUC、Bootstrap 标准误与检验"
+        "配对与独立样本的平滑曲线完整及部分 AUC、Bootstrap 标准误与检验",
+        "普通及高斯卷积对数凹密度的 ROC 曲线、完整及部分 AUC"
       ],
       "evidence": [
         "docs/methods/roc-delong.md",
@@ -38,7 +39,7 @@
         "docs/methods/roc-parametric.md"
       ],
       "remaining": [
-        "其他参数分布、函数型密度、对数凹平滑、两曲线逐坐标比较与绘图"
+        "其他参数分布、函数型密度、对数凹平滑的重采样、两曲线逐坐标比较与绘图"
       ]
     },
     "survrm2-rmst2": {
@@ -115,7 +116,8 @@
         "Hmisc/rms 限制性三次样条、自动结点、预测重用和主成分旋转",
         "datadist 数值和名义因子、预测网格、参考归零及有限网格点态与同时置信带",
         "已有拟合模型的列线图分值、样条、分类交互和结局轴",
-        "lrm 二元惩罚似然、连续与分类默认惩罚、自定义半正定矩阵及有效自由度"
+        "lrm 二元惩罚似然、连续与分类默认惩罚、自定义半正定矩阵及有效自由度",
+        "二元 lrm 病例权重、归一化权重、logit 偏移量及仅截距拟合"
       ],
       "evidence": [
         "docs/methods/logistic-validation.md",
@@ -127,7 +129,7 @@
       ],
       "remaining": [
         "公式、有序分类评分、列线图自动刻度与绘图、重采样区间",
-        "惩罚搜索、偏移量、观测权重、变量选择、整群重采样、其他结局"
+        "惩罚搜索、变量选择、整群重采样、其他结局"
       ]
     },
     "metafor-meta-analysis": {
@@ -287,6 +289,45 @@
       ],
       "remaining": [
         "多随机项、Kenward–Roger、voom 权重与经验贝叶斯联合验收"
+      ]
+    },
+    "icenreg-interval-censoring": {
+      "status": "native_validated",
+      "covered": [
+        "加权 Turnbull 最大交集、端点精确识别、区间质量和生存概率界"
+      ],
+      "evidence": [
+        "docs/methods/interval-censoring.md",
+        "validation/interval_censoring/expected.json"
+      ],
+      "remaining": [
+        "半参数 PH/PO、参数模型、重抽样推断、分层与截断"
+      ]
+    },
+    "flexsurv-parametric-spline": {
+      "status": "research_only",
+      "covered": [
+        "已核查样条基线的 Python 候选及 R 口径"
+      ],
+      "evidence": [
+        "docs/research.md",
+        "docs/development.md"
+      ],
+      "remaining": [
+        "三种样条变换尺度的预测与拟合、时间依赖系数、边际标准化与区间"
+      ]
+    },
+    "jmbayes2-joint-model": {
+      "status": "research_only",
+      "covered": [
+        "已核查 jmstate 的联合模型、测量类型及动态预测文档"
+      ],
+      "evidence": [
+        "docs/research.md",
+        "docs/development.md"
+      ],
+      "remaining": [
+        "对照 Gaussian 纵向与单事件场景、后验风险，再评估混合类型与多状态路径"
       ]
     }
   }

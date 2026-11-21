@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 
-当前开发仓库跟踪 16 组 R 统计入口。各方法的覆盖、统计差异与本地验证记录见 [迁移目录](catalog/progress.json) 和 [验证报告](docs/validation.md)。
+当前开发仓库跟踪 19 组 R 统计入口。各方法的覆盖、统计差异与本地验证记录见 [迁移目录](catalog/progress.json) 和 [验证报告](docs/validation.md)。
 
 ## 覆盖与验收
 
@@ -20,10 +20,11 @@
 | 生存分析 | `survival.survdiff`、`survdiff_one_sample` | survival 3.8-6 | 17 份固定输入 + 100 组固定种子随机输入；rho、分层、近并列事件、单样本参照 |
 | 生存分析 | `rmst.rmst2` | survRM2 1.0-4 | 14 组；未调整与 1–2 个协变量的 RMST、RMTL 及差值/比值推断 |
 | 生存分析 | `rmst_curves.rmst_curve_data` | survRM2 1.0-4、survival 3.8-6 | 14 组 Kaplan–Meier 阶梯和限制平均生存时间阴影坐标 |
+| 生存分析 | `interval_censoring.turnbull` | icenReg 2.0.16 | 8 组区间删失概率质量，含四种端点组合、准确时间、全右删失及权重 |
 | 诊断准确性 | `roc.delong_auc`、`delong_paired_test`、`delong_unpaired_test` | pROC 1.19.1 | 28 个场景；AUC 方差、区间、配对与独立检验 |
 | 诊断准确性 | `roc_bootstrap.roc_auc`、`bootstrap_auc_ci`、`bootstrap_paired_test` | pROC 1.19.1 | 41 个完整/部分 AUC 场景；61 次指定分层重抽样与配对检验 |
 | 诊断准确性 | `roc_thresholds.roc_coords`、`bootstrap_roc_coords` | pROC 1.19.1 | 47 个坐标场景 + 13 个固定重抽样区间场景；8214 行快照，坐标字段逐位一致 |
-| 诊断准确性 | `roc_smoothing.smooth_roc` | pROC 1.19.1 | 37 个场景，核对二正态、七种核及给定密度、完整与部分 AUC |
+| 诊断准确性 | `roc_smoothing.smooth_roc` | pROC 1.19.1、logcondens 2.1.9 | 37 个二正态、核密度及给定密度场景。另有 11 个对数凹场景 |
 | 诊断准确性 | `roc_parametric.smooth_parametric_roc` | pROC 1.19.1、MASS 7.3-65 | 17 个场景，含正态、对数正态、指数分布与混合分布族 |
 | 诊断准确性 | `roc_smooth_bootstrap.bootstrap_smooth_auc_ci`、`bootstrap_smooth_sensitivity_ci` | pROC 1.19.1、MASS 7.3-65 | 18 个场景与 780 次固定重抽样 |
 | 诊断准确性 | `roc_smooth_bootstrap.bootstrap_smooth_paired_test` | pROC 1.19.1 | 6 组配对平滑 AUC，核对 283 次固定重抽样 |
@@ -38,7 +39,7 @@
 | 临床预测 | `splines.restricted_cubic_spline_knots`、`fit_restricted_cubic_spline` | Hmisc 5.3-1、rms 8.2-1 | 19 组固定输入 + 540 组自动结点；预测重用与主成分旋转 |
 | 临床预测 | `rms_prediction.datadist`、`prediction_grid`、`predict` | rms 8.2-1、multcomp 1.4-31 | 12 组数值与分类默认值、参考归零、点态及同时区间 |
 | 临床预测 | `nomogram.nomogram` | rms 8.2-1 | 2 组加性和交互模型的轴刻度与分值 |
-| 临床预测 | `rms_logistic.fit_penalized_logistic` | rms 8.2-1 | 6 组二元拟合，含默认及自定义惩罚、有效自由度与共线设计 |
+| 临床预测 | `rms_logistic.fit_penalized_logistic` | rms 8.2-1 | 13 组二元拟合，含惩罚矩阵、加权、偏移量和仅截距 |
 | 竞争风险 | `risk_scores.score_competing_risks` | riskRegression 2026.03.11 | 4 组边际 KM + 5 组反向 Cox；AUC、Brier、影响函数、积分 Brier 与配对比较 |
 | 竞争风险 | `risk_cross_validation.cross_validate_competing_risks` | riskRegression 2026.03.11 | 3 折与 4 折校验，核对折外风险及汇总评分 |
 | 竞争风险 | `competing_calibration.calibrate_competing_risks`、`jackknife_cumulative_incidence` | riskRegression、prodlim 2026.03.11 | 7 组；分位数、近邻、局部风险与 Jackknife 伪值 |
