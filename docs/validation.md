@@ -1,6 +1,6 @@
 # 本地验证记录
 
-2026-11-21 在 macOS arm64 本机运行。主要环境为 Python 3.12.7、NumPy 2.1.3、SciPy 1.14.1、pytest 9.2.0 和 R 4.5.3。在 0.3.0 发布提交上开启实时 R 对照并将 Python 警告视为错误，**1,384 项测试全部通过**。默认套件有 1,316 项通过，68 个实时 R 测试按配置跳过。该版本的 wheel 和源码包构建成功。下面列有后续方法的专项验证，参考输入使用人工构造数据。
+2026-11-21 在 macOS arm64 本机运行。主要环境为 Python 3.12.7、NumPy 2.1.3、SciPy 1.14.1、pytest 9.2.0 和 R 4.5.3。在 0.3.0 发布提交上开启实时 R 对照并将 Python 警告视为错误，**1,408 项测试全部通过**。默认套件有 1,339 项通过，69 个实时 R 测试按配置跳过。该版本的 wheel 和源码包构建成功。下面列有后续方法的专项验证，参考输入使用人工构造数据。
 
 | 统计入口 | R 参考 | 覆盖 |
 | --- | --- | --- |
@@ -47,6 +47,7 @@
 | [多层模型影响诊断](methods/meta-influence.md) | metafor 5.0-1 | 4 组逐行或逐研究删除、Cook 距离、DFBETAS、残差与杠杆值 |
 | [多结局随机效应协方差](methods/meta-multivariate.md) | metafor 5.0-1 | 12 组，共八种结构，核对随机协方差、额外随机截距、系数、似然和 Wald 推断 |
 | [Royston–Parmar 样条分布](methods/royston-parmar.md) | flexsurv 2.3.2 | 10 组分布与 9 组分位数，含三种链接、两种时间尺度与逐行参数 |
+| [Royston–Parmar 样条回归](methods/royston-parmar-regression.md) | flexsurv 2.3.2 | 10 组拟合与 7 组给定系数似然，含三种尺度、区间删失、左截断、权重与 ancillary |
 | [区间删失非参数生存](methods/interval-censoring.md) | icenReg 2.0.16 | 8 组开闭端点、最大交集、质量和似然 |
 | [区间删失半参数回归](methods/interval-regression.md) | icenReg 2.0.16 | 6 组比例风险和比例优势，核对权重、系数、似然及生存 |
 | [区间删失病例 Bootstrap](methods/interval-bootstrap.md) | icenReg 2.0.16 | 2 组 26 次成功重拟合及 1 次失败，核对系数、协方差与 Wald 推断 |

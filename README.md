@@ -24,6 +24,7 @@
 | 生存分析 | `interval_regression.fit_interval_regression` | icenReg 2.0.16 | 6 组区间删失 PH 和 PO，含分数权重及基线和协变量生存 |
 | 生存分析 | `interval_bootstrap.bootstrap_interval_regression` | icenReg 2.0.16 | 2 组病例 Bootstrap、26 次重拟合；系数协方差与 Wald 推断 |
 | 生存分析 | `royston_parmar.royston_parmar`、`royston_parmar_quantile` | flexsurv 2.3.2 | 10 组分布与 9 组分位数，含三种链接、两种时间尺度与逐行参数 |
+| 生存分析 | `royston_parmar_regression.fit_royston_parmar`、`royston_parmar_log_likelihood` | flexsurv 2.3.2 | 10 组拟合与 7 组给定系数似然，含三种尺度、区间删失、左截断、权重与 ancillary |
 | 诊断准确性 | `roc.delong_auc`、`delong_paired_test`、`delong_unpaired_test` | pROC 1.19.1 | 28 个场景；AUC 方差、区间、配对与独立检验 |
 | 诊断准确性 | `roc_bootstrap.roc_auc`、`bootstrap_auc_ci`、`bootstrap_paired_test` | pROC 1.19.1 | 41 个完整/部分 AUC 场景；61 次指定分层重抽样与配对检验 |
 | 诊断准确性 | `roc_thresholds.roc_coords`、`bootstrap_roc_coords` | pROC 1.19.1 | 47 个坐标场景 + 13 个固定重抽样区间场景；8214 行快照，坐标字段逐位一致 |

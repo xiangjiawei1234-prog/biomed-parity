@@ -316,15 +316,18 @@
       ]
     },
     "flexsurv-parametric-spline": {
-      "status": "native_partial_parity",
+      "status": "native_validated",
       "covered": [
-        "给定结点与系数的 Royston–Parmar 生存、风险、密度与分位数"
+        "给定结点与系数的 Royston–Parmar 生存、风险、密度与分位数",
+        "flexsurvspline 样条回归拟合、加权似然、协方差与条件预测"
       ],
       "evidence": [
-        "docs/methods/royston-parmar.md"
+        "docs/methods/royston-parmar.md",
+        "docs/methods/royston-parmar-regression.md"
       ],
       "remaining": [
-        "flexsurvspline 拟合、时间依赖系数、边际标准化与区间"
+        "自动选结点、多列与多 ancillary 设计、splines2ns 基底",
+        "置信区间、分位数与 RMST、左截断与区间删失组合及真实数据"
       ]
     },
     "jmbayes2-joint-model": {
