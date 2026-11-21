@@ -13,10 +13,10 @@ from scipy.stats import norm
 from .roc import Alternative, _binary_inputs, _p_value, _validate_alternative
 from .roc_bootstrap import Focus, RocDirection, _paired_auc_statistic
 from .roc_parametric import ParametricDistribution, smooth_parametric_roc
-from .roc_smoothing import DensityKernel, smooth_roc
+from .roc_smoothing import DensityKernel, SmoothingMethod, smooth_roc
 from .roc_thresholds import _draws
 
-BootstrapSmoothingMethod = Literal["binormal", "density", "fitdistr"]
+BootstrapSmoothingMethod = SmoothingMethod | Literal["fitdistr"]
 
 
 @dataclass(frozen=True)
@@ -80,8 +80,8 @@ def _fitter(method, bw, kernel, adjust, cut, control_distribution, case_distribu
     if method == "fitdistr":
         return partial(smooth_parametric_roc, control_distribution=control_distribution,
             case_distribution=case_distribution)
-    if method not in ("binormal", "density"):
-        raise ValueError("method must be 'binormal', 'density', or 'fitdistr'")
+    if method not in ("binormal", "density", "logcondens", "logcondens.smooth"):
+        raise ValueError("method must be 'binormal', 'density', 'fitdistr', 'logcondens', or 'logcondens.smooth'")
     return partial(smooth_roc, method=method, bw=bw, kernel=kernel, adjust=adjust, cut=cut)
 
 

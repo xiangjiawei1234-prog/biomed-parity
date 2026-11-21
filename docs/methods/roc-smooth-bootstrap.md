@@ -1,6 +1,6 @@
 # 平滑 ROC 的 Bootstrap 区间与检验
 
-`biomed_parity.roc_smooth_bootstrap` 使用 Bootstrap 对单条平滑二分类 ROC 计算完整或部分 AUC 的分位数区间与固定特异度上的灵敏度区间，也可比较配对或独立样本的两条平滑曲线。每个重抽样重新拟合双正态、核密度或按类拟合分布的参数化曲线。区间口径对应 pROC 1.19.1 的 `ci.auc()` 和 `ci.se()`，AUC 检验对应 `roc.test(method="bootstrap")`。[pROC AUC 区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.auc) · [pROC 灵敏度区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.se) · [pROC 检验手册](https://search.r-project.org/CRAN/refmans/pROC/html/roc.test.html)
+`biomed_parity.roc_smooth_bootstrap` 使用 Bootstrap 对单条平滑二分类 ROC 计算完整或部分 AUC 的分位数区间与固定特异度上的灵敏度区间，也可比较配对或独立样本的两条平滑曲线。每次重抽样重新拟合双正态、核密度、按类拟合的参数分布或对数凹密度。区间口径对应 pROC 1.19.1 的 `ci.auc()` 和 `ci.se()`，AUC 检验对应 `roc.test(method="bootstrap")`。[pROC AUC 区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.auc) · [pROC 灵敏度区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.se) · [pROC 检验手册](https://search.r-project.org/CRAN/refmans/pROC/html/roc.test.html)
 
 ## 接口
 
@@ -9,7 +9,7 @@
 | `bootstrap_smooth_auc_ci(labels, scores, ...)` | `auc` 为原始样本的平滑 AUC，`median` 为重抽样的中位数，`confidence_interval` 为下、上分位点。可用 `partial_auc`、`focus` 和 `standardize` 指定部分 AUC。 |
 | `bootstrap_smooth_sensitivity_ci(labels, scores, specificity, ...)` | `specificity` 保留输入顺序，`sensitivity` 为原始样本的估计，`intervals` 每行依次为下分位点、中位数和上分位点。可指定一个数或一维数组。 |
 
-两种结果都提供总抽样次数 `n_resamples` 和被丢弃的次数 `omitted_resamples`。`method` 默认为 `"binormal"`，也支持 `"density"` 和 `"fitdistr"`。`direction="auto"` 只在原始样本上判定一次，之后每个重抽样固定使用该方向。核密度的 `bw`、`kernel`、`adjust` 与 `cut` 沿用 `smooth_roc` 的设置，带宽规则 `"nrd0"` 和 `"nrd"` 在每个重抽样重新估计。[双正态与核密度平滑](roc-smoothing.md)
+两种结果都提供总抽样次数 `n_resamples` 和被丢弃的次数 `omitted_resamples`。`method` 默认为 `"binormal"`，也支持 `"density"`、`"fitdistr"`、`"logcondens"` 和 `"logcondens.smooth"`。`direction="auto"` 只在原始样本上判定一次，之后每个重抽样固定使用该方向。核密度的 `bw`、`kernel`、`adjust` 与 `cut` 沿用 `smooth_roc` 的设置，带宽规则 `"nrd0"` 和 `"nrd"` 在每个重抽样重新估计。[平滑方法](roc-smoothing.md)
 
 ```python
 from biomed_parity.roc_smooth_bootstrap import bootstrap_smooth_auc_ci, bootstrap_smooth_sensitivity_ci
@@ -45,7 +45,7 @@ area = bootstrap_smooth_auc_ci(
 
 ## 验证与范围
 
-18 个场景包含 11 个 AUC 区间和 7 个灵敏度区间，其中 5 个场景使用参数化平滑。场景覆盖分层与普通抽样、概率及百分制、完整与部分 AUC、机会水平以下的校正、特异度端点与重复输入，以及因单类、完全分离、零方差或零均值被丢弃的抽样。每个场景按固定的 R 种子生成 43 次抽样，手动逐次调用 pROC，并与使用同一随机数流的公开 `ci.auc()` 或 `ci.se()` 交叉核对。6 个场景各加入一条指定的失败抽样，共保存 780 个抽样索引行。[对照用例](../../validation/roc_smooth_bootstrap/cases.json) · [参考脚本](../../validation/roc_smooth_bootstrap/oracle.R) · [R 4.5.3 / pROC 1.19.1 / MASS 7.3-65 快照](../../validation/roc_smooth_bootstrap/expected.json)
+双正态、核密度和参数分布的 18 个场景包含 11 个 AUC 区间和 7 个灵敏度区间。场景覆盖分层与普通抽样、概率及百分制、完整与部分 AUC、机会水平以下的校正、特异度端点与重复输入，以及因单类、完全分离、零方差或零均值被丢弃的抽样。每个场景按固定的 R 种子生成 43 次抽样，逐次调用 pROC，并与使用同一随机数流的公开 `ci.auc()` 或 `ci.se()` 交叉核对。6 个场景各加入一条指定的失败抽样，共保存 780 个抽样索引行。[对照用例](../../validation/roc_smooth_bootstrap/cases.json) · [参考脚本](../../validation/roc_smooth_bootstrap/oracle.R) · [版本化快照](../../validation/roc_smooth_bootstrap/expected.json)
 
 原样本点估计及分位数在 0–1 尺度上的最大绝对偏差为 `7.8e-16`，丢弃抽样数逐场景一致。数值容差为相对 `2e-14`、绝对 `3e-15`，百分制绝对容差乘以 100。
 
@@ -72,7 +72,7 @@ result = bootstrap_smooth_paired_test(
 
 结果的 `difference` 为 `auc_1 - auc_2`，`standard_error` 为有效重抽样 AUC 差值的样本标准差。`statistic` 用原样本差值除以标准误，`p_value` 按标准正态分布和 `alternative="two.sided"`、`"less"` 或 `"greater"` 计算。有效重抽样少于两次时，标准误、统计量和 p 值为 `NaN`。`percent=True` 同时缩放 AUC、差值及标准误。校正后的部分 AUC 在重抽样中保留低于机会水平的值。[pROC 计算口径](https://search.r-project.org/CRAN/refmans/pROC/html/roc.test.html#details)
 
-6 个场景使用 283 次固定抽样，覆盖三种平滑方法、相反的自动方向、分层和普通抽样、三种备择、部分 AUC 的两种轴、McClish 校正、百分制、相同评分的零差值及单条曲线拟合失败的抽样。R 参考逐次重拟合两条曲线，以相同种子交叉核对公开 `roc.test(method="bootstrap", paired=TRUE)`，覆盖从原 ROC 重用部分 AUC 设置和从检验调用重新指定两种用法。[对照用例](../../validation/roc_smooth_paired/cases.json) · [R 参考脚本](../../validation/roc_smooth_paired/oracle.R) · [R 4.5.3 / pROC 1.19.1 / MASS 7.3-65 快照](../../validation/roc_smooth_paired/expected.json)
+双正态、核密度和参数分布的 6 个场景使用 283 次固定抽样，覆盖相反的自动方向、分层和普通抽样、三种备择、部分 AUC 的两种轴、McClish 校正、百分制、相同评分的零差值及单条曲线拟合失败的抽样。R 参考逐次重拟合两条曲线，以相同种子交叉核对公开 `roc.test(method="bootstrap", paired=TRUE)`，覆盖从原 ROC 重用部分 AUC 设置和从检验调用重新指定两种用法。[对照用例](../../validation/roc_smooth_paired/cases.json) · [R 参考脚本](../../validation/roc_smooth_paired/oracle.R) · [版本化快照](../../validation/roc_smooth_paired/expected.json)
 
 对照中两端均丢弃 12 行抽样。按 0–1 尺度比较时，AUC 与 AUC 差的最大绝对偏差为 `8.9e-16`，检验统计量和 p 值的最大绝对偏差分别为 `1.1e-14` 和 `6.7e-15`。
 
@@ -96,8 +96,14 @@ result = bootstrap_smooth_unpaired_test(
 
 `bootstrap_indices_1` 和 `bootstrap_indices_2` 各为相应样本的零基索引矩阵，列数等于该样本人数。提供两张矩阵时，行数必须相同。提供一张矩阵时，按其行数为另一组生成独立的抽样索引。分层抽样时两组各自维持原病例数和对照数。
 
-5 个场景各用 43 次抽样，覆盖三种平滑方法、样本量和类别人数不同、相反的自动方向、分层和普通抽样、两种部分 AUC 轴、百分制、McClish 校正与三种备择。相同观测输入的场景验证两组抽样仍独立。普通抽样场景包含仅一条曲线拟合失败的重抽样。用两张索引矩阵逐次计算 R 参考值，并以相同的随机数流交叉核对公开 `roc.test()`。两端均丢弃 22 次抽样。按 0–1 尺度比较时，AUC、AUC 差与标准误的最大绝对偏差为 `4.5e-16`，统计量与 p 值的最大绝对偏差为 `1.5e-15`。[对照用例](../../validation/roc_smooth_unpaired/cases.json) · [R 参考脚本](../../validation/roc_smooth_unpaired/oracle.R) · [R 4.5.3 / pROC 1.19.1 / MASS 7.3-65 快照](../../validation/roc_smooth_unpaired/expected.json)
+双正态、核密度和参数分布的 5 个场景各用 43 次抽样，覆盖样本量和类别人数不同、相反的自动方向、分层和普通抽样、两种部分 AUC 轴、百分制、McClish 校正与三种备择。相同观测输入的场景验证两组抽样仍独立。普通抽样场景包含仅一条曲线拟合失败的重抽样。用两张索引矩阵逐次计算 R 参考值，并以相同的随机数流交叉核对公开 `roc.test()`。两端均丢弃 22 次抽样。按 0–1 尺度比较时，AUC、AUC 差与标准误的最大绝对偏差为 `4.5e-16`，统计量与 p 值的最大绝对偏差为 `1.5e-15`。[对照用例](../../validation/roc_smooth_unpaired/cases.json) · [R 参考脚本](../../validation/roc_smooth_unpaired/oracle.R) · [版本化快照](../../validation/roc_smooth_unpaired/expected.json)
 
 ```sh
 R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 python -m pytest -q -W error tests/test_roc_smooth_unpaired.py
 ```
+
+## 对数凹密度推断
+
+四个推断入口都支持 `method="logcondens"` 和 `method="logcondens.smooth"`。每次重抽样重新估计两类密度，卷积方法还重新计算病例的高斯卷积方差。沿用 pROC 的高分识别病例口径。任一组少于两个不同分数的抽样无法拟合，计入 `omitted_resamples`。[对数凹平滑算法与方向](roc-smoothing.md#对数凹密度-roc)
+
+8 个场景逐次核对 R 4.5.3、pROC 1.19.1 与 logcondens 2.1.9，共 354 次固定抽样。每种方法各对照 AUC 分位数区间、灵敏度逐点区间、配对 AUC 检验和独立样本 AUC 检验。场景涵盖完整与部分 AUC、校正后的百分制区间、原始 ROC 方向为 `">"`、分层与普通抽样。两端均丢弃 38 次抽样。将曲线和面积换算到 0–1 尺度后，输出字段最大绝对偏差为 `7.2e-14`。对数凹场景的绝对容差为 `3e-11`，百分制数值的绝对容差相应乘以 100。[区间对照](../../validation/roc_smooth_bootstrap/cases.json) · [配对检验对照](../../validation/roc_smooth_paired/cases.json) · [独立样本检验对照](../../validation/roc_smooth_unpaired/cases.json)

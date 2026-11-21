@@ -18,6 +18,8 @@
     {"id": "density_triangular_percent_partial", "dataset": "unequal_samples", "method": "density", "direction": "auto", "n": 47, "kernel": "triangular", "bw": 0.8, "cut": 0.5, "adjust": 1.2, "percent": true, "partial_auc": [62, 96], "focus": "sensitivity", "alternative": "less", "seed": 6841},
     {"id": "density_identical_observations_independent_draws", "dataset": "unequal_samples", "method": "density", "n": 43, "same_data": true, "seed": 3717},
     {"id": "fitdistr_corrected_partial_auto", "dataset": "unequal_samples", "method": "fitdistr", "direction": "auto", "n": 51, "control_distribution": "log-normal", "case_distribution": "exponential", "partial_auc": [0.56, 0.93], "standardize": true, "allow_below_chance": true, "alternative": "greater", "seed": 8381},
-    {"id": "fitdistr_unstratified_omissions", "dataset": "small_samples", "method": "fitdistr", "n": 53, "control_distribution": "exponential", "case_distribution": "exponential", "stratified": false, "seed": 7129}
+    {"id": "fitdistr_unstratified_omissions", "dataset": "small_samples", "method": "fitdistr", "n": 53, "control_distribution": "exponential", "case_distribution": "exponential", "stratified": false, "seed": 7129},
+    {"id": "logcondens_full_unequal_auto", "dataset": "unequal_samples", "method": "logcondens", "n": 29, "direction": "auto", "seed": 4551},
+    {"id": "logcondens_smooth_corrected_ordinary", "dataset": "small_samples", "method": "logcondens.smooth", "n": 31, "partial_auc": [0.52, 0.91], "focus": "sensitivity", "standardize": true, "allow_below_chance": true, "alternative": "greater", "stratified": false, "seed": 3554}
   ]
 }

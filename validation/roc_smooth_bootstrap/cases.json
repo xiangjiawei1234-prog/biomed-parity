@@ -23,6 +23,10 @@
     {"id": "auc_fitdistr_partial_percent", "dataset": "positive_ties", "method": "fitdistr", "n": 79, "seed": 5269, "control_distribution": "log-normal", "case_distribution": "exponential", "percent": true, "partial_auc": [59, 97], "focus": "sensitivity", "standardize": true},
     {"id": "auc_fitdistr_exponential_ordinary", "dataset": "exponential_with_zero", "method": "fitdistr", "n": 43, "seed": 35801, "control_distribution": "exponential", "case_distribution": "exponential", "stratified": false, "append_draw": "one_class", "confidence_level": 0.9},
     {"id": "sensitivity_fitdistr_reverse_mixed_percent", "dataset": "mixed_supports", "kind": "sensitivity", "method": "fitdistr", "n": 51, "seed": 61429, "case_distribution": "lognormal", "direction": ">", "percent": true, "specificity": [85, 0, 20, 100, 85], "append_draw": "separated"},
-    {"id": "sensitivity_fitdistr_exponential", "dataset": "exponential_with_zero", "kind": "sensitivity", "method": "fitdistr", "n": 39, "seed": 13479, "control_distribution": "exponential", "case_distribution": "exponential", "specificity": 0.64}
+    {"id": "sensitivity_fitdistr_exponential", "dataset": "exponential_with_zero", "kind": "sensitivity", "method": "fitdistr", "n": 39, "seed": 13479, "control_distribution": "exponential", "case_distribution": "exponential", "specificity": 0.64},
+    {"id": "auc_logcondens_stratified_omission", "dataset": "nonunit_intervals_with_ties", "method": "logcondens", "n": 31, "seed": 7763, "direction": "auto", "append_draw": "separated"},
+    {"id": "auc_logcondens_smooth_corrected_percent", "dataset": "nonunit_intervals_with_ties", "method": "logcondens.smooth", "n": 33, "seed": 8812, "confidence_level": 0.9, "percent": true, "partial_auc": [54, 91], "focus": "sensitivity", "standardize": true},
+    {"id": "sensitivity_logcondens_ordinary", "dataset": "interleaved_small", "kind": "sensitivity", "method": "logcondens", "n": 27, "seed": 5941, "specificity": [0.87, 0.37, 0.2, 0.0, 1.0], "stratified": false, "append_draw": "one_class"},
+    {"id": "sensitivity_logcondens_smooth_percent", "dataset": "nonunit_intervals_with_ties", "kind": "sensitivity", "method": "logcondens.smooth", "n": 43, "seed": 6143, "direction": ">", "percent": true, "specificity": [85, 0, 20, 100, 85]}
   ]
 }

@@ -17,6 +17,8 @@
     {"id": "density_partial_percent_recompute", "dataset": "paired_scores", "method": "density", "direction": "auto", "n": 51, "seed": 6839, "partial_auc": [62, 96], "percent": true, "kernel": "epanechnikov", "bw": 0.8, "cut": 0.5, "adjust": 1.2, "alternative": "less"},
     {"id": "density_identical", "dataset": "paired_scores", "method": "density", "n": 51, "seed": 3719, "identical_scores": true},
     {"id": "fitdistr_partial_auto", "dataset": "paired_scores", "method": "fitdistr", "direction": "auto", "n": 59, "seed": 8379, "control_distribution": "log-normal", "case_distribution": "exponential", "partial_auc": [0.59, 0.93]},
-    {"id": "fitdistr_ordinary_failures", "dataset": "zero_controls", "method": "fitdistr", "n": 53, "seed": 7127, "control_distribution": "exponential", "case_distribution": "exponential", "stratified": false, "append_failed_pair": true}
+    {"id": "fitdistr_ordinary_failures", "dataset": "zero_controls", "method": "fitdistr", "n": 53, "seed": 7127, "control_distribution": "exponential", "case_distribution": "exponential", "stratified": false, "append_failed_pair": true},
+    {"id": "logcondens_partial_reuse_auto", "dataset": "paired_scores", "method": "logcondens", "n": 31, "seed": 5634, "direction": "auto", "percent": true, "partial_auc": [52, 91], "reuse_auc": true, "alternative": "less"},
+    {"id": "logcondens_smooth_ordinary_failures", "dataset": "zero_controls", "method": "logcondens.smooth", "n": 29, "seed": 7127, "stratified": false}
   ]
 }

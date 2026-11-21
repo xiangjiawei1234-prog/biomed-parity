@@ -33,10 +33,11 @@ def _assert_parity(case, reference):
     assert len(captured) == bool(omitted)
     if omitted:
         assert f"{omitted} bootstrap draws" in str(captured[0].message)
+    atol = 3e-11 if case.get("method", "").startswith("logcondens") else 8e-15
     for field in ("auc_1", "auc_2", "difference", "standard_error", "statistic", "p_value"):
         scale = 100 if case.get("percent") and field not in ("statistic", "p_value") else 1
         np.testing.assert_allclose(getattr(result, field), reference[field],
-            rtol=4e-14, atol=8e-15 * scale, err_msg=f"{case['id']} {field}")
+            rtol=4e-14, atol=atol * scale, err_msg=f"{case['id']} {field}")
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda case: case["id"])

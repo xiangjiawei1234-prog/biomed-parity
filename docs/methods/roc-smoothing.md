@@ -60,7 +60,7 @@ R_LIBS_USER="$PWD/.r-lib" Rscript --vanilla validation/roc_smoothing/oracle.R va
 
 为复现 pROC，段内分位数使用对数密度差乘以原分数的区间宽度。因此改变分数单位可能改变曲线。未卷积分布沿用 `logcondens` 在近水平区间的线性近似。pROC 在两种方法中均以原始高分识别病例，结果的 `direction` 字段仍记录原始 ROC 方向，包括 `">"`。网格端点固定为 `(0, 1)` 和 `(1, 0)`，再按 pROC 加入两个锚点。`coefficients` 与 `bandwidth` 均为 `None`。[pROC 平滑实现](https://github.com/xrobin/pROC/blob/v1.19.1/R/smooth.R) · [logcondens 分位数实现](https://github.com/cran/logcondens/blob/2.1.9/R/quantilesLogConDens.r)
 
-11 个合成场景对照 R 4.5.3、pROC 1.19.1 与 logcondens 2.1.9。10 个场景逐点核对坐标与 AUC，1 个验证常数对照组被拒绝。另用 35 组生成数据交叉核对两种方法，0–1 尺度的最大绝对偏差为灵敏度 `2.8e-12`、AUC `4.1e-13`。同一活动集可能因数值舍入和线搜索步长产生小幅差异。对数凹方法提供点估计。[对照用例](../../validation/roc_log_concave/cases.json) · [R 参考脚本](../../validation/roc_log_concave/oracle.R) · [版本化快照](../../validation/roc_log_concave/expected.json)
+11 个合成场景对照 R 4.5.3、pROC 1.19.1 与 logcondens 2.1.9。10 个场景逐点核对坐标与 AUC，1 个验证常数对照组被拒绝。另用 35 组生成数据交叉核对两种方法，0–1 尺度的最大绝对偏差为灵敏度 `2.8e-12`、AUC `4.1e-13`。同一活动集可能因数值舍入和线搜索步长产生小幅差异。[对照用例](../../validation/roc_log_concave/cases.json) · [R 参考脚本](../../validation/roc_log_concave/oracle.R) · [版本化快照](../../validation/roc_log_concave/expected.json) · [对数凹密度 Bootstrap 推断](roc-smooth-bootstrap.md#对数凹密度推断)
 
 ```sh
 R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 python -m pytest -q -W error tests/test_roc_log_concave.py

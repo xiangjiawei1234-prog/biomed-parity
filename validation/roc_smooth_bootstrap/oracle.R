@@ -2,7 +2,7 @@ args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 1L) stop("Usage: Rscript oracle.R cases.json")
 input <- jsonlite::read_json(args[[1L]], simplifyVector = FALSE)
 datasets <- input$datasets
-for (method in c("roc_smoothing", "roc_parametric")) {
+for (method in c("roc_smoothing", "roc_parametric", "roc_log_concave")) {
     linked <- file.path(dirname(args[[1L]]), "..", method, "cases.json")
     datasets <- c(datasets, jsonlite::read_json(linked, simplifyVector = FALSE)$datasets)
 }
@@ -21,7 +21,7 @@ evaluate <- function(case) {
     if (identical(settings$method, "fitdistr")) {
         settings$density.controls <- case$control_distribution
         settings$density.cases <- case$case_distribution
-    } else {
+    } else if (identical(settings$method, "density")) {
         settings <- c(settings, list(kernel = default(case$kernel, "gaussian"), bw = default(case$bw, "nrd0"),
             cut = default(case$cut, 3), adjust = default(case$adjust, 1)))
     }
@@ -102,6 +102,6 @@ results <- lapply(input$cases, function(case) {
 })
 names(results) <- vapply(input$cases, function(case) case$id, character(1))
 versions <- list(R = as.character(getRversion()), pROC = as.character(packageVersion("pROC")),
-    MASS = as.character(packageVersion("MASS")))
+    MASS = as.character(packageVersion("MASS")), logcondens = as.character(packageVersion("logcondens")))
 cat(jsonlite::toJSON(list(versions = versions, results = results),
     auto_unbox = TRUE, digits = NA, na = "null", null = "null", pretty = TRUE), "\n", sep = "")

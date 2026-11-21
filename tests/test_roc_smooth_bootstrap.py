@@ -13,7 +13,7 @@ from biomed_parity.roc_smooth_bootstrap import bootstrap_smooth_auc_ci, bootstra
 FIXTURES = Path(__file__).resolve().parents[1] / "validation" / "roc_smooth_bootstrap"
 INPUT = json.loads((FIXTURES / "cases.json").read_text(encoding="utf-8"))
 DATASETS = INPUT["datasets"].copy()
-for method in ("roc_smoothing", "roc_parametric"):
+for method in ("roc_smoothing", "roc_parametric", "roc_log_concave"):
     linked = FIXTURES.parent / method / "cases.json"
     DATASETS.update(json.loads(linked.read_text(encoding="utf-8"))["datasets"])
 CASES = INPUT["cases"]
@@ -48,9 +48,10 @@ def _assert_parity(case, reference):
         lower, upper = actual.confidence_interval
         point, interval = [actual.auc], [[lower, actual.median, upper]]
     scale = 100 if case.get("percent") else 1
+    atol = 3e-11 if case.get("method", "").startswith("logcondens") else 3e-15
     for value, expected in ((point, reference["observed"]), (interval, reference["intervals"])):
         np.testing.assert_allclose(value, np.asarray(expected, dtype=float),
-            rtol=2e-14, atol=3e-15 * scale, err_msg=case["id"])
+            rtol=2e-14, atol=atol * scale, err_msg=case["id"])
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda case: case["id"])
@@ -91,7 +92,7 @@ def test_seed_uses_subject_indices(stratified):
     assert fixed.n_resamples == count
 
 
-@pytest.mark.parametrize("method", ["binormal", "fitdistr"])
+@pytest.mark.parametrize("method", ["binormal", "fitdistr", "logcondens", "logcondens.smooth"])
 def test_all_draws_omitted_leave_point_estimates_and_missing_bounds(method):
     data = DATASETS["continuous"]
     indices = [[0] * 10 + [10] * 7] * 2

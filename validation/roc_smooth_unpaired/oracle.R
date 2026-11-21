@@ -104,6 +104,6 @@ results <- lapply(input$cases, function(case) {
 })
 names(results) <- vapply(input$cases, function(case) case$id, character(1))
 versions <- list(R = as.character(getRversion()), pROC = as.character(packageVersion("pROC")),
-    MASS = as.character(packageVersion("MASS")))
+    MASS = as.character(packageVersion("MASS")), logcondens = as.character(packageVersion("logcondens")))
 cat(jsonlite::toJSON(list(versions = versions, results = results),
     auto_unbox = TRUE, digits = NA, na = "null", null = "null", pretty = TRUE), "\n", sep = "")
