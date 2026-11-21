@@ -64,7 +64,7 @@
 | 证据综合 | `meta_covariance.vcalc` | metafor 5.0-1 | 11 组相关效应抽样协方差，含重复随访、共用对照和正定修正 |
 | 证据综合 | `meta_prediction.predict_multilevel_meta` | metafor 5.0-1 | 6 组模型型置信与预测区间 |
 | 证据综合 | `meta_influence.meta_influence`、`meta_hatvalues` | metafor 5.0-1 | 4 组逐效应或逐研究删除、方差重估、残差和杠杆值 |
-| 证据综合 | `meta_multivariate.meta_multivariate` | metafor 5.0-1 | 10 组多结局 Meta 分析，含八种共同、异质和自回归随机协方差结构 |
+| 证据综合 | `meta_multivariate.meta_multivariate` | metafor 5.0-1 | 12 组，含八种多结局随机协方差及可估计或固定的额外随机截距 |
 | 混合模型 | `zero_inflated.fit_zip_random_intercept`、`zip_random_intercept_loglikelihood` | glmmTMB 1.1.14 | 3 组拟合与给定参数的 Laplace 对数似然 |
 | 混合模型 | `zero_inflated.fit_zinb2_random_intercept`、`zinb2_random_intercept_loglikelihood` | glmmTMB 1.1.14 | 2 组 NB2、离散度回归与暴露量 |
 | 混合模型 | `count_predictions.predict_count_mixed`、`simulate_count_mixed` | glmmTMB 1.1.14 | 2 组 Poisson/NB2 点预测和模拟分布矩 |

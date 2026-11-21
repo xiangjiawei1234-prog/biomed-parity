@@ -1,5 +1,6 @@
 """Estimate a structured outcome-level covariance in Gaussian meta-analysis."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from numbers import Real
 from typing import Literal
@@ -10,7 +11,7 @@ from scipy.optimize import minimize
 
 from .meta_multilevel import (
     Array, MetaMultilevelResult, _codes, _covariance, _degrees_of_freedom, _design_matrix, _real_array,
-    _require_estimable, _variance_objective, meta_multilevel,
+    _random_components, _require_estimable, _variance_objective, meta_multilevel,
 )
 
 
@@ -134,6 +135,9 @@ def meta_multivariate(
     structure: Literal["UN", "CS", "HCS", "ID", "DIAG", "AR", "HAR", "CAR"] = "UN",
     moderators: ArrayLike | None = None,
     intercept: bool = True,
+    random_intercepts: Mapping[str, ArrayLike] | None = None,
+    covariance_components: Mapping[str, ArrayLike] | None = None,
+    fixed_variances: Mapping[str, float] | None = None,
     method: Literal["ML", "REML"] = "REML",
     test: Literal["z", "t", "knha", "adhoc"] = "z",
     dfs: Literal["residual", "contain"] | ArrayLike = "residual",
@@ -144,7 +148,8 @@ def meta_multivariate(
 
     Effects in the same study and outcome share a random effect. The full
     sampling covariance is supplied separately and may have cross-study
-    entries. AR and HAR use the ordered levels, equally spaced by design.
+    entries. Independent random-intercept terms and scaled known covariance
+    kernels can be included as in meta_multilevel. AR and HAR use the ordered levels.
     CAR uses the absolute differences between numeric outcome times.
     By default outcomes are ordered by first occurrence in the inputs.
     """
@@ -169,29 +174,44 @@ def meta_multivariate(
     rows, cols = model.rows, model.cols
     outcome_high = np.maximum(outcome[:, None], outcome)
     outcome_low = np.minimum(outcome[:, None], outcome)
-    components = (
+    outcome_components = (
         within_study & (outcome_high[None, :, :] == rows[:, None, None])
         & (outcome_low[None, :, :] == cols[:, None, None])
     ).astype(float)
+    names, groups, extra, fixed = _random_components(
+        size, random_intercepts, covariance_components, fixed_variances
+    )
+    components = np.concatenate((outcome_components, extra)) if names else outcome_components
     objective, scale = _variance_objective(y, sampling, components, design / design_scale, method)
+    count = len(model.bounds)
+    cell_count = len(rows)
+    free = np.isnan(fixed)
+    scales = fixed / scale
+    bounds = model.bounds + [(0.0, None)] * int(free.sum())
 
     def loss(parameters):
-        covariance, jacobian = model.evaluate(parameters)
-        value, score = objective.evaluate(covariance[rows, cols], gradient=True)
-        return value, jacobian[:, rows, cols] @ score
+        covariance, jacobian = model.evaluate(parameters[:count])
+        additional = scales.copy()
+        additional[free] = parameters[count:]
+        value, score = objective.evaluate(np.r_[covariance[rows, cols], additional], gradient=True)
+        return value, np.r_[jacobian[:, rows, cols] @ score[:cell_count], score[cell_count:][free]]
 
     _, derivative = model.evaluate(model.start(0.7, 0.35))
     linearization = derivative[:, rows, cols]
-    _require_estimable(
-        np.einsum("ij,jkl->ikl", linearization, objective.components),
-        np.einsum("ij,jkl->ikl", linearization, components),
-    )
+
+    def tangent_kernels(kernels):
+        tangent = np.einsum("ij,jkl->ikl", linearization, kernels[:cell_count])
+        return np.concatenate((tangent, kernels[cell_count:][free])) if np.any(free) else tangent
+
+    _require_estimable(tangent_kernels(objective.components), tangent_kernels(components))
     best = None
-    for start in (model.start(0.4, 0), model.start(0.8, 0.35), model.start(1.1, -0.2)):
-        result = minimize(loss, start, method="L-BFGS-B", jac=True, bounds=model.bounds,
+    starts = [(0.4, 0, 0.2), (0.8, 0.35, 0), (1.1, -0.2, 0.8)]
+    for sd, rho, extra_start in starts:
+        start = np.r_[model.start(sd, rho), np.full(free.sum(), extra_start)]
+        result = minimize(loss, start, method="L-BFGS-B", jac=True, bounds=bounds,
                           options={"ftol": 5e-15, "gtol": 2e-9, "maxiter": 800, "maxls": 50})
         score = result.jac.copy()
-        for index, (lo, hi) in enumerate(model.bounds):
+        for index, (lo, hi) in enumerate(bounds):
             if result.x[index] == lo:
                 score[index] = min(score[index], 0)
             elif result.x[index] == hi:
@@ -200,17 +220,23 @@ def meta_multivariate(
             if best is None or result.fun < best.fun:
                 best = result
     best_value = np.inf if best is None else best.fun
-    fitted = None if best is None else model.evaluate(best.x)[0]
+    fitted = None if best is None else model.evaluate(best.x[:count])[0]
+    if best is not None:
+        scales[free] = best.x[count:]
     if model.structure == "CAR":
         # Zero correlation is the infinite-decay limit. Compare the exact
         # independent fit as a candidate instead of relying on an arbitrary cap.
-        independent = replace(objective, components=objective.components[rows == cols].sum(axis=0)[None])
+        diagonal = objective.components[:cell_count][rows == cols].sum(axis=0)[None]
+        independent = replace(
+            objective, components=np.concatenate((diagonal, objective.components[cell_count:]))
+        )
         try:
-            variance, value = independent.fit(np.array([np.nan]))
+            variance, value = independent.fit(np.r_[np.nan, fixed / scale])
         except ValueError:
             value = np.inf
         if np.isfinite(value) and value <= best_value + 1e-12:
             fitted = np.eye(model.size) * variance[0]
+            scales = variance[1:]
     if fitted is None:
         raise ValueError("outcome covariance optimization did not converge")
 
@@ -225,14 +251,20 @@ def meta_multivariate(
     degrees = dfs
     if test != "z" and isinstance(dfs, str) and dfs == "contain":
         study_outcome = _codes(zip(study, outcome, strict=True), size, "study outcomes")
-        degrees = _degrees_of_freedom(dfs, design, [study, study_outcome])
+        degrees = _degrees_of_freedom(dfs, design, [study, study_outcome, *groups.values()])
+    outcome_term = "outcomes"
+    while outcome_term in names:
+        outcome_term = "_" + outcome_term
+    kernels = {name: extra[i] for i, name in enumerate(names) if name not in groups}
+    variances = dict(zip(names, map(float, scales * scale), strict=True))
     fit = meta_multilevel(
         y, sampling, moderators=moderators, intercept=intercept, method=method, test=test, dfs=degrees,
         confidence_level=confidence_level, tested_coefficients=tested_coefficients,
-        covariance_components={"outcomes": random_kernel}, fixed_variances={"outcomes": 1.0},
+        random_intercepts=groups, covariance_components={**kernels, outcome_term: random_kernel},
+        fixed_variances={**variances, outcome_term: 1.0},
     )
     fit = replace(
-        fit, variance_components={}, _estimated_variances=len(model.bounds),
+        fit, variance_components=variances, _estimated_variances=len(bounds),
         _fit_inputs=replace(fit._fit_inputs, reestimation_supported=False),
     )
     return MetaMultivariateResult(levels, structure, random_covariance, correlation, fit)

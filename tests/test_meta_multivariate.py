@@ -39,6 +39,8 @@ def _inputs(case):
         random[:, 1] *= -1
     y = np.array([0.26, 0.55, -0.12])[outcome] + 0.36 * moderator
     y += random[rows, outcome] + 0.13 * np.cos(index * 2.8)
+    if "extra" in case:
+        y += 0.65 * np.cos((3 * study % 7) * 2.31)
     V = 0.18 * np.outer(np.sqrt(variance), np.sqrt(variance)) * (study[:, None] == study)
     np.fill_diagonal(V, variance)
     X = np.column_stack((np.eye(3)[outcome], moderator))
@@ -47,10 +49,14 @@ def _inputs(case):
 
 def _check(case, reference):
     y, V, study, endpoint, levels, X = _inputs(case)
+    site = 3 * study % 7
+    groups = {"site": site} if "extra" in case else None
+    fixed = {"site": 0.2} if case.get("extra") == "fixed" else None
     result = meta_multivariate(
         y, V, study, endpoint, outcome_levels=levels, structure=case["structure"],
         method=case["method"], test=case["test"], dfs=case.get("dfs", "residual"),
         moderators=X, intercept=False,
+        random_intercepts=groups, fixed_variances=fixed,
         tested_coefficients=[3], confidence_level=0.9,
     )
     assert result.outcome_levels == tuple(reference["levels"])
@@ -75,6 +81,10 @@ def _check(case, reference):
     expected_marginal = V + result.random_covariance[by_outcome[:, None], by_outcome] * (
         study[:, None] == study
     )
+    if groups:
+        np.testing.assert_allclose(fit.variance_components["site"], reference["site_variance"],
+                                   rtol=2e-5, atol=2e-7)
+        expected_marginal += fit.variance_components["site"] * (site[:, None] == site)
     np.testing.assert_allclose(fit.marginal_covariance, expected_marginal, rtol=2e-14, atol=1e-16)
     np.testing.assert_allclose(result.random_correlation.diagonal(), 1, atol=2e-15)
     assert np.linalg.eigvalsh(result.random_covariance)[0] >= -1e-12
@@ -139,3 +149,18 @@ def test_continuous_time_rejects_non_numeric_outcomes_and_allows_independence():
     assert result.random_correlation[0, 1] == 0
     with pytest.raises(ValueError, match="CAR outcome times"):
         meta_multivariate(effects, variance, studies, ["a", "b"] * 10, structure="CAR")
+
+
+def test_additional_known_kernel_and_inestimable_study_intercept():
+    case = next(case for case in CASES if case["id"] == "unstructured-and-random-intercept")
+    y, V, studies, outcomes, levels, X = _inputs(case)
+    site = 3 * studies % 7
+    kwargs = dict(outcome_levels=levels, moderators=X, intercept=False)
+    with pytest.raises(ValueError, match="not identifiable"):
+        meta_multivariate(y, V, studies, outcomes, random_intercepts={"study": studies}, **kwargs)
+    result = meta_multivariate(
+        y, V, studies, outcomes, covariance_components={"site": site[:, None] == site}, **kwargs,
+    )
+    ref = meta_multivariate(y, V, studies, outcomes, random_intercepts={"site": site}, **kwargs)
+    np.testing.assert_array_equal(result.random_covariance, ref.random_covariance)
+    assert result.fit.variance_components == ref.fit.variance_components

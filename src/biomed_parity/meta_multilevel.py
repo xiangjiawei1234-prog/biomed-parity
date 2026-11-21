@@ -341,6 +341,29 @@ def _require_estimable(projected, components):
         raise ValueError("estimated variance components are not identifiable under this design")
 
 
+def _random_components(size, random_intercepts, covariance_components, fixed_variances):
+    intercept_terms = random_intercepts or {}
+    extra = covariance_components or {}
+    names = tuple(intercept_terms) + tuple(extra)
+    if len(set(names)) != len(names) or any(not isinstance(name, str) or not name for name in names):
+        raise ValueError("variance components must have unique nonempty string names")
+    groups = {name: _codes(value, size, name) for name, value in intercept_terms.items()}
+    kernels = [(code[:, None] == code).astype(float) for code in groups.values()]
+    kernels.extend(_covariance(value, size, name) for name, value in extra.items())
+    components = np.asarray(kernels, dtype=float).reshape((-1, size, size))
+    fixed_variances = fixed_variances or {}
+    if set(fixed_variances) - set(names):
+        raise ValueError("fixed_variances names must match a specified variance component")
+    fixed = np.full(len(names), np.nan)
+    for i, name in enumerate(names):
+        if name in fixed_variances:
+            value = fixed_variances[name]
+            if not isinstance(value, Real) or not np.isfinite(value) or value < 0:
+                raise ValueError("fixed variances must be finite and nonnegative")
+            fixed[i] = value
+    return names, groups, components, fixed
+
+
 def meta_multilevel(
     effects: ArrayLike,
     sampling_covariance: ArrayLike,
@@ -390,25 +413,9 @@ def meta_multilevel(
         tested = tested.astype(np.intp)
 
     sampling = _covariance(sampling_covariance, size, "sampling_covariance", vector=True)
-    intercept_terms = random_intercepts or {}
-    extra = covariance_components or {}
-    names = tuple(intercept_terms) + tuple(extra)
-    if len(set(names)) != len(names) or any(not isinstance(name, str) or not name for name in names):
-        raise ValueError("variance components must have unique nonempty string names")
-    labels = [_codes(value, size, name) for name, value in intercept_terms.items()]
-    kernels = [(code[:, None] == code).astype(float) for code in labels]
-    kernels.extend(_covariance(value, size, name) for name, value in extra.items())
-    components = np.asarray(kernels, dtype=float).reshape((-1, size, size))
-    fixed_variances = fixed_variances or {}
-    if set(fixed_variances) - set(names):
-        raise ValueError("fixed_variances names must match a specified variance component")
-    fixed = np.full(len(names), np.nan)
-    for i, name in enumerate(names):
-        if name in fixed_variances:
-            value = fixed_variances[name]
-            if not isinstance(value, Real) or not np.isfinite(value) or value < 0:
-                raise ValueError("fixed variances must be finite and nonnegative")
-            fixed[i] = value
+    names, groups, components, fixed = _random_components(
+        size, random_intercepts, covariance_components, fixed_variances
+    )
 
     objective, scale = _variance_objective(y, sampling, components, x_scaled, method)
     y_scaled = y / np.sqrt(scale)
@@ -434,7 +441,7 @@ def meta_multilevel(
         rss = float(res_scaled @ res_scaled)
         adjustment = 0.0 if rss <= np.finfo(float).eps else rss / (size - count)
         covariance *= max(1.0, adjustment) if test == "adhoc" else adjustment
-    degrees = None if test == "z" else _degrees_of_freedom(dfs, design, labels)
+    degrees = None if test == "z" else _degrees_of_freedom(dfs, design, groups.values())
     inference = _coefficient_tests(beta, covariance, degrees, confidence_level)
     omnibus = _wald(beta, covariance, tested, None if degrees is None else float(degrees[tested].min()))
 
@@ -456,8 +463,8 @@ def meta_multilevel(
     log_likelihood = -nll - 0.5 * len(objective.y) * (np.log(2 * np.pi) + np.log(scale))
     random_variance = (fitted * scale) @ np.diagonal(components, axis1=1, axis2=2)
     fit_inputs = _MetaFitInputs(
-        sampling, dict(zip(intercept_terms, labels, strict=True)),
-        {name: components[i].copy() for i, name in enumerate(names) if name in extra},
+        sampling, groups,
+        {name: components[i].copy() for i, name in enumerate(names) if name not in groups},
         {name: float(fixed[i]) for i, name in enumerate(names) if not free[i]},
         intercept, test, dfs if isinstance(dfs, str) or degrees is None else degrees,
     )

@@ -1,6 +1,6 @@
 # 本地验证记录
 
-2026-11-21 在 macOS arm64 本机运行。主要环境为 Python 3.12.7、NumPy 2.1.3、SciPy 1.14.1、pytest 9.2.0 和 R 4.5.3。在 `8489def` 的快照上开启实时 R 对照并将 Python 警告视为错误，**1,213 项测试全部通过**。默认 Python 套件有 1,157 项通过，56 个实时 R 测试按配置跳过。最低依赖环境 Python 3.11.15、NumPy 1.26.4、SciPy 1.12.0 得到同一默认套件结果。下面列有后续方法的专项验证，参考输入使用人工构造数据。
+2026-11-21 在 macOS arm64 本机运行。主要环境为 Python 3.12.7、NumPy 2.1.3、SciPy 1.14.1、pytest 9.2.0 和 R 4.5.3。在 `56a58ba` 的快照上开启实时 R 对照并将 Python 警告视为错误，**1,253 项测试全部通过**。默认 Python 套件有 1,194 项通过，59 个实时 R 测试按配置跳过。最低依赖环境 Python 3.11.15、NumPy 1.26.4、SciPy 1.12.0 得到同一默认套件结果。该快照的 wheel 和源码包构建成功，安装后核对了新增入口。下面列有后续方法的专项验证，参考输入使用人工构造数据。
 
 | 统计入口 | R 参考 | 覆盖 |
 | --- | --- | --- |
@@ -42,7 +42,7 @@
 | [相关效应的抽样协方差](methods/meta-covariance.md) | metafor 5.0-1 | 11 组含命名相关、重复时点、共用臂、正定修正及显式相关块 |
 | [多层模型预测](methods/meta-prediction.md) | metafor 5.0-1 | 6 组平均效应和预测区间，含逐行自由度、Bonferroni 和新观测误差 |
 | [多层模型影响诊断](methods/meta-influence.md) | metafor 5.0-1 | 4 组逐行或逐研究删除、Cook 距离、DFBETAS、残差与杠杆值 |
-| [多结局随机效应协方差](methods/meta-multivariate.md) | metafor 5.0-1 | 10 组，共八种结构，核对随机协方差、系数、似然和 Wald 推断 |
+| [多结局随机效应协方差](methods/meta-multivariate.md) | metafor 5.0-1 | 12 组，共八种结构，核对随机协方差、额外随机截距、系数、似然和 Wald 推断 |
 | [竞争风险评分](methods/competing-risk-scores.md) | riskRegression 2026.03.11 | 4 个边际 KM 和 5 个反向 Cox 方案。九组对照兼容模式的 AUC 区间与影响函数，包括两个非默认目标原因案例 |
 | [竞争风险交叉验证](methods/risk-cross-validation.md) | riskRegression 2026.03.11 | 3 折与 4 折真实重拟合，核对折外预测、评分和区间 |
 | [竞争风险校准](methods/competing-risk-calibration.md) | riskRegression 和 prodlim 2026.03.11 | 7 组分位数、近邻、局部风险和逐行伪值对照 |

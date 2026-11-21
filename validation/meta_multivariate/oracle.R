@@ -23,6 +23,14 @@ evaluate <- function(case) {
     if (!(case$structure %in% c("AR", "HAR"))) random[, 2] <- -random[, 2]
     y <- c(.26, .55, -.12)[outcome] + .36 * moderator +
         random[cbind(index, outcome)] + .13 * cos(index * 2.8)
+    site <- factor((3 * studies) %% 7)
+    random_terms <- ~ endpoint | study
+    sigma2 <- NA_real_
+    if (!is.null(case$extra)) {
+        y <- y + .65 * cos(as.numeric(as.character(site)) * 2.31)
+        random_terms <- list(~ endpoint | study, ~ 1 | site)
+        if (case$extra == "fixed") sigma2 <- 0.2
+    }
     V <- .18 * outer(sqrt(variance), sqrt(variance)) * outer(studies, studies, "==")
     diag(V) <- variance
     study <- factor(studies)
@@ -32,7 +40,7 @@ evaluate <- function(case) {
                1.0 * (outcome == 3), moderator)
     dfs <- if (is.null(case$dfs)) "residual" else case$dfs
     fit <- metafor::rma.mv(
-        y, V, mods = X, intercept = FALSE, random = ~ endpoint | study,
+        y, V, mods = X, intercept = FALSE, random = random_terms, sigma2 = sigma2,
         struct = case$structure, method = case$method, test = case$test, dfs = dfs,
         btt = 4, level = 90,
         control = list(optimizer = "BFGS", reltol = 1e-13, maxit = 2000L)
@@ -44,7 +52,7 @@ evaluate <- function(case) {
         coefficients = I(unname(coef(fit))), coefficient_covariance = unname(vcov(fit)),
         se = I(fit$se), p = I(fit$pval), confint = cbind(fit$ci.lb, fit$ci.ub), df = I(unname(fit$ddf)),
         likelihood = as.numeric(logLik(fit)), omnibus = fit$QM,
-        omnibus_p = fit$QMp, qe = fit$QE
+        omnibus_p = fit$QMp, qe = fit$QE, site_variance = if (is.null(case$extra)) NULL else fit$sigma2
     )
 }
 results <- lapply(cases, function(case) tryCatch(

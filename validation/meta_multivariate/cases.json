@@ -8,5 +8,7 @@
   {"id": "negative-ar", "structure": "AR", "method": "REML", "test": "t", "dfs": "contain"},
   {"id": "negative-har", "structure": "HAR", "method": "ML", "test": "adhoc", "incomplete": true, "dfs": "contain"},
   {"id": "continuous-ar", "structure": "CAR", "method": "REML", "test": "z"},
-  {"id": "continuous-ar-incomplete", "structure": "CAR", "method": "ML", "test": "t", "incomplete": true}
+  {"id": "continuous-ar-incomplete", "structure": "CAR", "method": "ML", "test": "t", "incomplete": true},
+  {"id": "unstructured-and-random-intercept", "structure": "UN", "method": "REML", "test": "z", "extra": "free"},
+  {"id": "continuous-ar-and-fixed-random-intercept", "structure": "CAR", "method": "ML", "test": "t", "extra": "fixed", "incomplete": true}
 ]
