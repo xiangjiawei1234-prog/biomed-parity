@@ -1,4 +1,4 @@
-"""Binormal and density smoothing of binary ROC curves."""
+"""Binormal, density, and log-concave smoothing of binary ROC curves."""
 
 from dataclasses import dataclass
 from math import hypot, pi, sqrt
@@ -10,11 +10,12 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 from scipy.special import ndtr, ndtri
 
+from ._log_concave import log_concave_rates
 from .roc import _binary_inputs
 from .roc_bootstrap import Focus, RocDirection, _AreaSpec, _restricted_trapezoids
 from .roc_thresholds import _empirical_points, _resolve_direction
 
-SmoothingMethod = Literal["binormal", "density"]
+SmoothingMethod = Literal["binormal", "density", "logcondens", "logcondens.smooth"]
 DensityKernel = Literal[
     "gaussian", "rectangular", "triangular", "epanechnikov", "biweight", "cosine", "optcosine"
 ]
@@ -240,14 +241,17 @@ def smooth_roc(
     it on the common n-point kernel grid. With both supplied, their length
     sets the number of fitted points and bandwidth is None. Percent mode
     uses the 0–100 convention.
+
+    The log-concave methods use pROC's high-score curve convention, even
+    when the original ROC direction resolves to ">".
     """
-    if method not in ("binormal", "density"):
-        raise ValueError("method must be 'binormal' or 'density'")
+    if method not in ("binormal", "density", "logcondens", "logcondens.smooth"):
+        raise ValueError("method must be 'binormal', 'density', 'logcondens', or 'logcondens.smooth'")
     if method != "density" and (density_controls is not None or density_cases is not None):
         raise ValueError("density_controls and density_cases require method='density'")
     uses_kernel = method == "density" and (density_controls is None or density_cases is None)
-    if method == "binormal" or uses_kernel:
-        minimum_n = 2 if method == "binormal" else 1
+    if method != "density" or uses_kernel:
+        minimum_n = 1 if method == "density" else 2
         if not isinstance(n, Integral) or isinstance(n, bool) or n < minimum_n:
             raise ValueError(f"n must be an integer of at least {minimum_n} for {method} smoothing")
     labels, scores = _binary_inputs(labels, scores)
@@ -259,7 +263,7 @@ def smooth_roc(
     coefficients, bandwidth = None, None
     if method == "binormal":
         sp, se, coefficients = _binormal(labels, scores, direction, percent, int(n))
-    else:
+    elif method == "density":
         controls = _tabulated_density(density_controls, "density_controls")
         cases = _tabulated_density(density_cases, "density_cases")
         if uses_kernel:
@@ -267,6 +271,9 @@ def smooth_roc(
                 labels, scores, int(n), bw, adjust, cut, kernel, controls, cases,
             )
         sp, se = _density_rates(controls, cases, direction)
+    else:
+        sp, se = log_concave_rates(scores[labels == 0], scores[labels == 1], int(n),
+            smooth=method == "logcondens.smooth")
     if np.any(np.diff(sp) < 0):
         sp, se = sp[::-1], se[::-1]
     sp, se = np.r_[0.0, sp, 1.0], np.r_[1.0, se, 0.0]

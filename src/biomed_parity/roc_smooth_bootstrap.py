@@ -13,10 +13,10 @@ from scipy.stats import norm
 from .roc import Alternative, _binary_inputs, _p_value, _validate_alternative
 from .roc_bootstrap import Focus, RocDirection, _paired_auc_statistic
 from .roc_parametric import ParametricDistribution, smooth_parametric_roc
-from .roc_smoothing import DensityKernel, SmoothingMethod, smooth_roc
+from .roc_smoothing import DensityKernel, smooth_roc
 from .roc_thresholds import _draws
 
-BootstrapSmoothingMethod = SmoothingMethod | Literal["fitdistr"]
+BootstrapSmoothingMethod = Literal["binormal", "density", "fitdistr"]
 
 
 @dataclass(frozen=True)

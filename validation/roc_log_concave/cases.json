@@ -1,0 +1,37 @@
+{
+  "datasets": {
+    "different_supports": {
+      "labels": [0, 0, 0, 0, 1, 1, 1, 1],
+      "scores": [0.1, 0.4, 0.6, 0.8, 0.3, 0.5, 0.7, 0.9]
+    },
+    "nonunit_intervals_with_ties": {
+      "labels": [0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1],
+      "scores": [-3.3, -2.1, -2.1, -1.5, -1.5, 0, 0, 0, 0.5, 1, 1.25, 2, 4.5, 5.9, 7.4]
+    },
+    "two_unique_scores_per_group": {
+      "labels": [0, 0, 0, 1, 1, 1, 1],
+      "scores": [1, 1, 3.5, 0.1, 3.2, 3.2, 3.2]
+    },
+    "same_uniform_scores": {
+      "labels": [0, 0, 1, 1],
+      "scores": [-2, 3, -2, 3]
+    },
+    "constant_controls": {
+      "labels": [0, 0, 0, 1, 1, 1],
+      "scores": [1, 1, 1, 0, 1, 2]
+    }
+  },
+  "cases": [
+    {"id": "mle_unequal_support_anchors", "dataset": "different_supports", "method": "logcondens", "n": 11},
+    {"id": "convolution_unequal_support_anchors", "dataset": "different_supports", "method": "logcondens.smooth", "n": 11},
+    {"id": "mle_reverse_direction_metadata", "dataset": "different_supports", "method": "logcondens", "direction": ">", "n": 11},
+    {"id": "mle_ties_and_percent_partial", "dataset": "nonunit_intervals_with_ties", "method": "logcondens", "direction": "auto", "n": 39, "percent": true, "partial_auc": [45, 84]},
+    {"id": "convolution_ties_corrected_sensitivity", "dataset": "nonunit_intervals_with_ties", "method": "logcondens.smooth", "direction": "auto", "n": 33, "focus": "sensitivity", "standardize": true, "partial_auc": [0.54, 0.91]},
+    {"id": "mle_log_linear_controls_and_cases", "dataset": "two_unique_scores_per_group", "method": "logcondens", "n": 27},
+    {"id": "convolution_log_linear_controls_and_cases", "dataset": "two_unique_scores_per_group", "method": "logcondens.smooth", "n": 27},
+    {"id": "mle_same_uniform_scores", "dataset": "same_uniform_scores", "method": "logcondens", "n": 7},
+    {"id": "convolution_same_uniform_scores", "dataset": "same_uniform_scores", "method": "logcondens.smooth", "n": 7},
+    {"id": "mle_two_point_grid", "dataset": "different_supports", "method": "logcondens", "n": 2},
+    {"id": "mle_constant_controls_error", "dataset": "constant_controls", "method": "logcondens", "n": 11, "error": true}
+  ]
+}
