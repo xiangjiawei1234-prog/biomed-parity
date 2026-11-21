@@ -1,0 +1,11 @@
+[
+  {"id": "mixed-censoring", "left": [1, 2, 4, 3, 0, 5], "right": [2, 3, 6, 3, 1, null]},
+  {"id": "fractional-weights", "left": [0, 2, 4, 2, 3, 5], "right": [2, 5, 8, 7, 3, null],
+   "weights": [0.5, 2, 3, 4, 1, 0.5]},
+  {"id": "right-censoring-with-ties", "left": [1, 1, 2, 2, 3, 3, 5], "right": [1, null, 2, null, 3, 3, null]},
+  {"id": "all-right-censored", "left": [1, 2, 2], "right": [null, null, null]},
+  {"id": "closed-touching", "left": [1, 2, 3, 4], "right": [2, 3, 4, 5], "bounds": [1, 1]},
+  {"id": "open-touching", "left": [1, 2, 3, 4], "right": [2, 3, 4, 5], "bounds": [0, 0]},
+  {"id": "closed-left-touching", "left": [1, 2, 3, 3], "right": [2, 3, 4, 3], "bounds": [1, 0]},
+  {"id": "disjoint-exact-and-open", "left": [1, 1, 1, 2, 3, 4], "right": [1, 1, 2, 3, 4, 4], "bounds": [0, 0]}
+]
