@@ -30,7 +30,7 @@ print(fit.survival_bounds([1, 1.5, 4, 7]))
 
 R 4.5.3 与 icenReg 2.0.16 的八组人工场景对照最大交集、概率质量及加权对数似然。场景包括混合删失、分数权重、并列时间、全右删失及四种开闭组合。质量最大绝对差小于 `4e-8`，对数似然最大绝对差小于 `5e-12`。R 通过将开端点内移约 `1e-10` 表示开区间。Python 直接记录开闭状态，对距离更小的相邻时间仍保留原始端点。 [R 脚本](../../validation/interval_censoring/oracle.R) · [参考输出](../../validation/interval_censoring/expected.json)
 
-当前是单组非参数拟合。协变量的半参数比例风险及比例优势模型、重采样推断、分组比较和截断数据列入后续工作。
+当前是单组非参数拟合。协变量可通过比例风险或比例优势模型纳入。重采样推断、分组比较和截断数据列入后续工作。 [半参数区间删失回归](interval-regression.md)
 
 ```sh
 R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 python -m pytest -q -W error tests/test_interval_censoring.py

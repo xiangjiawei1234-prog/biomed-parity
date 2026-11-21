@@ -9,14 +9,12 @@ from scipy.optimize import brentq, minimize
 
 
 @dataclass(frozen=True)
-class TurnbullFit:
-    """Probability masses on maximal intersections of observation intervals."""
+class IntervalDistribution:
+    """Distribution described by probability masses on disjoint intervals."""
 
     intervals: NDArray[np.float64]
     closed: NDArray[np.bool_]
     mass: NDArray[np.float64]
-    log_likelihood: float
-    optimality_gap: float
 
     def survival_bounds(self, times: ArrayLike) -> NDArray[np.float64]:
         """Return lower and upper bounds for P(T > t) with these fitted masses."""
@@ -30,6 +28,14 @@ class TurnbullFit:
         included = (first_left < len(left)) & (left[index] == t) & self.closed[index, 0]
         first_right = np.searchsorted(right, t, side="right")
         return np.stack((cumulative[first_left + included], cumulative[first_right]), axis=-1)
+
+
+@dataclass(frozen=True)
+class TurnbullFit(IntervalDistribution):
+    """Interval-censored nonparametric maximum likelihood fit."""
+
+    log_likelihood: float
+    optimality_gap: float
 
 
 def _observation_intervals(left, right, bounds, weights):
@@ -51,7 +57,10 @@ def _observation_intervals(left, right, bounds, weights):
     ):
         raise ValueError("weights must be finite, nonnegative, and have positive total")
     keep = weights > 0
-    return left[keep].astype(float), right[keep].astype(float), closed.astype(bool), weights[keep].astype(float)
+    return (
+        left[keep].astype(float), right[keep].astype(float), closed.astype(bool),
+        weights[keep].astype(float), keep,
+    )
 
 
 def _maximal_intersections(left, right, endpoint_closed):
@@ -132,7 +141,7 @@ def turnbull(
     Zero-weight rows are omitted. The likelihood assigns mass to intervals
     and leaves its placement within each interval unspecified.
     """
-    left, right, closed, weights = _observation_intervals(left, right, bounds, weights)
+    left, right, closed, weights, _ = _observation_intervals(left, right, bounds, weights)
     if not isinstance(tolerance, Real) or not np.isfinite(tolerance) or tolerance <= 0:
         raise ValueError("tolerance must be finite and positive")
     if isinstance(max_iterations, bool) or not isinstance(max_iterations, Integral) or max_iterations < 1:

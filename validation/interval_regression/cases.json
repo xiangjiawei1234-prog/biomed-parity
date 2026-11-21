@@ -1,0 +1,8 @@
+[
+  {"id": "ph-mixed", "model": "ph"},
+  {"id": "po-mixed", "model": "po"},
+  {"id": "ph-weighted", "model": "ph", "weighted": true, "two_covariates": true},
+  {"id": "po-weighted", "model": "po", "weighted": true, "two_covariates": true},
+  {"id": "ph-closed", "model": "ph", "bounds": [1, 1]},
+  {"id": "po-open-right", "model": "po", "bounds": [1, 0]}
+]
