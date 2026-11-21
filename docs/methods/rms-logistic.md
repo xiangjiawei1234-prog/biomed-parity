@@ -22,15 +22,28 @@ prediction = wald_predict(design, fit.coefficients, fit.covariance, transform=ex
 - `penalty_matrix` 可传入自定义的对称半正定基础矩阵，行列与斜率顺序一致。`penalty` 可以为共同的非负倍数，也可以为逐列倍数。逐列倍数的平方根同时缩放基础矩阵的行和列。因子取零时对应列不参与惩罚。可按设计列顺序给样条非线性项和交互项指定不同倍数。
 - `fit.penalty_matrix` 是实际施加到斜率的矩阵。截距相应的惩罚恒为零。默认惩罚受设计列的变化范围影响，分类主效应的惩罚在同一块各列采用共同倍数时与参考水平选择无关。 [rms 惩罚矩阵源码](https://github.com/harrelfe/rms/blob/master/R/rmsMisc.s)
 
-## 结果与验证
+## 结果
 
 `coefficients` 和 `covariance` 使用原始设计尺度，截距位于第一项。协方差是拟合点的惩罚信息矩阵逆。`effective_df_diagonal` 是未惩罚信息矩阵与该协方差乘积的对角线，`effective_df` 是斜率项贡献的总和。`deviance`、`penalized_deviance` 和 `null_deviance` 分别是拟合点的未惩罚、惩罚和空模型偏差。`likelihood_ratio` 使用未惩罚偏差，`pvalue` 用有效自由度计算卡方右尾概率。输出也包含训练行的线性预测和响应概率。 [rms::lrm 源码](https://github.com/harrelfe/rms/blob/master/R/lrm.s)
 
-当前接口覆盖完整的二元响应和数值斜率设计。调用者负责分类变量编码、样条基构造和数据缺失处理。序数响应、偏移量、观测权重、惩罚强度搜索和惩罚模型重抽样为后续范围。惩罚须能约束造成分离或共线的方向，才能得到有限且可识别的拟合。
+## 权重、偏移与仅截距拟合
+
+`weights` 按行提供非负观测权重，可包含小数和零。两种结局都须有正总权重。`normwt=True` 将权重和缩放至输入行数，默认保留原权重尺度。权重作用于似然和信息矩阵。默认矩阵仍由完整设计的未加权样本方差与分类块确定。 [rms::lrm.fit 源码](https://github.com/harrelfe/rms/blob/master/R/lrm.fit.r)
+
+`offset` 是固定的 logit 尺度偏移，可以是标量或逐行向量。`linear_predictor` 包含该偏移，`probabilities` 是对应的逆 logit 值。`null_deviance` 使用带相同权重和偏移的仅截距模型。传入 `x=None` 或零列设计直接拟合该模型，仅截距模型的斜率有效自由度与似然比均为零。
+
+rms 8.2-1 的 `lrm` 惩罚拟合在重算自由度与似然比时省略观测权重，有偏移时该似然比使用无偏移的空模型。`lrm.fit` 对有斜率的拟合保存的线性预测省略偏移，仅截距时该字段为空。Python 用加权后拟合点的未惩罚信息计算有效自由度，用相同权重和偏移比较嵌套模型。R 验证通过 `lrm.fit` 分别计算这些量。 [rms::lrm 源码](https://github.com/harrelfe/rms/blob/master/R/lrm.s) [加权 R 验证脚本](../../validation/rms_logistic_weighted/oracle.R)
+
+当前接口覆盖完整的二元响应和数值斜率设计。调用者负责分类变量编码、样条基构造和数据缺失处理。序数响应、惩罚强度搜索和惩罚模型重抽样为后续范围。惩罚须能约束造成分离或共线的方向，才能得到有限且可识别的拟合。
+
+## 本地验证
 
 ```bash
-R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 .venv/bin/python -m pytest -q -W error tests/test_rms_logistic.py
+R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 .venv/bin/python -m pytest -q -W error tests/test_rms_logistic*.py
 R_LIBS_USER="$PWD/.r-lib" .venv/bin/python validation/rms_logistic/verify.py
+R_LIBS_USER="$PWD/.r-lib" .venv/bin/python validation/rms_logistic_weighted/verify.py
 ```
 
 R 4.5.3 和 rms 8.2-1 的六个合成案例覆盖普通拟合、连续列方差惩罚、相关自定义矩阵与不惩罚的列、多水平因子和样条交互、完全分离及共线设计。对照拟合系数、协方差、实际惩罚、预测、有效自由度和偏差统计量，绝对容差为 `3e-9`，相对容差为 `2e-9`。 [R 验证脚本](../../validation/rms_logistic/oracle.R)
+
+另有七个合成案例核对频数权重、归一化小数权重、零权重、加惩罚的加权偏移模型、有斜率的非加权偏移模型，以及标量和逐行偏移的仅截距模型。绝对和相对容差均为 `2e-9`。 [加权 R 案例](../../validation/rms_logistic_weighted/cases.json)

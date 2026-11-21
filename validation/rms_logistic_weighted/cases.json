@@ -1,0 +1,10 @@
+[
+  {"id": "weighted_frequency_zero", "weights": "frequency"},
+  {"id": "normalized_fractional_penalty", "weights": "fractional", "normwt": true, "penalty": 2},
+  {"id": "weighted_offset_penalty", "weights": "fractional", "offset": "varying", "penalty": 2},
+  {"id": "offset_with_slopes", "offset": "varying"},
+  {"id": "intercept_only", "intercept_only": true},
+  {"id": "normalized_weighted_intercept_with_offset", "intercept_only": true,
+   "weights": "fractional", "normwt": true, "offset": "varying"},
+  {"id": "intercept_only_scalar_offset", "intercept_only": true, "offset": 1.75}
+]

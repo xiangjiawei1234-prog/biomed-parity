@@ -4,34 +4,43 @@ import numpy as np
 from scipy.special import expit, logit
 
 
-def _deviance(signed, linear):
-    return 2 * np.logaddexp(0, -signed * linear).sum()
+def _deviance(signed, linear, weights=None):
+    losses = np.logaddexp(0, -signed * linear)
+    if weights is not None:
+        losses *= weights
+    return 2 * losses.sum()
 
 
-def _information(design, linear):
-    weights = expit(linear) * expit(-linear)
-    return np.einsum("ij,ik,i->jk", design, design, weights)
+def _information(design, linear, weights=None):
+    curvature = expit(linear) * expit(-linear)
+    if weights is not None:
+        curvature *= weights
+    return np.einsum("ij,ik,i->jk", design, design, curvature)
 
 
 def _quadratic_penalty(slopes, penalty):
     return np.einsum("i,ij,j->", slopes, penalty, slopes)
 
 
-def _fit_coefficients(design, y, penalty=None):
+def _fit_coefficients(design, y, penalty=None, *, weights=None, offset=0, intercept=None):
     signed = 2 * y - 1
-    coefficients = np.r_[logit(y.mean()), np.zeros(design.shape[1] - 1)]
+    start = logit(y.mean()) if intercept is None else intercept
+    coefficients = np.r_[start, np.zeros(design.shape[1] - 1)]
 
     def objective(linear, beta):
-        deviance = _deviance(signed, linear)
+        deviance = _deviance(signed, linear, weights)
         if penalty is not None:
             deviance += _quadratic_penalty(beta[1:], penalty)
         return deviance
 
-    linear = np.einsum("ij,j->i", design, coefficients)
+    linear = np.einsum("ij,j->i", design, coefficients) + offset
     deviance = objective(linear, coefficients)
     for _ in range(80):
-        score = np.einsum("ij,i->j", design, signed * expit(-signed * linear))
-        information = _information(design, linear)
+        residual = signed * expit(-signed * linear)
+        if weights is not None:
+            residual *= weights
+        score = np.einsum("ij,i->j", design, residual)
+        information = _information(design, linear, weights)
         if penalty is not None:
             score[1:] -= np.einsum("ij,j->i", penalty, coefficients[1:])
             information[1:, 1:] += penalty
@@ -40,7 +49,7 @@ def _fit_coefficients(design, y, penalty=None):
             return coefficients
         for half in range(25):
             updated = coefficients + delta * 0.5**half
-            fitted = np.einsum("ij,j->i", design, updated)
+            fitted = np.einsum("ij,j->i", design, updated) + offset
             candidate = objective(fitted, updated)
             if candidate <= deviance + np.finfo(float).eps * deviance:
                 coefficients, linear, deviance = updated, fitted, candidate
