@@ -27,7 +27,7 @@ print(fit.distribution([1]).survival_bounds([1, 2.5, 4]))
 
 R 4.5.3 和 icenReg 2.0.16 的六组人工数据对照包括一至两个协变量、分数权重、端点组合及多种删失。最大绝对偏差为系数 `2.1e-6`、对数似然 `5.6e-11`、生存概率 `9.0e-7`。生存对照包括全零及非零协变量。 [本地 R 脚本](../../validation/interval_regression/oracle.R) · [参考输出](../../validation/interval_regression/expected.json)
 
-当前提供固定设计、点估计和预测分布。模型推断还需对照病例 Bootstrap、协方差和区间。时变协变量、左截断和多事件流程另行验证。
+当前提供固定设计、点估计和预测分布。系数协方差和区间见[病例 Bootstrap 推断](interval-bootstrap.md)。时变协变量、左截断和多事件流程另行验证。
 
 ```sh
 R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 python -m pytest -q -W error tests/test_interval_regression.py

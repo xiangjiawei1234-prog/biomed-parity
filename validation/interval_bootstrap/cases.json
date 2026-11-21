@@ -1,0 +1,5 @@
+[
+  {"id": "unweighted_ph", "model": "ph", "seed": 281, "n_resamples": 12},
+  {"id": "weighted_po_with_singular_draw", "model": "po", "weighted": true,
+   "seed": 928, "n_resamples": 14, "bounds": [1, 0], "confidence_level": 0.9, "singular_draw": true}
+]
