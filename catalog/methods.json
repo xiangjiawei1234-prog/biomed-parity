@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "as_of": "2026-11-19",
+  "as_of": "2026-11-21",
   "categories": [
     {
       "id": "survival",
@@ -86,6 +86,9 @@
         "roc",
         "ci.auc",
         "roc.test",
+        "coords",
+        "smooth",
+        "multiclass.roc",
         "var",
         "cov"
       ],
@@ -100,7 +103,8 @@
       "validation_targets": [
         "AUC、方差、协方差和区间",
         "配对和不配对样本的估计、检验统计量、自由度与 p 值",
-        "不同方向、分数并列、完全分离、零方差与非默认备择"
+        "不同方向、分数并列、完全分离、零方差与非默认备择",
+        "二正态、核密度与多分类的 AUC 定义"
       ],
       "sources": [
         {
@@ -114,6 +118,14 @@
         {
           "label": "AUC 区间",
           "url": "https://search.r-project.org/CRAN/refmans/pROC/html/ci.auc.html"
+        },
+        {
+          "label": "ROC 平滑",
+          "url": "https://search.r-project.org/CRAN/refmans/pROC/html/smooth.html"
+        },
+        {
+          "label": "Hand–Till 多分类 AUC",
+          "url": "https://search.r-project.org/CRAN/refmans/pROC/html/multiclass.html"
         },
         {
           "label": "scikit-learn ROC AUC",
@@ -135,7 +147,8 @@
       "priority": "P0",
       "r_package": "survRM2",
       "r_entry_points": [
-        "rmst2"
+        "rmst2",
+        "plot.rmst2"
       ],
       "license": "GPL-2.0-only",
       "assessment": "compatibility_gap",
@@ -157,6 +170,10 @@
         {
           "label": "rmst2 手册",
           "url": "https://search.r-project.org/CRAN/refmans/survRM2/html/rmst2.html"
+        },
+        {
+          "label": "RMST 可视化",
+          "url": "https://search.r-project.org/CRAN/refmans/survRM2/html/plot.rmst2.html"
         },
         {
           "label": "lifelines RMST",
@@ -274,8 +291,13 @@
         "gsDesign",
         "gsProbability",
         "gsCP",
+        "sequentialPValue",
+        "nSurv",
         "gsSurv",
-        "gsSurvPower"
+        "gsSurvPower",
+        "gsBinomialExact",
+        "binomialSPRT",
+        "toBinomialExact"
       ],
       "license": "GPL-3.0-or-later",
       "assessment": "workflow_gap",
@@ -303,6 +325,18 @@
         {
           "label": "生存试验效能参考",
           "url": "https://keaven.github.io/gsDesign/reference/gsSurvPower.html"
+        },
+        {
+          "label": "生存样本量和分析日历",
+          "url": "https://keaven.github.io/gsDesign/reference/nSurv.html"
+        },
+        {
+          "label": "序贯 p 值和重复置信区间",
+          "url": "https://keaven.github.io/gsd-tech-manual/analysis.html"
+        },
+        {
+          "label": "精确二项组序贯设计",
+          "url": "https://keaven.github.io/gsd-tech-manual/binomial-exact.html"
         },
         {
           "label": "Python gsdesign",
@@ -356,6 +390,14 @@
           "url": "https://search.r-project.org/CRAN/refmans/rms/html/calibrate.html"
         },
         {
+          "label": "点态预测和参考值",
+          "url": "https://search.r-project.org/CRAN/refmans/rms/html/Predict.html"
+        },
+        {
+          "label": "列线图的评分和刻度",
+          "url": "https://search.r-project.org/CRAN/refmans/rms/html/nomogram.html"
+        },
+        {
           "label": "工作流说明",
           "url": "https://search.r-project.org/CRAN/refmans/rms/html/zzzrmsOverview.html"
         },
@@ -381,6 +423,10 @@
       "r_entry_points": [
         "rma.uni",
         "rma.mv",
+        "cooks.distance",
+        "dfbetas",
+        "hatvalues",
+        "rstudent",
         "confint",
         "vcalc",
         "robust",
@@ -394,10 +440,11 @@
         "PyMARE",
         "statsmodels.stats.meta_analysis"
       ],
-      "gap": "本地验证中，pimeta 1.0.0 复现所测嵌套或交叉拟合及单系数 CR2，其已安装接口缺少所测固定方差、已知相关矩阵、多层方差剖面区间和 HTZ 联合检验。这些数值路径已由原生实现对照，随机效应相关参数估计仍待核对。",
+      "gap": "本地验证中，pimeta 1.0.0 复现所测嵌套或交叉拟合及单系数 CR2，其已安装接口缺少所测固定方差、已知相关矩阵、多层方差剖面区间和 HTZ 联合检验。仓库已原生对照这些路径及八种常见多结局随机协方差结构。空间相关、部分固定结构及多个相关随机项仍待核对。",
       "validation_targets": [
         "给定非对角 V 的多层 REML",
         "结构化和嵌套随机效应、方差分量和预测区间",
+        "多结局随机效应协方差，包括非等间隔时点",
         "集群稳健 CR2 的协方差与 Satterthwaite 自由度"
       ],
       "sources": [
@@ -408,6 +455,18 @@
         {
           "label": "多层模型",
           "url": "https://wviechtb.github.io/metafor/reference/rma.mv.html"
+        },
+        {
+          "label": "依赖效应的抽样协方差",
+          "url": "https://wviechtb.github.io/metafor/reference/vcalc.html"
+        },
+        {
+          "label": "多层预测的置信和预测区间",
+          "url": "https://wviechtb.github.io/metafor/reference/predict.rma.html"
+        },
+        {
+          "label": "多层模型影响诊断",
+          "url": "https://wviechtb.github.io/metafor/reference/influence.rma.mv.html"
         },
         {
           "label": "稳健推断",
@@ -443,6 +502,7 @@
       "r_entry_points": [
         "svydesign",
         "svrepdesign",
+        "as.svrepdesign",
         "calibrate",
         "svyglm",
         "twophase",
@@ -471,6 +531,18 @@
           "url": "https://search.r-project.org/CRAN/refmans/survey/html/twophase.html"
         },
         {
+          "label": "重复权重设计",
+          "url": "https://search.r-project.org/CRAN/refmans/survey/html/svrepdesign.html"
+        },
+        {
+          "label": "复杂抽样校准",
+          "url": "https://r-survey.r-forge.r-project.org/pkgdown/docs/reference/calibrate.html"
+        },
+        {
+          "label": "重复权重生成与孤立 PSU",
+          "url": "https://r-survey.r-forge.r-project.org/pkgdown/docs/reference/as.svrepdesign.html"
+        },
+        {
           "label": "调查加权 Cox",
           "url": "https://search.r-project.org/CRAN/refmans/survey/html/svycoxph.html"
         },
@@ -495,11 +567,18 @@
       "r_package": "mice",
       "r_entry_points": [
         "mice",
+        "mice.impute.polyreg",
+        "mice.impute.polr",
         "mice.impute.2l.pan",
+        "mice.impute.2l.norm",
+        "mice.impute.2l.bin",
+        "mice.impute.mnar.norm",
+        "mice.impute.mnar.logreg",
         "pool",
         "D1",
         "D2",
-        "D3"
+        "D3",
+        "mitml::testModels(method='D4')"
       ],
       "license": "GPL-2.0-or-later",
       "assessment": "compatibility_gap",
@@ -523,6 +602,22 @@
           "url": "https://amices.org/mice/reference/mice.impute.2l.pan.html"
         },
         {
+          "label": "两层二元随机效应插补",
+          "url": "https://amices.org/mice/reference/mice.impute.2l.bin.html"
+        },
+        {
+          "label": "无序多分类插补",
+          "url": "https://amices.org/mice/reference/mice.impute.polyreg.html"
+        },
+        {
+          "label": "有序多分类插补",
+          "url": "https://amices.org/mice/reference/mice.impute.polr.html"
+        },
+        {
+          "label": "非随机缺失敏感性分析",
+          "url": "https://amices.org/mice/reference/mice.impute.mnar.html"
+        },
+        {
           "label": "合并及自由度",
           "url": "https://amices.org/mice/reference/pool.html"
         },
@@ -539,7 +634,7 @@
           "url": "https://amices.org/mice/reference/mice.html"
         },
         {
-          "label": "D1/D2 多参数检验",
+          "label": "mitml D1–D4 多参数检验",
           "url": "https://search.r-project.org/CRAN/refmans/mitml/html/testModels.html"
         }
       ]
@@ -551,9 +646,12 @@
       "r_package": "mstate",
       "r_entry_points": [
         "msprep",
+        "expand.covs",
         "msfit",
         "probtrans",
-        "MarkovTest"
+        "MarkovTest",
+        "optimal_weights_matrix",
+        "optimal_weights_multiple"
       ],
       "license": "GPL-2.0-or-later",
       "assessment": "compatibility_gap",
@@ -575,6 +673,14 @@
         {
           "label": "mstate 函数索引",
           "url": "https://search.r-project.org/CRAN/refmans/mstate/html/00Index.html"
+        },
+        {
+          "label": "多状态转移协变量",
+          "url": "https://search.r-project.org/CRAN/refmans/mstate/html/expand.covs.msdata.html"
+        },
+        {
+          "label": "多状态 Markov 检验",
+          "url": "https://search.r-project.org/CRAN/refmans/mstate/html/MarkovTest.html"
         },
         {
           "label": "PyMSM 多状态模型",
@@ -612,6 +718,14 @@
         {
           "label": "glmmTMB 参数说明",
           "url": "https://search.r-project.org/CRAN/refmans/glmmTMB/html/glmmTMB.html"
+        },
+        {
+          "label": "NB2 方差和离散度参数",
+          "url": "https://glmmtmb.github.io/glmmTMB/reference/nbinom2.html"
+        },
+        {
+          "label": "计数混合模型预测",
+          "url": "https://glmmtmb.github.io/glmmTMB/reference/predict.glmmTMB.html"
         },
         {
           "label": "statsmodels 广义混合模型",

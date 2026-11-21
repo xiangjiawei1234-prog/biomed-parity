@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "as_of": "2026-11-19",
+  "as_of": "2026-11-21",
   "methods": {
     "survival-survdiff": {
       "status": "native_validated",
@@ -22,27 +22,37 @@
         "delong_paired_test",
         "delong_unpaired_test",
         "部分 AUC、分层 Bootstrap 区间与配对检验",
-        "pROC coords 操作点、阈值选择与 Bootstrap 坐标区间"
+        "pROC coords 操作点、阈值选择与 Bootstrap 坐标区间",
+        "二正态、七种核及给定密度表的平滑 ROC，完整与部分 AUC",
+        "Hand–Till 多分类完整及部分 AUC，单列及类别评分矩阵",
+        "三种闭式参数分布的 fitdistr 平滑，以及平滑 AUC 与固定特异度灵敏度的 Bootstrap 区间",
+        "配对与独立样本的平滑曲线完整及部分 AUC、Bootstrap 标准误与检验"
       ],
       "evidence": [
         "docs/methods/roc-delong.md",
         "docs/methods/roc-bootstrap.md",
-        "docs/methods/roc-thresholds.md"
+        "docs/methods/roc-thresholds.md",
+        "docs/methods/roc-smoothing.md",
+        "docs/methods/roc-multiclass.md",
+        "docs/methods/roc-smooth-bootstrap.md",
+        "docs/methods/roc-parametric.md"
       ],
       "remaining": [
-        "平滑 ROC、多分类 ROC 与绘图"
+        "其他参数分布、函数型密度、对数凹平滑、两曲线逐坐标比较与绘图"
       ]
     },
     "survrm2-rmst2": {
       "status": "native_validated",
       "covered": [
-        "rmst2 未调整及协变量调整"
+        "rmst2 未调整及协变量调整",
+        "两臂 Kaplan–Meier 阶梯线、RMST/RMTL 阴影坐标及可选点态区间"
       ],
       "evidence": [
-        "docs/methods/rmst2.md"
+        "docs/methods/rmst2.md",
+        "docs/methods/rmst-curves.md"
       ],
       "remaining": [
-        "R 展示对象和绘图工作流"
+        "格式化对象与完整绘图入口"
       ]
     },
     "cmprsk-competing-risks": {
@@ -65,14 +75,16 @@
       "covered": [
         "score_competing_risks 的边际 IPCW AUC/Brier、影响函数、配对比较",
         "反向 Cox 删失权重与分层、积分 Brier、旧版 AUC 影响函数复现",
-        "固定时点分组与近邻校准，局部累积发生率和 Jackknife 伪值"
+        "固定时点分组与近邻校准，局部累积发生率和 Jackknife 伪值",
+        "一次 K 折重拟合及折外风险汇总，边际 KM 与反向 Cox"
       ],
       "evidence": [
         "docs/methods/competing-risk-scores.md",
-        "docs/methods/competing-risk-calibration.md"
+        "docs/methods/competing-risk-calibration.md",
+        "docs/methods/risk-cross-validation.md"
       ],
       "remaining": [
-        "重拟合交叉验证",
+        "重复 K 折与 Bootstrap 重拟合",
         "自动带宽、校准信赖带和成组重抽样推断"
       ]
     },
@@ -80,13 +92,19 @@
       "status": "native_validated",
       "covered": [
         "单侧有效性 O’Brien–Fleming 与 Hwang–Shih–DeCani 花费边界",
-        "对称双侧、约束性与非约束性无效边界、越界概率和条件把握度"
+        "对称双侧、约束性与非约束性无效边界、越界概率和条件把握度",
+        "nSurv 四种固定样本量方法、gsSurv 的分层分段入组、事件目标和分析日历",
+        "正态序贯及重复 p 值、单侧或对称重复 Wald 区间",
+        "单样本精确二项越界及条件推断、整数疗效花费、无效与伤害界、截断 SPRT"
       ],
       "evidence": [
-        "docs/methods/group-sequential.md"
+        "docs/methods/group-sequential.md",
+        "docs/methods/group-sequential-survival.md",
+        "docs/methods/group-sequential-inference.md",
+        "docs/methods/group-sequential-binomial.md"
       ],
       "remaining": [
-        "伤害界、端点特异样本量与日历时间、非恒定疗效、预测把握度与重复置信区间"
+        "正态伤害界和二项无效/伤害界校准、非恒定疗效、预测把握度、阶段排序及精确二项区间"
       ]
     },
     "rms-clinical-modeling": {
@@ -94,16 +112,22 @@
       "covered": [
         "validate_logistic 无惩罚二分类模型固定索引重采样",
         "calibrate_logistic 表观及偏差校正曲线、四种重采样与点态近似区间",
-        "Hmisc/rms 限制性三次样条、自动结点、预测重用和主成分旋转"
+        "Hmisc/rms 限制性三次样条、自动结点、预测重用和主成分旋转",
+        "datadist 数值和名义因子、预测网格、参考归零及有限网格点态与同时置信带",
+        "已有拟合模型的列线图分值、样条、分类交互和结局轴",
+        "lrm 二元惩罚似然、连续与分类默认惩罚、自定义半正定矩阵及有效自由度"
       ],
       "evidence": [
         "docs/methods/logistic-validation.md",
         "docs/methods/logistic-calibration-curve.md",
-        "docs/methods/restricted-cubic-splines.md"
+        "docs/methods/restricted-cubic-splines.md",
+        "docs/methods/rms-prediction.md",
+        "docs/methods/nomogram.md",
+        "docs/methods/rms-logistic.md"
       ],
       "remaining": [
-        "公式、datadist、Predict 和列线图",
-        "惩罚、变量选择、整群重采样、其他结局"
+        "公式、有序分类评分、列线图自动刻度与绘图、重采样区间",
+        "惩罚搜索、偏移量、观测权重、变量选择、整群重采样、其他结局"
       ]
     },
     "metafor-meta-analysis": {
@@ -111,46 +135,67 @@
       "covered": [
         "meta_reml 单截距随机效应、Knapp–Hartung、预测与剖面似然区间",
         "rma.mv 的相关抽样协方差、嵌套及交叉随机截距、ML/REML 与方差剖面区间",
-        "CR0、CR1、CR2、Satterthwaite 与 HTZ 联合检验"
+        "CR0、CR1、CR2、Satterthwaite 与 HTZ 联合检验",
+        "vcalc 多结局、共享试验臂、重复时点及输入相关块的抽样协方差",
+        "多层模型平均效应、预测区间、逐行自由度与未来效应抽样方差",
+        "Cook 距离、DFBETAS、删除残差和帽子矩阵，可重新估计线性方差分量",
+        "八种跨结局随机协方差结构，含不等间隔随访与包含性自由度"
       ],
       "evidence": [
         "docs/methods/meta-reml.md",
-        "docs/methods/meta-multilevel.md"
+        "docs/methods/meta-multilevel.md",
+        "docs/methods/meta-covariance.md",
+        "docs/methods/meta-prediction.md",
+        "docs/methods/meta-influence.md",
+        "docs/methods/meta-multivariate.md"
       ],
       "remaining": [
-        "估计随机项相关、vcalc、预测区间、影响诊断与稀疏模型"
+        "空间相关、随机斜率、多个相关随机效应项、部分固定结构、协方差区间、整项重估与稀疏拟合"
       ]
     },
     "survey-complex-design": {
       "status": "native_validated",
       "covered": [
         "svycoxph 首阶段 Taylor 方差，Efron/Breslow",
-        "twophase 两阶段均值与总量估计"
+        "twophase 两阶段均值与总量估计",
+        "svrepdesign 九种已有重复权重设计的均值、总量、协方差及调查域",
+        "线性、raking、logit 有界校准、重复权重再校准和一阶段 Taylor 总量",
+        "as.svrepdesign 一阶段 JK1/JKn 重复权重、FPC 和孤立 PSU 策略",
+        "已给重复权重的 Gaussian 与二元 quasibinomial 回归、设计自由度与协方差"
       ],
       "evidence": [
         "docs/methods/survey-cox.md",
-        "docs/methods/survey-twophase.md"
+        "docs/methods/survey-twophase.md",
+        "docs/methods/survey-replicates.md",
+        "docs/methods/survey-calibration.md",
+        "docs/methods/survey-jackknife.md",
+        "docs/methods/survey-glm.md"
       ],
       "remaining": [
-        "复制权重、校准、调查域与复杂抽样预测曲线"
+        "生成 BRR/Bootstrap 权重、绝对权重界及多阶段校准、其他 GLM 分布与线性化推断、复杂抽样预测曲线"
       ]
     },
     "mice-multiple-imputation": {
       "status": "native_validated",
       "covered": [
         "pool_scalar 的 Rubin 和 Reiter 规则",
-        "mice 数值及二元全条件插补链、预测矩阵、访问顺序、被动变量与重插补",
+        "mice 连续、二元、无序及有序多分类插补链、预测矩阵、访问顺序、被动变量与重插补",
         "向量 Rubin 协方差合并、D1 联合 Wald、D2 重复统计量合并",
-        "mice 2l.pan/2l.norm 两层高斯条件插补的设计对照与分布矩验收"
+        "mice 2l.pan/2l.norm 两层高斯条件插补、分布矩验收与链式集成",
+        "mnar.norm/mnar.logreg 的非随机缺失偏移，可逐行或随链内预测变量变化",
+        "mice D3 和 mitml D4 的嵌套模型似然比合并及可选 ARIV",
+        "mice 2l.bin 两层二元随机截距、三种部分缺失簇抽样策略与链式集成"
       ],
       "evidence": [
         "docs/methods/mi-pooling.md",
         "docs/methods/chained-imputation.md",
-        "docs/methods/multilevel-imputation.md"
+        "docs/methods/multilevel-imputation.md",
+        "docs/methods/mnar-imputation.md",
+        "docs/methods/multilevel-binary.md"
       ],
       "remaining": [
-        "两层模型的链式集成、多分类、插补块、非随机缺失与诊断",
-        "D3、D4 及自动模型对象适配"
+        "两层二元随机斜率、多分类结局、插补块、其他非随机缺失机制、因子字符串与诊断",
+        "合并推断的自动模型对象适配"
       ]
     },
     "mstate-transition-models": {
@@ -158,27 +203,35 @@
       "covered": [
         "probtrans 从给定累积风险轨迹估计状态占用",
         "msprep 宽表转长表前向流程、左进入、并列及协变量复写",
-        "msfit 转移分层 Cox、Aalen/Greenwood 协方差与最终状态概率串联"
+        "expand.covs 对转移特异的数值和因子对比展开",
+        "msfit 转移分层 Cox、Aalen/Greenwood 协方差与最终状态概率串联",
+        "MarkovTest 未调整 log-rank 轨迹、协方差、野生 Bootstrap、状态特异及联合最优权重"
       ],
       "evidence": [
         "docs/methods/multistate.md",
         "docs/methods/mstate-prep.md",
-        "docs/methods/mstate-fit.md"
+        "docs/methods/mstate-fit.md",
+        "docs/methods/mstate-covariates.md",
+        "docs/methods/mstate-markov.md"
       ],
       "remaining": [
-        "MarkovTest、expand.covs、转移相关其他并列模型与复杂风险项"
+        "MarkovTest 的协变量和 offset 调整、其他并列模型与复杂风险项"
       ]
     },
     "glmmtmb-zero-inflated-mixed": {
       "status": "native_validated",
       "covered": [
-        "零膨胀 Poisson 的一个随机截距、固定零膨胀回归和 Laplace 对数似然"
+        "零膨胀 Poisson 的一个随机截距、固定零膨胀回归和 Laplace 对数似然",
+        "零膨胀 NB2 的单随机截距、零概率和离散度回归、offset 与 Laplace 似然",
+        "Poisson 与 NB2 的已知簇及新簇点预测、不同零概率口径与组内相关模拟"
       ],
       "evidence": [
-        "docs/methods/zip-random-intercept.md"
+        "docs/methods/zip-random-intercept.md",
+        "docs/methods/zinb2-random-intercept.md",
+        "docs/methods/count-predictions.md"
       ],
       "remaining": [
-        "固定效应与方差的推断、离散度模型、其他分布及多组件随机结构"
+        "固定效应与方差的推断、预测区间、截断及其他分布、多组件随机效应"
       ]
     },
     "limma-linear-models": {

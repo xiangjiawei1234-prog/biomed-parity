@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 
-**v0.2.0（Alpha）** — 方法目录跟踪 16 组 R 统计入口，当前包含 25 个 Python 模块和 27 篇方法文档。默认测试 648 项通过（不需要 R），实时 R 对照 677 项通过（R 4.5.3）。各入口仍存在未覆盖的接口或统计路径，公开 API 可能随验收进展调整；剩余范围见 [catalog/progress.json](catalog/progress.json)。
+当前开发仓库跟踪 16 组 R 统计入口。各方法的覆盖、统计差异与本地验证记录见 [迁移目录](catalog/progress.json) 和 [验证报告](docs/validation.md)。
 
 ## 覆盖与验收
 
@@ -19,27 +19,55 @@
 | --- | --- | --- | --- |
 | 生存分析 | `survival.survdiff`、`survdiff_one_sample` | survival 3.8-6 | 17 份固定输入 + 100 组固定种子随机输入；rho、分层、近并列事件、单样本参照 |
 | 生存分析 | `rmst.rmst2` | survRM2 1.0-4 | 14 组；未调整与 1–2 个协变量的 RMST、RMTL 及差值/比值推断 |
+| 生存分析 | `rmst_curves.rmst_curve_data` | survRM2 1.0-4、survival 3.8-6 | 14 组 Kaplan–Meier 阶梯和限制平均生存时间阴影坐标 |
 | 诊断准确性 | `roc.delong_auc`、`delong_paired_test`、`delong_unpaired_test` | pROC 1.19.1 | 28 个场景；AUC 方差、区间、配对与独立检验 |
 | 诊断准确性 | `roc_bootstrap.roc_auc`、`bootstrap_auc_ci`、`bootstrap_paired_test` | pROC 1.19.1 | 41 个完整/部分 AUC 场景；61 次指定分层重抽样与配对检验 |
 | 诊断准确性 | `roc_thresholds.roc_coords`、`bootstrap_roc_coords` | pROC 1.19.1 | 47 个坐标场景 + 13 个固定重抽样区间场景；8214 行快照，坐标字段逐位一致 |
+| 诊断准确性 | `roc_smoothing.smooth_roc` | pROC 1.19.1 | 37 个场景，核对二正态、七种核及给定密度、完整与部分 AUC |
+| 诊断准确性 | `roc_parametric.smooth_parametric_roc` | pROC 1.19.1、MASS 7.3-65 | 17 个场景，含正态、对数正态、指数分布与混合分布族 |
+| 诊断准确性 | `roc_smooth_bootstrap.bootstrap_smooth_auc_ci`、`bootstrap_smooth_sensitivity_ci` | pROC 1.19.1、MASS 7.3-65 | 18 个场景与 780 次固定重抽样 |
+| 诊断准确性 | `roc_smooth_bootstrap.bootstrap_smooth_paired_test` | pROC 1.19.1 | 6 组配对平滑 AUC，核对 283 次固定重抽样 |
+| 诊断准确性 | `roc_smooth_bootstrap.bootstrap_smooth_unpaired_test` | pROC 1.19.1、MASS 7.3-65 | 5 组独立样本的平滑 AUC，核对 215 对固定重抽样 |
+| 诊断准确性 | `roc_multiclass.multiclass_auc` | pROC 1.19.1 | 23 个情形，含共享分数、类别分数矩阵与 Hand–Till 成对分量 |
 | 临床试验设计 | `group_sequential.efficacy_boundaries`、`symmetric_boundaries`、`efficacy_futility_boundaries`、`crossing_probabilities`、`conditional_power` | gsDesign 3.11.0 | 13 个边界方案（HSD/LDOF、单侧/双侧、约束/非约束无效界）；25 组越界概率与条件把握度 |
+| 临床试验设计 | `group_sequential_survival.fixed_survival_design`、`group_sequential_survival_design` | gsDesign 3.11.0 | 15 组固定和组序贯设计，含分层入组、脱落、事件数量和分析日历 |
+| 临床试验设计 | `group_sequential_inference.repeated_pvalues`、`repeated_confidence_intervals` | gsDesign 3.11.0 | 10 组正态重复推断，含信息时间调整、单侧和对称区间 |
+| 临床试验设计 | `group_sequential_binomial` 的精确越界、整数疗效界和 SPRT | gsDesign 3.11.0 | 10 组单样本二项边界、条件越界和伤害停止 |
 | 临床预测 | `calibration.validate_logistic` | rms 8.2-1 | 3 份数据、53 次固定重采样、11 个性能指标 |
 | 临床预测 | `calibration.calibrate_logistic` | rms 8.2-1、Hmisc 5.3-1 | 5 组输入、62 次重采样；表观与偏差校正曲线、四种重采样、点态近似区间 |
 | 临床预测 | `splines.restricted_cubic_spline_knots`、`fit_restricted_cubic_spline` | Hmisc 5.3-1、rms 8.2-1 | 19 组固定输入 + 540 组自动结点；预测重用与主成分旋转 |
+| 临床预测 | `rms_prediction.datadist`、`prediction_grid`、`predict` | rms 8.2-1、multcomp 1.4-31 | 12 组数值与分类默认值、参考归零、点态及同时区间 |
+| 临床预测 | `nomogram.nomogram` | rms 8.2-1 | 2 组加性和交互模型的轴刻度与分值 |
+| 临床预测 | `rms_logistic.fit_penalized_logistic` | rms 8.2-1 | 6 组二元拟合，含默认及自定义惩罚、有效自由度与共线设计 |
 | 竞争风险 | `risk_scores.score_competing_risks` | riskRegression 2026.03.11 | 4 组边际 KM + 5 组反向 Cox；AUC、Brier、影响函数、积分 Brier 与配对比较 |
+| 竞争风险 | `risk_cross_validation.cross_validate_competing_risks` | riskRegression 2026.03.11 | 3 折与 4 折校验，核对折外风险及汇总评分 |
 | 竞争风险 | `competing_calibration.calibrate_competing_risks`、`jackknife_cumulative_incidence` | riskRegression、prodlim 2026.03.11 | 7 组；分位数、近邻、局部风险与 Jackknife 伪值 |
 | 竞争风险 | `competing_risks.cmprsk_timepoints`、`cmprsk_residuals_by_time` | cmprsk、pycmprsk | 82/82 项字段适配对照 |
 | 多状态 | `mstate_prep.msprep` | mstate 0.3.3 | 6 组宽表转换；左进入、并列、协变量复写 |
+| 多状态 | `mstate_covariates.expand_covariates` | mstate 0.3.3 | 5 组转移特异数值列与因子对比 |
+| 多状态 | `mstate_markov.markov_test`、`optimal_weights_matrix`、`optimal_weights_multiple` | mstate 0.3.3 | 3 组 log-rank 轨迹、状态特异和联合权重，以及固定野生 Bootstrap 乘子 |
 | 多状态 | `mstate_fit.msfit` | mstate 0.3.3 | 7 组风险拟合；Aalen/Greenwood 协方差，3 组串联到状态概率 |
 | 多状态 | `multistate.probtrans` | mstate 0.3.3 | 6 组占用概率；固定起点、固定终点、方差与协方差 |
-| 多重插补 | `chained_imputation.mice_impute` | mice 3.19.0 | 3 组确定性链逐值 + 5 组条件模型分布；pmm、norm、logreg、被动变量 |
+| 多重插补 | `chained_imputation.mice_impute` | mice 3.19.0 | 连续、二元、多分类、两层高斯与被动插补；按逐值对照、条件概率和分布矩验证 |
 | 多重插补 | `multilevel_imputation.impute_two_level_normal` | mice 3.19.0、pan 2.0 | 8 组设计逐项对照 + 6 组随机模型矩对照（每侧 2,200 次抽样，5σ 判定） |
-| 多重插补 | `imputation.pool_scalar`、`pool_parameters`、`pool_d1`、`pool_d2` | mice 3.19.0、mitml 0.4-5 | 11 组标量推断；8 组总协方差、D1 联合 Wald 与 D2 |
+| 多重插补 | `multilevel_binary.impute_two_level_binary` | mice 3.19.0、lme4 2.0-1 | 3 组两层二元拟合、3 种簇抽样策略及链式调用 |
+| 多重插补 | `chained_imputation.mice_impute` 的 `mnar.norm`、`mnar.logreg` | mice 3.19.0 | 3 组连续和二元结局的非随机缺失偏移 |
+| 多重插补 | `imputation.pool_scalar`、`pool_parameters`、`pool_d1`–`pool_d4` | mice 3.19.0、mitml 0.4-5 | 标量、协方差、Wald、统计量及嵌套模型似然的合并 |
 | 抽样调查 | `survey_cox.svycoxph` | survey 4.5 | 5 个方案；加权偏似然、Taylor 方差、区间与设计自由度 |
 | 抽样调查 | `survey_twophase.survey_twophase` | survey 4.5 | 10 种设计；两阶段均值与总量、分层、整群与有限总体校正 |
+| 抽样调查 | `survey_replicates.svrepdesign` | survey 4.5 | 14 组给定重复权重设计，含均值、总量、协方差和调查域 |
+| 抽样调查 | `survey_calibration.calibrate`、`calibrate_replicates`、`calibrated_total` | survey 4.5 | 15 组线性、raking 和 logit 校准，含有限界、重复权重和 Taylor 方差 |
+| 抽样调查 | `survey_jackknife.as_svrepdesign` | survey 4.5 | 13 组 JK1/JKn 权重生成、有限总体修正和孤立 PSU |
+| 抽样调查 | `survey_glm.svyglm` | survey 4.5 | 7 组重复权重 Gaussian 与二元 quasibinomial 回归 |
 | 证据综合 | `meta_analysis.meta_reml` | metafor 5.0-1 | 19 组区间与检验；Knapp–Hartung、预测区间、异质性剖面似然 |
 | 证据综合 | `meta_multilevel.meta_multilevel`、`meta_cluster_robust` | metafor 5.0-1、clubSandwich 0.7.0 | 8 个嵌套/交叉方案；嵌套与交叉随机项、已知相关核、CR0–CR2、HTZ |
+| 证据综合 | `meta_covariance.vcalc` | metafor 5.0-1 | 11 组相关效应抽样协方差，含重复随访、共用对照和正定修正 |
+| 证据综合 | `meta_prediction.predict_multilevel_meta` | metafor 5.0-1 | 6 组模型型置信与预测区间 |
+| 证据综合 | `meta_influence.meta_influence`、`meta_hatvalues` | metafor 5.0-1 | 4 组逐效应或逐研究删除、方差重估、残差和杠杆值 |
+| 证据综合 | `meta_multivariate.meta_multivariate` | metafor 5.0-1 | 10 组多结局 Meta 分析，含八种共同、异质和自回归随机协方差结构 |
 | 混合模型 | `zero_inflated.fit_zip_random_intercept`、`zip_random_intercept_loglikelihood` | glmmTMB 1.1.14 | 3 组拟合与给定参数的 Laplace 对数似然 |
+| 混合模型 | `zero_inflated.fit_zinb2_random_intercept`、`zinb2_random_intercept_loglikelihood` | glmmTMB 1.1.14 | 2 组 NB2、离散度回归与暴露量 |
+| 混合模型 | `count_predictions.predict_count_mixed`、`simulate_count_mixed` | glmmTMB 1.1.14 | 2 组 Poisson/NB2 点预测和模拟分布矩 |
 | 表达统计 | `dream.dream_random_intercept` | variancePartition 1.40.2、lmerTest 3.2-1 | 3 组逐特征加权 Gaussian REML 与 Satterthwaite 对比 |
 | 表达统计 | `nbinom_lrt.nbinom_lrt` | DESeq2 1.50.2 | 2 个嵌套矩阵设计；14 个可检验特征及两个全零特征 |
 | 表达统计 | `vst.local_vst`、`local_vst_grid` | DESeq2 1.50.2、locfit 1.5.9.12 | 5 组给定离散度趋势与归一化因子的变换，含零计数和 R 拟合曲线 |
