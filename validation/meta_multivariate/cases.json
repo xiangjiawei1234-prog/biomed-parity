@@ -6,5 +6,7 @@
   {"id": "diagonal-incomplete", "structure": "DIAG", "method": "REML", "test": "z", "incomplete": true},
   {"id": "identity", "structure": "ID", "method": "ML", "test": "z"},
   {"id": "negative-ar", "structure": "AR", "method": "REML", "test": "t", "dfs": "contain"},
-  {"id": "negative-har", "structure": "HAR", "method": "ML", "test": "adhoc", "incomplete": true, "dfs": "contain"}
+  {"id": "negative-har", "structure": "HAR", "method": "ML", "test": "adhoc", "incomplete": true, "dfs": "contain"},
+  {"id": "continuous-ar", "structure": "CAR", "method": "REML", "test": "z"},
+  {"id": "continuous-ar-incomplete", "structure": "CAR", "method": "ML", "test": "t", "incomplete": true}
 ]

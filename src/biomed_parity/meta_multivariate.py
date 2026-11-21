@@ -48,21 +48,36 @@ def _outcomes(values, levels, n):
 
 
 class _Structure:
-    def __init__(self, structure, size):
+    def __init__(self, structure, levels, outcome, within_study):
+        size = len(levels)
         self.structure = "ID" if size == 1 else structure
         self.size = size
         self.rows, self.cols = np.tril_indices(size)
         self.lags = np.abs(np.arange(size)[:, None] - np.arange(size))
-        self.common_scale = self.structure in ("ID", "CS", "AR")
-        self.correlated = self.structure in ("CS", "HCS", "AR", "HAR")
+        self.common_scale = self.structure in ("ID", "CS", "AR", "CAR")
+        self.correlated = self.structure in ("CS", "HCS", "AR", "HAR", "CAR")
         self.autoregressive = self.structure in ("AR", "HAR")
+        if structure == "CAR":
+            times = _real_array(levels, "CAR outcome times")
+            if len(np.unique(times)) != size:
+                raise ValueError("CAR outcome times must be distinct at floating-point precision")
+            if size > 1:
+                with np.errstate(over="ignore"):
+                    distances = np.abs(times[:, None] - times)
+                    observed = distances[outcome[:, None], outcome][within_study]
+                    positive = observed[observed > 0]
+                    self.lags = distances / (np.min(positive) if len(positive) else 1.0)
+                if not np.isfinite(self.lags).all():
+                    raise ValueError("CAR outcome times exceed the supported numerical range")
         self.scale_count = 1 if self.common_scale else size
         if self.structure == "UN":
             self.bounds = [(0.0, None) if i == j else (None, None)
                            for i, j in zip(self.rows, self.cols, strict=True)]
         else:
             self.bounds = [(0.0, None)] * self.scale_count
-            if self.correlated:
+            if self.structure == "CAR":
+                self.bounds.append((0.0, None))
+            elif self.correlated:
                 self.bounds.append((-1.0 if self.autoregressive else -1.0 / (size - 1), 1.0))
 
     def start(self, scale, correlation):
@@ -71,6 +86,8 @@ class _Structure:
             initial = np.diag(sd) + correlation * scale * np.tril(np.ones_like(self.lags), -1)
             return initial[self.rows, self.cols]
         start = np.array([scale]) if self.common_scale else sd
+        if self.structure == "CAR":
+            return np.r_[start, 0.7 - correlation]
         return np.r_[start, max(correlation, self.bounds[-1][0] / 2)] if self.correlated else start
 
     def evaluate(self, parameters):
@@ -86,7 +103,13 @@ class _Structure:
         corr = np.eye(n)
         sd = np.repeat(parameters[0], n) if self.common_scale else parameters[:n]
         derivatives = np.zeros((len(parameters), n, n))
-        if self.correlated:
+        if self.structure == "CAR":
+            off_diag = self.lags > 0
+            distance = self.lags[off_diag]
+            with np.errstate(over="ignore", under="ignore"):
+                corr[off_diag] = np.exp(-parameters[-1] * distance)
+                derivatives[-1, off_diag] = -distance * corr[off_diag] * parameters[0]**2
+        elif self.correlated:
             rho = parameters[-1]
             off_diag = self.lags > 0
             powers = self.lags[off_diag] if self.autoregressive else np.ones(off_diag.sum(), dtype=int)
@@ -108,7 +131,7 @@ def meta_multivariate(
     outcomes: ArrayLike,
     *,
     outcome_levels: ArrayLike | None = None,
-    structure: Literal["UN", "CS", "HCS", "ID", "DIAG", "AR", "HAR"] = "UN",
+    structure: Literal["UN", "CS", "HCS", "ID", "DIAG", "AR", "HAR", "CAR"] = "UN",
     moderators: ArrayLike | None = None,
     intercept: bool = True,
     method: Literal["ML", "REML"] = "REML",
@@ -122,13 +145,14 @@ def meta_multivariate(
     Effects in the same study and outcome share a random effect. The full
     sampling covariance is supplied separately and may have cross-study
     entries. AR and HAR use the ordered levels, equally spaced by design.
+    CAR uses the absolute differences between numeric outcome times.
     By default outcomes are ordered by first occurrence in the inputs.
     """
     y = _real_array(effects, "effects")
     if y.ndim != 1 or len(y) < 2:
         raise ValueError("effects must be a vector with at least two observations")
-    if structure not in ("UN", "CS", "HCS", "ID", "DIAG", "AR", "HAR"):
-        raise ValueError("structure must be UN, CS, HCS, ID, DIAG, AR, or HAR")
+    if structure not in ("UN", "CS", "HCS", "ID", "DIAG", "AR", "HAR", "CAR"):
+        raise ValueError("structure must be UN, CS, HCS, ID, DIAG, AR, HAR, or CAR")
     if method not in ("ML", "REML"):
         raise ValueError("method must be ML or REML")
     size = len(y)
@@ -136,8 +160,8 @@ def meta_multivariate(
     sampling = _covariance(sampling_covariance, size, "sampling_covariance", vector=True)
     study = _codes(studies, size, "studies")
     levels, outcome = _outcomes(outcomes, outcome_levels, size)
-    model = _Structure(structure, len(levels))
     within_study = study[:, None] == study
+    model = _Structure(structure, levels, outcome, within_study)
     if model.autoregressive:
         observed_lags = model.lags[outcome[:, None], outcome][within_study]
         if not np.any(observed_lags % 2):
@@ -175,10 +199,22 @@ def meta_multivariate(
         if np.isfinite(result.fun) and np.max(np.abs(score)) < 2e-5:
             if best is None or result.fun < best.fun:
                 best = result
-    if best is None:
+    best_value = np.inf if best is None else best.fun
+    fitted = None if best is None else model.evaluate(best.x)[0]
+    if model.structure == "CAR":
+        # Zero correlation is the infinite-decay limit. Compare the exact
+        # independent fit as a candidate instead of relying on an arbitrary cap.
+        independent = replace(objective, components=objective.components[rows == cols].sum(axis=0)[None])
+        try:
+            variance, value = independent.fit(np.array([np.nan]))
+        except ValueError:
+            value = np.inf
+        if np.isfinite(value) and value <= best_value + 1e-12:
+            fitted = np.eye(model.size) * variance[0]
+    if fitted is None:
         raise ValueError("outcome covariance optimization did not converge")
 
-    random_covariance = model.evaluate(best.x)[0] * scale
+    random_covariance = fitted * scale
     sd = np.sqrt(random_covariance.diagonal())
     denominator = np.outer(sd, sd)
     correlation = np.divide(
@@ -196,7 +232,7 @@ def meta_multivariate(
         covariance_components={"outcomes": random_kernel}, fixed_variances={"outcomes": 1.0},
     )
     fit = replace(
-        fit, variance_components={}, _estimated_variances=len(best.x),
+        fit, variance_components={}, _estimated_variances=len(model.bounds),
         _fit_inputs=replace(fit._fit_inputs, reestimation_supported=False),
     )
     return MetaMultivariateResult(levels, structure, random_covariance, correlation, fit)

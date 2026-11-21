@@ -4,6 +4,7 @@ cases <- jsonlite::read_json(args[[1L]], simplifyVector = FALSE)
 
 evaluate <- function(case) {
     levels <- c("followup", "baseline", "discharge")
+    if (case$structure == "CAR") levels <- c(0, 7.25, 2.5)
     studies <- rep(seq_len(20L), each = 3L)
     outcome <- rep(c(2, 1, 3), times = 20L)
     if (isTRUE(case$incomplete)) {
@@ -26,6 +27,7 @@ evaluate <- function(case) {
     diag(V) <- variance
     study <- factor(studies)
     endpoint <- factor(levels[outcome], levels = levels)
+    if (case$structure == "CAR") endpoint <- levels[outcome]
     X <- cbind(1.0 * (outcome == 1), 1.0 * (outcome == 2),
                1.0 * (outcome == 3), moderator)
     dfs <- if (is.null(case$dfs)) "residual" else case$dfs
@@ -35,8 +37,10 @@ evaluate <- function(case) {
         btt = 4, level = 90,
         control = list(optimizer = "BFGS", reltol = 1e-13, maxit = 2000L)
     )
+    G <- as.matrix(fit$G)
+    if (case$structure == "CAR") G <- G[as.character(levels), as.character(levels)]
     list(
-        levels = levels, random_covariance = unname(as.matrix(fit$G)),
+        levels = levels, random_covariance = unname(G),
         coefficients = I(unname(coef(fit))), coefficient_covariance = unname(vcov(fit)),
         se = I(fit$se), p = I(fit$pval), confint = cbind(fit$ci.lb, fit$ci.ub), df = I(unname(fit$ddf)),
         likelihood = as.numeric(logLik(fit)), omnibus = fit$QM,

@@ -17,7 +17,7 @@ EXPECTED = json.loads((FIXTURES / "expected.json").read_text())
 
 
 def _inputs(case):
-    levels = ("followup", "baseline", "discharge")
+    levels = (0, 7.25, 2.5) if case["structure"] == "CAR" else ("followup", "baseline", "discharge")
     study = np.repeat(np.arange(1, 21), 3)
     outcome = np.tile([1, 0, 2], 20)
     if case.get("incomplete"):
@@ -125,3 +125,17 @@ def test_autoregression_requires_information_on_correlation_sign():
             np.arange(6), np.ones(6), [1, 1, 2, 2, 3, 4], outcomes,
             outcome_levels=["a", "b", "c"], structure="AR",
         )
+
+
+def test_continuous_time_rejects_non_numeric_outcomes_and_allows_independence():
+    studies = np.repeat(np.arange(10), 2)
+    outcomes = [0, 1.5] * 10
+    first = np.linspace(-0.8, 0.8, 10)
+    effects = np.column_stack((first, -first)).ravel()
+    variance = np.full(len(effects), 0.05)
+    result = meta_multivariate(effects, variance, studies, outcomes, structure="CAR")
+    ref = meta_multivariate(effects, variance, studies, outcomes, structure="ID")
+    np.testing.assert_allclose(result.random_covariance, ref.random_covariance, rtol=2e-7)
+    assert result.random_correlation[0, 1] == 0
+    with pytest.raises(ValueError, match="CAR outcome times"):
+        meta_multivariate(effects, variance, studies, ["a", "b"] * 10, structure="CAR")
