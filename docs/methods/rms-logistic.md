@@ -34,7 +34,7 @@ prediction = wald_predict(design, fit.coefficients, fit.covariance, transform=ex
 
 rms 8.2-1 的 `lrm` 惩罚拟合在重算自由度与似然比时省略观测权重，有偏移时该似然比使用无偏移的空模型。`lrm.fit` 对有斜率的拟合保存的线性预测省略偏移，仅截距时该字段为空。Python 用加权后拟合点的未惩罚信息计算有效自由度，用相同权重和偏移比较嵌套模型。R 验证通过 `lrm.fit` 分别计算这些量。 [rms::lrm 源码](https://github.com/harrelfe/rms/blob/master/R/lrm.s) [加权 R 验证脚本](../../validation/rms_logistic_weighted/oracle.R)
 
-当前接口覆盖完整的二元响应和数值斜率设计。调用者负责分类变量编码、样条基构造和数据缺失处理。序数响应、惩罚强度搜索和惩罚模型重抽样为后续范围。惩罚须能约束造成分离或共线的方向，才能得到有限且可识别的拟合。
+当前接口覆盖完整的二元响应和数值斜率设计。调用者负责分类变量编码、样条基构造和数据缺失处理。惩罚强度的网格搜索见 [rms::pentrace](rms-penalty.md)。序数响应和惩罚模型重抽样为后续范围。惩罚须能约束造成分离或共线的方向，才能得到有限且可识别的拟合。
 
 ## 本地验证
 

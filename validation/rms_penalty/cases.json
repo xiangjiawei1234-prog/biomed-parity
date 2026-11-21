@@ -1,0 +1,25 @@
+[
+  {
+    "id": "scalar_aicc_with_zero", "design": "quadratic",
+    "penalties": [5, 0, 20, 0.5, 2]
+  },
+  {
+    "id": "scalar_bic_with_custom_matrix", "design": "quadratic",
+    "penalties": [0.25, 4, 15], "criterion": "bic", "include_zero": false,
+    "penalty_matrix": [[1.4, 0.25, -0.2], [0.25, 2.1, 0.35], [-0.2, 0.35, 1]]
+  },
+  {
+    "id": "ordered_term_types_with_factor_blocks", "design": "factor_spline",
+    "penalties": {"simple": [0, 1], "nonlinear": [0, 2, 5], "interaction": [2, 5], "nonlinear.interaction": [4, 8]},
+    "term_types": ["simple", "nonlinear", "nonlinear", "simple", "simple", "simple",
+                   "interaction", "nonlinear.interaction", "nonlinear.interaction",
+                   "interaction", "nonlinear.interaction", "nonlinear.interaction"],
+    "categorical_blocks": [[3, 4]]
+  },
+  {
+    "id": "unordered_term_grid_and_inheritance", "design": "factor_interaction",
+    "penalties": {"simple": [0, 4], "nonlinear": [0, 1, 8]},
+    "term_types": ["simple", "simple", "simple", "interaction", "interaction"],
+    "categorical_blocks": [[1, 2]], "criterion": "aic", "complex_more": false
+  }
+]
