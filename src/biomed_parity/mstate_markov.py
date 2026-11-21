@@ -1,5 +1,6 @@
 """Log-rank tests of the Markov assumption for multi-state transition data."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from numbers import Integral
 from typing import Literal
@@ -8,9 +9,21 @@ from warnings import warn
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from ._survival_inputs import _encode_labels, _numeric_vector
+from ._cox import _fit_likelihood
+from ._survival_inputs import _encode_labels, _fix_near_ties, _numeric_vector
 from .mstate_fit import _counting_data
 from .mstate_prep import MultiStateRecords
+
+
+@dataclass(frozen=True)
+class MarkovCoxFit:
+    """Efron partial likelihood for the selected transition."""
+
+    covariates: tuple[str, ...]
+    coefficients: NDArray[np.float64]
+    covariance: NDArray[np.float64]
+    log_likelihood: float
+    null_log_likelihood: float
 
 
 @dataclass(frozen=True)
@@ -39,6 +52,7 @@ class MarkovTestResult:
     state_pvalues: NDArray[np.float64] | None
     overall_pvalue: float | None
     z_quantiles: NDArray[np.float64] | None
+    cox_fit: MarkovCoxFit | None = None
 
 
 @dataclass(frozen=True)
@@ -236,6 +250,200 @@ def _joint_trace(scores, covariance):
     return np.einsum("ij,jk,ik->i", contrast, inverse, contrast)
 
 
+@dataclass(frozen=True)
+class _RiskIntervals:
+    first: NDArray[np.intp]
+    after: NDArray[np.intp]
+    size: int
+
+    @classmethod
+    def build(cls, times, start, stop):
+        return cls(
+            np.searchsorted(times, start, side="right"),
+            np.searchsorted(times, stop, side="right"),
+            len(times) + 1,
+        )
+
+    def total(self, values):
+        change = np.zeros((self.size, *values.shape[1:]), dtype=values.dtype)
+        np.add.at(change, self.first, values)
+        np.subtract.at(change, self.after, values)
+        return np.cumsum(change, axis=0)[:-1]
+
+
+@dataclass(frozen=True)
+class _EfronRiskSets:
+    intervals: _RiskIntervals
+    design: NDArray[np.float64]
+    offset: NDArray[np.float64]
+    event: NDArray[np.bool_]
+    event_indices: NDArray[np.intp]
+    ties: NDArray[np.intp]
+    fractions: NDArray[np.float64]
+    moments: NDArray[np.float64]
+
+    @classmethod
+    def build(cls, start, stop, event, design, offset):
+        finite = np.isfinite(stop)
+        snapped = _fix_near_ties(np.r_[start, stop[finite]])
+        start = snapped[:len(start)]
+        stop = stop.copy()
+        stop[finite] = snapped[len(start):]
+        if np.any(stop <= start):
+            raise ValueError("near-tie correction created a Cox interval of zero length")
+        times, event_indices, deaths = np.unique(stop[event], return_inverse=True, return_counts=True)
+        ties = np.repeat(np.arange(len(times)), deaths)
+        fractions = (np.arange(event.sum()) - np.repeat(np.cumsum(deaths) - deaths, deaths)) / deaths[ties]
+        outer = (design[:, :, None] * design[:, None, :]).reshape(len(design), design.shape[1] ** 2)
+        moments = np.column_stack((np.ones(len(design)), design, outer))
+        return cls(_RiskIntervals.build(times, start, stop), design, offset, event,
+                   event_indices, ties, fractions, moments)
+
+    def evaluate(self, beta, _ties):
+        eta = self.design @ beta + self.offset
+        centered = eta - eta.max()
+        values = self.moments * np.exp(centered[:, None])
+        total = self.intervals.total(values)
+        tied_events = np.zeros_like(total)
+        np.add.at(tied_events, self.event_indices, values[self.event])
+        remaining = total[self.ties] - self.fractions[:, None] * tied_events[self.ties]
+        denominator = remaining[:, 0]
+        if np.any(denominator <= 0) or not np.isfinite(denominator).all():
+            raise ValueError("Cox risk sets do not have stable positive totals")
+        width = len(beta)
+        means = remaining[:, 1:width + 1] / denominator[:, None]
+        second = (remaining[:, width + 1:] / denominator[:, None]).sum(axis=0).reshape(width, width)
+        likelihood = centered[self.event].sum() - np.log(denominator).sum()
+        gradient = self.design[self.event].sum(axis=0) - means.sum(axis=0)
+        return likelihood, gradient, second - means.T @ means
+
+
+def _fit_cox(records, risk_subject, start, stop, event, covariates, offset, cox_mode):
+    if covariates is None:
+        names = ()
+    elif isinstance(covariates, str):
+        names = (covariates,)
+    elif isinstance(covariates, Sequence):
+        names = tuple(covariates)
+    else:
+        raise ValueError("covariates must name one or more numeric record columns")
+    if not all(isinstance(name, str) for name in names) or len(set(names)) != len(names):
+        raise ValueError("covariates must contain distinct names of numeric record columns")
+    if offset is not None and not isinstance(offset, str):
+        raise ValueError("offset must name a numeric record column")
+    if not names and offset is None:
+        return None, np.empty((len(start), 0)), np.zeros(len(start)), np.empty((0, 0))
+
+    # msdata2etm takes the first retained row's covariates for each subject.
+    rows = np.flatnonzero(records.t_start < records.t_stop)
+    _, first = np.unique(records.id[rows], return_index=True)
+    selected = rows[first[risk_subject]]
+
+    def column(name):
+        if name not in records.covariates:
+            raise ValueError(f"Cox column {name!r} is absent from records.covariates")
+        values = np.asarray(records.covariates[name])
+        if values.shape != records.id.shape:
+            raise ValueError(f"Cox column {name!r} must align with the record rows")
+        return _numeric_vector(values[selected], name)
+
+    raw_design = np.column_stack([column(name) for name in names]) if names else np.empty((len(start), 0))
+    offset_values = np.zeros(len(start)) if offset is None else column(offset)
+    offset_values = offset_values - (offset_values.min() * 0.5 + offset_values.max() * 0.5)
+    scales = raw_design.std(axis=0)
+    if np.any(scales == 0):
+        raise ValueError("Cox covariates must be nonconstant")
+    design = (raw_design - raw_design.mean(axis=0)) / scales
+    if names and np.linalg.matrix_rank(design) < len(names):
+        raise ValueError("Cox covariates must form a full-rank design")
+    risk_sets = _EfronRiskSets.build(start, stop, event, design, offset_values)
+    if names:
+        beta, likelihood, null, inverse_information = _fit_likelihood([risk_sets], len(names), "efron")
+    else:
+        beta = np.empty(0)
+        likelihood, _, inverse_information = risk_sets.evaluate(beta, "efron")
+        null = likelihood
+    fit = MarkovCoxFit(
+        names, beta / scales, inverse_information / np.outer(scales, scales),
+        float(likelihood), float(null),
+    )
+    predictor = design @ beta + (offset_values if cox_mode == "full" else 0)
+    if cox_mode == "mstate" and len(names) > 1:
+        return fit, raw_design, predictor, fit.covariance
+    return fit, design, predictor, inverse_information
+
+
+@dataclass(frozen=True)
+class _CoxProjection:
+    design: NDArray[np.float64]
+    mean: NDArray[np.float64]
+    inverse_information: NDArray[np.float64]
+    variance: NDArray[np.float64]
+    legacy_phases: tuple[tuple[NDArray[np.intp], NDArray[np.intp]], ...]
+
+    @classmethod
+    def build(cls, intervals, design, weights, risk, risk_event, time_index, inverse_information, cox_mode):
+        mean = intervals.total(weights[:, None] * design) / risk[:, None]
+        outer = design[:, :, None] * design[:, None, :]
+        second = intervals.total(weights[:, None, None] * outer) / risk[:, None, None]
+        variance = second - mean[:, :, None] * mean[:, None, :]
+        legacy_phases = ()
+        width = design.shape[1]
+        if cox_mode == "mstate" and width > 1:
+            # R recycles each length-p row through a column-major n-by-p
+            # matrix. Event rows of the same phase use the same permutation.
+            phases = np.flatnonzero(risk_event) % width
+            offsets = len(design) * np.arange(width)
+            legacy_phases = tuple(
+                ((phase + offsets) % width, np.bincount(time_index[phases == phase], minlength=len(mean)))
+                for phase in np.unique(phases)
+            )
+        return cls(design, mean, inverse_information, variance, legacy_phases)
+
+    def at_landmark(self, intervals, weighted_group, weights, risk, share, deaths, time_after, eligible):
+        cross = intervals.total(weighted_group[:, None, :] * self.design[:, :, None])
+        centered = cross / risk[:, None, None] - self.mean[:, :, None] * share[:, None, :]
+        late = np.einsum("t,tij->ij", deaths[time_after], centered[time_after])
+        # Earlier event times enter H only for intervals ending after the landmark.
+        if not time_after.all():
+            early_weight = weights * eligible
+            early_group = weighted_group * eligible[:, None]
+            early_cross = intervals.total(early_group[:, None, :] * self.design[:, :, None])
+            early_cross -= intervals.total(early_weight[:, None] * self.design)[:, :, None] * share[:, None, :]
+            centered_mean = intervals.total(early_group) - intervals.total(early_weight)[:, None] * share
+            early_cross -= self.mean[:, :, None] * centered_mean[:, None, :]
+            early = np.einsum("t,tij->ij", deaths[~time_after] / risk[~time_after], early_cross[~time_after])
+        else:
+            early = 0
+        projection = self.inverse_information @ (late + early)
+        if self.legacy_phases:
+            return projection, self._legacy_variance(projection, centered, share, time_after)
+        information = np.einsum("t,tij->ij", deaths, self.variance)
+        cross_term = late.T @ projection
+        adjustment = projection.T @ information @ projection - cross_term - cross_term.T
+        return projection, adjustment
+
+    def _legacy_variance(self, projection, centered, share, time_after):
+        adjustment = np.zeros((projection.shape[1], projection.shape[1]))
+        for permutation, counts in self.legacy_phases:
+            recycled = np.zeros_like(projection)
+            np.add.at(recycled, permutation, projection)
+            difference = self.mean @ (recycled - projection)
+            after_counts = counts[time_after]
+            variance = np.einsum("t,tij->ij", counts, self.variance)
+            cross = np.einsum("t,tij->ij", after_counts, centered[time_after]).T @ recycled
+            adjustment += (
+                recycled.T @ variance @ recycled - cross - cross.T
+                + difference.T @ (counts[:, None] * difference)
+            )
+            # R centers the second factor using the first state's mean.
+            # Its upper triangle is mirrored to fill the covariance matrix.
+            asymmetric = -(difference[time_after].T * after_counts) @ share[time_after]
+            upper = np.triu(asymmetric - np.diag(asymmetric)[:, None], k=1)
+            adjustment += upper + upper.T
+        return adjustment
+
+
 def markov_test(
     records: MultiStateRecords,
     transition: int,
@@ -248,8 +456,11 @@ def markov_test(
     state_weights: ArrayLike | Literal["optimal"] | None = None,
     overall_weights: ArrayLike | Literal["optimal"] | None = None,
     min_time: float = 0,
+    covariates: str | Sequence[str] | None = None,
+    offset: str | None = None,
+    cox_mode: Literal["mstate", "full"] = "mstate",
 ) -> MarkovTestResult:
-    """Test a zero-based transition with standard, unadjusted log-rank weights.
+    """Test the Markov assumption for a zero-based transition.
 
     At each grid time subjects are classified by their state immediately
     before that time. Only subsequent events enter the trace. The default
@@ -261,6 +472,12 @@ def markov_test(
     for data-derived weights integrated over intervals starting at min_time.
     Explicit weights have one entry per grid point, with an optional column
     per qualifying state in state_weights. A zero total weight gives NaN.
+
+    Covariates and offset name numeric columns in records.covariates.
+    Covariates are fitted with the Efron partial likelihood. cox_mode="full"
+    applies offsets to the test's risk weights and centers each covariance
+    term by its own risk-set mean. The default matches mstate 0.3.3 with
+    survival 3.8.6, including its offset and covariance conventions.
     """
     episodes = _episodes(records)
     if not len(episodes.labels):
@@ -282,6 +499,8 @@ def markov_test(
             overall_weights = raw_overall * widths
     state_weights = _summary_weights(state_weights, "state_weights", grid, states)
     overall_weights = _summary_weights(overall_weights, "overall_weights", grid)
+    if cox_mode not in ("mstate", "full"):
+        raise ValueError("cox_mode must be 'mstate' or 'full'")
     at_risk = episodes.origin == origin
     observed = episodes.outcome == transition
     event_subject, event_exit = episodes.subject[observed], episodes.stop[observed]
@@ -290,11 +509,23 @@ def markov_test(
     samples = _bootstrap_multipliers(multipliers, n_bootstrap, distribution, random_state, len(event_subject))
 
     times, time_index, deaths = np.unique(event_exit, return_inverse=True, return_counts=True)
-    first = np.searchsorted(times, episodes.start[at_risk], side="right")
-    after = np.searchsorted(times, episodes.stop[at_risk], side="right")
-    size = len(times) + 1
-    risk = np.cumsum(np.bincount(first, minlength=size) - np.bincount(after, minlength=size))[:-1]
     risk_subject = episodes.subject[at_risk]
+    risk_start, risk_stop, risk_event = episodes.start[at_risk], episodes.stop[at_risk], observed[at_risk]
+    cox_fit, design, predictor, inverse_information = _fit_cox(
+        records, risk_subject, risk_start, risk_stop, risk_event, covariates, offset, cox_mode,
+    )
+    intervals = _RiskIntervals.build(times, risk_start, risk_stop)
+    risk_weight = np.exp(predictor - predictor.max())
+    risk = intervals.total(risk_weight)
+    if np.any(risk <= 0) or not np.isfinite(risk).all():
+        raise ValueError("Cox-adjusted trace risk sets do not have stable positive totals")
+    cox_projection = None
+    if design.shape[1]:
+        cox_projection = _CoxProjection.build(
+            intervals, design, risk_weight, risk, risk_event, time_index, inverse_information, cox_mode,
+        )
+        cox_bootstrap_score = samples @ (design[risk_event] - cox_projection.mean[time_index])
+
     subject_count = len(np.unique(risk_subject))
     event_counts = len(event_exit) - np.searchsorted(np.sort(event_exit), grid, side="right")
     k = len(states)
@@ -310,22 +541,26 @@ def markov_test(
         occupancy = np.full(len(episodes.labels), -1, dtype=np.intp)
         occupancy[episodes.subject[occupied]] = episodes.origin[occupied]
         group = occupancy[risk_subject, None] == states
-        entered = np.zeros((size, k), dtype=np.intp)
-        np.add.at(entered, first, group)
-        np.add.at(entered, after, -group.astype(np.intp))
-        share = np.cumsum(entered, axis=0)[:-1] / risk[:, None]
+        weighted_group = risk_weight[:, None] * group
+        share = intervals.total(weighted_group) / risk[:, None]
         time_after = times > landmark
         after_share = share[time_after]
         after_deaths = deaths[time_after]
         expected = after_deaths @ after_share
         cov = np.diag(expected) - (after_share.T * after_deaths) @ after_share
-        covariance[index] = cov
 
         event_after = event_exit > landmark
         observed_group = occupancy[event_subject[event_after], None] == states
         contribution = observed_group - share[time_index[event_after]]
         score = contribution.sum(axis=0)
         simulated = samples[:, event_after] @ contribution
+        if cox_projection is not None:
+            projection, adjustment = cox_projection.at_landmark(
+                intervals, weighted_group, risk_weight, risk, share, deaths, time_after, risk_stop > landmark,
+            )
+            cov += adjustment
+            simulated -= cox_bootstrap_score @ projection
+        covariance[index] = cov
         raw_score[index] = score
         combined = np.vstack((score, simulated))
         variance = np.diag(cov)
@@ -348,5 +583,5 @@ def markov_test(
         int(transition), origin, destination, states, grid, subject_count, event_counts,
         episodes.labels[event_subject], event_exit, raw_score, all_z[0], covariance, all_chi[0],
         state_statistics[0], float(overall_statistics[0]), all_z[1:], all_chi[1:],
-        state_statistics[1:], overall_statistics[1:], state_pvalues, overall_pvalue, quantiles,
+        state_statistics[1:], overall_statistics[1:], state_pvalues, overall_pvalue, quantiles, cox_fit,
     )

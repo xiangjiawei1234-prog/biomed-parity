@@ -22,7 +22,9 @@ def test_r_reference(case):
 
 @pytest.mark.skipif(os.environ.get("BIOMED_R_PARITY") != "1", reason="set BIOMED_R_PARITY=1 for live R")
 def test_live_r_reference():
-    assert verify()["cases_passed"] == len(CASES)
+    report = verify()
+    assert report["cases_passed"] == len(CASES)
+    assert report["cox_configurations_passed"] == sum(len(case.get("adjustments", [])) for case in CASES)
 
 
 @pytest.fixture
@@ -115,6 +117,27 @@ def test_optimal_weights_count_future_zero_duration_events():
     )
 
 
+def test_full_offset_trace_with_weighted_summary(illness_death):
+    subject_offset = np.array([np.log(3), 0, 0])
+    records = replace(illness_death, covariates={"off": subject_offset[illness_death.subject_index]})
+    options = {"n_bootstrap": 0, "state_weights": "optimal", "overall_weights": "optimal"}
+    legacy = markov_test(records, 2, [2], offset="off", **options)
+    result = markov_test(records, 2, [2], offset="off", cox_mode="full", **options)
+    np.testing.assert_array_equal(legacy.score_trace, [[-0.5, 0.5]])
+    np.testing.assert_allclose(result.score_trace, [[-0.25, 0.25]], rtol=0, atol=1e-15)
+    np.testing.assert_allclose(result.covariance[0], [[3 / 16, -3 / 16], [-3 / 16, 3 / 16]])
+    assert result.overall_statistic == pytest.approx(1 / 3)
+    assert result.cox_fit.covariates == ()
+    assert result.cox_fit.log_likelihood == pytest.approx(np.log(0.75))
+    assert result.cox_fit.log_likelihood == legacy.cox_fit.log_likelihood
+
+
+def test_cox_covariates_require_finite_nonconstant_columns(illness_death):
+    records = replace(illness_death, covariates={"constant": np.ones(len(illness_death.id))})
+    with pytest.raises(ValueError, match="nonconstant"):
+        markov_test(records, 2, [2], n_bootstrap=0, covariates="constant")
+
+
 def test_zero_duration_intervals_removed(illness_death):
     end = illness_death.t_stop.copy()
     last = np.flatnonzero(illness_death.id == 3)
@@ -137,6 +160,10 @@ def test_zero_duration_intervals_removed(illness_death):
         (2, [2], {"state_weights": [[1]]}, "qualifying_states"),
         (2, [2], {"overall_weights": [-1]}, "nonnegative"),
         (2, [2], {"state_weights": "optimal", "min_time": 3}, "first grid point"),
+        (2, [2], {"covariates": ["missing"]}, "absent from records"),
+        (2, [2], {"covariates": ["x", "x"]}, "distinct names"),
+        (2, [2], {"offset": [0, 0, 0]}, "offset must name"),
+        (2, [2], {"cox_mode": "other"}, "cox_mode"),
     ],
 )
 def test_invalid_test_inputs(illness_death, transition, grid, options, message):

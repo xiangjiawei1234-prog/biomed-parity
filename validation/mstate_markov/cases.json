@@ -19,7 +19,16 @@
     "grid": [0, 1, 2.5, 4, 5, 6.5, 7, 9, 11, 15, 16],
     "seed": 67,
     "distribution": "normal",
-    "replicates": 18
+    "replicates": 18,
+    "covariate_data": {
+      "x": [-0.8, 0.6, -0.2, 1.0, 0.9, -1.2, 0.1, 0.8, 0.4, -0.5, -0.5, 0.3],
+      "off": [0.1, 0.3, -0.4, 0.5, 0.1, -0.2, -0.2, 0.3, 0.3, -0.3, 0.1, -0.1]
+    },
+    "adjustments": [
+      {"id": "covariate", "covariates": ["x"]},
+      {"id": "offset_only_mstate", "offset": "off"},
+      {"id": "offset_only_full", "offset": "off", "cox_mode": "full"}
+    ]
   },
   {
     "id": "indirect_predecessor",
@@ -41,7 +50,16 @@
     "min_time": 1,
     "seed": 47,
     "distribution": "poisson",
-    "replicates": 17
+    "replicates": 17,
+    "covariate_data": {
+      "x": [-0.8, 0.6, -0.2, 1.0, 0.9, -1.2, 0.1, 0.8, 0.4, -0.5, -0.5, 0.3, 0.8, -0.9, 0.2],
+      "binary": [0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0],
+      "off": [0.1, 0.3, -0.4, 0.5, 0.1, -0.2, -0.2, 0.3, 0.3, -0.3, 0.1, -0.1, 0.5, -0.4, 0.2]
+    },
+    "adjustments": [
+      {"id": "two_covariates_offset_mstate", "covariates": ["x", "binary"], "offset": "off"},
+      {"id": "two_covariates_offset_full", "covariates": ["x", "binary"], "offset": "off", "cox_mode": "full"}
+    ]
   },
   {
     "id": "initial_state_transition",
