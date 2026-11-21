@@ -1,0 +1,20 @@
+[
+  {"id": "ordinary_binary", "design": "linear"},
+  {"id": "continuous_variance_penalty", "design": "linear", "penalty": 5},
+  {
+    "id": "correlated_penalty_with_unpenalized_slope",
+    "design": "linear",
+    "penalty": [2, 0, 2],
+    "r_penalty": {"simple": 2, "nonlinear": 0},
+    "penalty_matrix": [[2, 0.4, -0.5], [0.4, 1, 0.3], [-0.5, 0.3, 1.3]]
+  },
+  {
+    "id": "factor_and_spline_interaction_penalties",
+    "design": "factor_spline",
+    "penalty": [0.5, 2, 2, 0.5, 0.5, 0.5, 3, 4, 4, 3, 4, 4],
+    "r_penalty": {"simple": 0.5, "nonlinear": 2, "interaction": 3, "nonlinear.interaction": 4},
+    "categorical_blocks": [[3, 4]]
+  },
+  {"id": "ridge_with_complete_separation", "design": "separated", "penalty": 0.4},
+  {"id": "ridge_with_collinear_predictors", "design": "collinear", "penalty": 1.5}
+]

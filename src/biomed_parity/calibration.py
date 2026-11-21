@@ -10,6 +10,7 @@ from numpy.typing import ArrayLike, NDArray
 from scipy.special import expit, logit, ndtri
 from scipy.stats import rankdata
 
+from ._logistic import _deviance, _fit_coefficients
 from ._lowess import _lowess
 
 _METRICS = ("Dxy", "R2", "Intercept", "Slope", "Emax", "D", "U", "Q", "B", "g", "gp")
@@ -41,10 +42,6 @@ def _finite_array(values, name):
     return array
 
 
-def _deviance(signed, lp):
-    return 2 * np.logaddexp(0, -signed * lp).sum()
-
-
 def _logistic_fit(x, y):
     if y.min() == y.max():
         raise np.linalg.LinAlgError("the sample must contain both response classes")
@@ -55,28 +52,9 @@ def _logistic_fit(x, y):
     design = np.column_stack((np.ones(len(y)), (x - center) / spread))
     if np.linalg.matrix_rank(design) < design.shape[1]:
         raise np.linalg.LinAlgError("the logistic design matrix is rank deficient")
-    signed = 2 * y - 1
-    coefficients = np.r_[logit(y.mean()), np.zeros(x.shape[1])]
-    lp = np.einsum("ij,j->i", design, coefficients)
-    deviance = _deviance(signed, lp)
-    for _ in range(80):
-        weights = expit(lp) * expit(-lp)
-        score = np.einsum("ij,i->j", design, signed * expit(-signed * lp))
-        information = np.einsum("ij,ik,i->jk", design, design, weights)
-        delta = np.linalg.solve(information, score)
-        if np.max(np.abs(delta)) <= 1e-9:
-            slopes = coefficients[1:] / spread
-            return np.r_[coefficients[0] - np.sum(center * slopes), slopes]
-        for half in range(25):
-            updated = coefficients + delta * 0.5**half
-            fitted = np.einsum("ij,j->i", design, updated)
-            candidate = _deviance(signed, fitted)
-            if candidate <= deviance + np.finfo(float).eps * deviance:
-                coefficients, lp, deviance = updated, fitted, candidate
-                break
-        else:
-            break
-    raise np.linalg.LinAlgError("logistic fit did not converge to a finite maximum")
+    coefficients = _fit_coefficients(design, y)
+    slopes = coefficients[1:] / spread
+    return np.r_[coefficients[0] - np.sum(center * slopes), slopes]
 
 
 def _gini_difference(values):
