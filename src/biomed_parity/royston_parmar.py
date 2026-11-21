@@ -65,10 +65,7 @@ def _broadcast_inputs(values, gamma, knots, scale, timescale):
         np.broadcast_to(knots, parameter_shape))
 
 
-def _spline_at(x, gamma, knots):
-    if gamma.shape[-1] == 2:
-        return gamma[:, 0] + gamma[:, 1] * x, gamma[:, 1]
-
+def _spline_terms(x, knots):
     lower, upper = knots[:, 0], knots[:, -1]
     middle = knots[:, 1:-1]
     left_gap = middle - lower[:, None]
@@ -86,9 +83,17 @@ def _spline_at(x, gamma, knots):
     slope_factor = right_gap[tail] * left_gap[tail]
     basis[tail] = -slope_factor * (span[tail, None] + right_gap[tail])
     derivative[tail] = -3 * slope_factor
+    return x_inside, basis, derivative, tail
+
+
+def _spline_at(x, gamma, knots):
+    if gamma.shape[-1] == 2:
+        return gamma[:, 0] + gamma[:, 1] * x, gamma[:, 1]
+
+    x_inside, basis, derivative, tail = _spline_terms(x, knots)
     slopes = gamma[:, 1] + np.sum(derivative * gamma[:, 2:], axis=1)
     eta = gamma[:, 0] + gamma[:, 1] * x_inside + np.sum(basis * gamma[:, 2:], axis=1)
-    eta[tail] += slopes[tail] * (x[tail] - upper[tail])
+    eta[tail] += slopes[tail] * (x[tail] - x_inside[tail])
     return eta, slopes
 
 
