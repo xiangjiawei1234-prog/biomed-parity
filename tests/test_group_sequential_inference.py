@@ -50,7 +50,7 @@ def test_inverting_efficacy_thresholds_recovers_alpha_at_each_look():
 def test_schedule_units_and_unobserved_future_look():
     relative = repeated_pvalues([0.33, 0.62], [2.8, 1.65])
     absolute = repeated_pvalues([33, 62], [2.8, 1.65], planned_final_information=100)
-    np.testing.assert_array_equal(relative.repeated, absolute.repeated)
+    np.testing.assert_allclose(relative.repeated, absolute.repeated, rtol=1e-14, atol=0)
     final = repeated_pvalues([0.33, 0.62, 1.0], [2.8, 1.65, 1.3])
     np.testing.assert_allclose(absolute.cumulative, final.cumulative[:2], atol=1e-12, rtol=0)
 

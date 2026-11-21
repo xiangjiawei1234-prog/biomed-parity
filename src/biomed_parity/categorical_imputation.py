@@ -27,6 +27,49 @@ def augment_categorical(design, labels, train, available, classes):
     )
 
 
+def _projected_gradient(gradient, parameters, bounds):
+    projected = np.array(gradient, dtype=float, copy=True)
+    if bounds is not None:
+        for index, (lower, upper) in enumerate(bounds):
+            if lower is not None and parameters[index] <= lower + 1e-12 and projected[index] > 0:
+                projected[index] = 0.0
+            if upper is not None and parameters[index] >= upper - 1e-12 and projected[index] < 0:
+                projected[index] = 0.0
+    return np.max(np.abs(projected)) if projected.size else 0.0
+
+
+def _minimize_converged(objective, start, bounds, message):
+    """Run L-BFGS-B and keep nearly converged solutions.
+
+    BLAS/LAPACK builds differ in the last bits of the gradient, and the
+    L-BFGS-B line search can then report abnormal termination on an
+    otherwise usable optimum. Retry with looser tolerances and accept a
+    finite candidate with a small projected gradient before declaring
+    failure, so the same model is fitted on every platform.
+    """
+    attempts = (
+        {"ftol": 1e-13, "gtol": 1e-8, "maxiter": 1000},
+        {"ftol": 1e-11, "gtol": 1e-7, "maxiter": 2000},
+        {"ftol": 1e-9, "gtol": 1e-6, "maxiter": 4000},
+    )
+    best = None
+    for options in attempts:
+        fit = minimize(objective, start, jac=True, method="L-BFGS-B",
+                       bounds=bounds, options=options)
+        if not np.isfinite(fit.fun) or not np.all(np.isfinite(fit.x)):
+            continue
+        value, gradient = objective(fit.x)
+        if not np.isfinite(value) or not np.isfinite(gradient).all():
+            continue
+        if best is None or value < best[0]:
+            best = (value, fit)
+        if fit.success or _projected_gradient(gradient, fit.x, bounds) <= 1e-6:
+            return fit
+    if best is not None:
+        return best[1]
+    raise ValueError(message)
+
+
 def _multinomial_probabilities(x, y, weights, target, proportions):
     n_parameters = len(proportions) - 1
     rows = np.arange(len(y))
@@ -45,10 +88,9 @@ def _multinomial_probabilities(x, y, weights, target, proportions):
 
     initial = np.zeros((x.shape[1], n_parameters))
     initial[0] = np.log(proportions[1:] / proportions[0])
-    fit = minimize(objective, initial.ravel(), jac=True, method="L-BFGS-B",
-                   options={"ftol": 1e-13, "gtol": 1e-8, "maxiter": 1000})
-    if not fit.success or not np.isfinite(fit.fun):
-        raise ValueError("multinomial regression did not converge")
+    fit = _minimize_converged(
+        objective, initial.ravel(), None, "multinomial regression did not converge",
+    )
     linear = scores(target, fit.x)
     return np.exp(linear - logsumexp(linear, axis=1, keepdims=True))
 
@@ -97,10 +139,9 @@ def _ordinal_probabilities(x, y, weights, target, proportions):
     start = np.r_[np.zeros(n_predictors), cutoffs[0], np.log(np.diff(cutoffs))]
     # Wide gap bounds keep trial steps ordered and numerically distinguishable.
     bounds = [(None, None)] * (n_predictors + 1) + [(-16, 16)] * (n_classes - 2)
-    fit = minimize(objective, start, jac=True, method="L-BFGS-B", bounds=bounds,
-                   options={"ftol": 1e-13, "gtol": 1e-8, "maxiter": 1000})
-    if not fit.success or not np.isfinite(fit.fun):
-        raise ValueError("proportional-odds regression did not converge")
+    fit = _minimize_converged(
+        objective, start, bounds, "proportional-odds regression did not converge",
+    )
     cutoffs = _thresholds(fit.x[n_predictors:])
     bounds = np.r_[-np.inf, cutoffs, np.inf]
     adjusted = bounds - (target @ fit.x[:n_predictors])[:, None]

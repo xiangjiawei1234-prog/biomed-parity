@@ -29,8 +29,9 @@ def assert_case(case, reference):
     }
     _assert_fields(case["id"], result, fields)
     deterministic = markov_test(*args, n_bootstrap=0)
-    np.testing.assert_array_equal(deterministic.z_trace, result.z_trace)
-    np.testing.assert_array_equal(deterministic.chi_squared_trace, result.chi_squared_trace)
+    np.testing.assert_allclose(deterministic.z_trace, result.z_trace, rtol=0, atol=1e-12)
+    np.testing.assert_allclose(deterministic.chi_squared_trace, result.chi_squared_trace,
+                               rtol=0, atol=1e-12)
 
     min_time = case.get("min_time", 0)
     state_weights = optimal_weights_matrix(*args)
@@ -39,8 +40,9 @@ def assert_case(case, reference):
     np.testing.assert_allclose(overall_weights, reference["weights"]["overall"], rtol=0, atol=1e-12)
     optimal = markov_test(*args, **options, state_weights="optimal", overall_weights="optimal", min_time=min_time)
     _assert_fields(f"{case['id']} state-specific weights", optimal, reference["weights"]["optimal"])
-    np.testing.assert_array_equal(optimal.z_trace, result.z_trace)
-    np.testing.assert_array_equal(optimal.chi_squared_trace, result.chi_squared_trace)
+    np.testing.assert_allclose(optimal.z_trace, result.z_trace, rtol=0, atol=1e-12)
+    np.testing.assert_allclose(optimal.chi_squared_trace, result.chi_squared_trace,
+                               rtol=0, atol=1e-12)
 
     # The closures returned in mstate 0.3.3 all capture the final column.
     shared = state_weights[:, -1] * np.diff(case["grid"], prepend=min_time)
