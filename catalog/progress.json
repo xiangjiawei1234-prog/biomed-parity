@@ -79,16 +79,17 @@
         "反向 Cox 删失权重与分层、积分 Brier、旧版 AUC 影响函数复现",
         "固定时点分组与近邻校准，局部累积发生率和 Jackknife 伪值",
         "一次 K 折重拟合及折外风险汇总，边际 KM 与反向 Cox",
-        "bootcv 有放回和子抽样、逐次袋外分数、平均和分位数区间及配对差"
+        "bootcv 有放回和子抽样、逐次袋外分数、平均和分位数区间及配对差",
+        "重复 K 折与按受试者/受试者对的留一、留对平均评分"
       ],
       "evidence": [
         "docs/methods/competing-risk-scores.md",
         "docs/methods/competing-risk-calibration.md",
         "docs/methods/risk-cross-validation.md",
-        "docs/methods/risk-bootstrap.md"
+        "docs/methods/risk-bootstrap.md",
+        "docs/methods/risk-resampled.md"
       ],
       "remaining": [
-        "重复 K 折与按受试者或受试者对的 loob",
         "自动带宽、校准信赖带和成组重抽样推断"
       ]
     },
@@ -300,29 +301,30 @@
       "status": "native_validated",
       "covered": [
         "加权 Turnbull 最大交集、端点精确识别、区间质量和生存概率界",
-        "ic_sp 固定设计比例风险及比例优势系数、分数权重、区间分布和预测"
+        "ic_sp 固定设计比例风险及比例优势系数、分数权重、区间分布和预测",
+        "病例 Bootstrap 的系数协方差与 Wald 推断"
       ],
       "evidence": [
         "docs/methods/interval-censoring.md",
         "validation/interval_censoring/expected.json",
         "docs/methods/interval-regression.md",
-        "validation/interval_regression/expected.json"
+        "validation/interval_regression/expected.json",
+        "docs/methods/interval-bootstrap.md"
       ],
       "remaining": [
-        "病例 Bootstrap 与回归区间、参数模型、分层与截断"
+        "分组重抽样、基线生存区间、参数模型、分层与截断"
       ]
     },
     "flexsurv-parametric-spline": {
-      "status": "research_only",
+      "status": "native_partial_parity",
       "covered": [
-        "已核查样条基线的 Python 候选及 R 口径"
+        "给定结点与系数的 Royston–Parmar 生存、风险、密度与分位数"
       ],
       "evidence": [
-        "docs/research.md",
-        "docs/development.md"
+        "docs/methods/royston-parmar.md"
       ],
       "remaining": [
-        "三种样条变换尺度的预测与拟合、时间依赖系数、边际标准化与区间"
+        "flexsurvspline 拟合、时间依赖系数、边际标准化与区间"
       ]
     },
     "jmbayes2-joint-model": {

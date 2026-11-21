@@ -22,6 +22,8 @@
 | 生存分析 | `rmst_curves.rmst_curve_data` | survRM2 1.0-4、survival 3.8-6 | 14 组 Kaplan–Meier 阶梯和限制平均生存时间阴影坐标 |
 | 生存分析 | `interval_censoring.turnbull` | icenReg 2.0.16 | 8 组区间删失概率质量，含四种端点组合、准确时间、全右删失及权重 |
 | 生存分析 | `interval_regression.fit_interval_regression` | icenReg 2.0.16 | 6 组区间删失 PH 和 PO，含分数权重及基线和协变量生存 |
+| 生存分析 | `interval_bootstrap.bootstrap_interval_regression` | icenReg 2.0.16 | 2 组病例 Bootstrap、26 次重拟合；系数协方差与 Wald 推断 |
+| 生存分析 | `royston_parmar.royston_parmar`、`royston_parmar_quantile` | flexsurv 2.3.2 | 10 组分布与 9 组分位数，含三种链接、两种时间尺度与逐行参数 |
 | 诊断准确性 | `roc.delong_auc`、`delong_paired_test`、`delong_unpaired_test` | pROC 1.19.1 | 28 个场景；AUC 方差、区间、配对与独立检验 |
 | 诊断准确性 | `roc_bootstrap.roc_auc`、`bootstrap_auc_ci`、`bootstrap_paired_test` | pROC 1.19.1 | 41 个完整/部分 AUC 场景；61 次指定分层重抽样与配对检验 |
 | 诊断准确性 | `roc_thresholds.roc_coords`、`bootstrap_roc_coords` | pROC 1.19.1 | 47 个坐标场景 + 13 个固定重抽样区间场景；8214 行快照，坐标字段逐位一致 |
@@ -46,6 +48,7 @@
 | 竞争风险 | `risk_scores.score_competing_risks` | riskRegression 2026.03.11 | 4 组边际 KM + 5 组反向 Cox；AUC、Brier、影响函数、积分 Brier 与配对比较 |
 | 竞争风险 | `risk_cross_validation.cross_validate_competing_risks` | riskRegression 2026.03.11 | 3 折与 4 折校验，核对折外风险及汇总评分 |
 | 竞争风险 | `risk_bootstrap.bootstrap_validate_competing_risks` | riskRegression 2026.03.11 | 3 组、21 次袋外验证，含子抽样、评分和模型差 |
+| 竞争风险 | `risk_resampled.score_resampled_competing_risks` | riskRegression、prodlim 2026.03.11 | 15 次留一与 3 组重复四折，核对留一 Brier、留对 AUC 与积分 Brier |
 | 竞争风险 | `competing_calibration.calibrate_competing_risks`、`jackknife_cumulative_incidence` | riskRegression、prodlim 2026.03.11 | 7 组；分位数、近邻、局部风险与 Jackknife 伪值 |
 | 竞争风险 | `competing_risks.cmprsk_timepoints`、`cmprsk_residuals_by_time` | cmprsk、pycmprsk | 82/82 项字段适配对照 |
 | 多状态 | `mstate_prep.msprep` | mstate 0.3.3 | 6 组宽表转换；左进入、并列、协变量复写 |

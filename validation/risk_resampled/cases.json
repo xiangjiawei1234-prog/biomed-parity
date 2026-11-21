@@ -1,0 +1,4 @@
+[
+  {"id":"loob-weighted-pair-coverage", "split":"loob", "n":15, "seed":472, "cause":1, "horizons":[12,21,29]},
+  {"id":"repeated-folds-cox", "split":"cv4", "n":3, "seed":681, "cause":2, "horizons":[14,23,31], "cox":true}
+]
