@@ -1,6 +1,6 @@
-# 平滑 ROC 的 Bootstrap 区间
+# 平滑 ROC 的 Bootstrap 区间与检验
 
-`biomed_parity.roc_smooth_bootstrap` 使用 Bootstrap 对单条平滑二分类 ROC 计算完整或部分 AUC 的分位数区间与固定特异度上的灵敏度区间，也可比较同一批受试者上两条平滑曲线的 AUC。每个重抽样重新拟合双正态、核密度或按类拟合分布的参数化曲线。区间口径对应 pROC 1.19.1 的 `ci.auc()` 和 `ci.se()`。[pROC AUC 区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.auc) · [pROC 灵敏度区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.se)
+`biomed_parity.roc_smooth_bootstrap` 使用 Bootstrap 对单条平滑二分类 ROC 计算完整或部分 AUC 的分位数区间与固定特异度上的灵敏度区间，也可比较配对或独立样本的两条平滑曲线。每个重抽样重新拟合双正态、核密度或按类拟合分布的参数化曲线。区间口径对应 pROC 1.19.1 的 `ci.auc()` 和 `ci.se()`，AUC 检验对应 `roc.test(method="bootstrap")`。[pROC AUC 区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.auc) · [pROC 灵敏度区间手册](https://cran.r-project.org/web/packages/pROC/refman/pROC.html#ci.se) · [pROC 检验手册](https://search.r-project.org/CRAN/refmans/pROC/html/roc.test.html)
 
 ## 接口
 
@@ -78,4 +78,26 @@ result = bootstrap_smooth_paired_test(
 
 ```sh
 R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 python -m pytest -q -W error tests/test_roc_smooth_paired.py
+```
+
+## 独立样本平滑 AUC 检验
+
+`bootstrap_smooth_unpaired_test(labels_1, scores_1, labels_2, scores_2, ...)` 对应 pROC 的 `roc.test(method="bootstrap", paired=FALSE)`。两个样本可以有不同的总人数及病例、对照比例，共用平滑方法和 AUC 规格。`direction="auto"` 分别在两个原始样本上确定方向。每次分别从两个样本独立抽取索引、重新平滑并计算两条曲线的 AUC 差。任一曲线无法估计时，整次重抽样计入 `omitted_resamples`。标准误、检验统计量、三种备择和百分制与配对检验采用相同口径。[pROC Bootstrap 实现](https://github.com/xrobin/pROC/blob/v1.19.1/R/bootstrap.R)
+
+```python
+from biomed_parity.roc_smooth_bootstrap import bootstrap_smooth_unpaired_test
+
+result = bootstrap_smooth_unpaired_test(
+    labels, scores,
+    [0, 0, 0, 1, 1, 1], [0.2, 0.4, 0.65, 0.3, 0.7, 0.95],
+    method="density", partial_auc=(0.65, 1.0), random_state=24,
+)
+```
+
+`bootstrap_indices_1` 和 `bootstrap_indices_2` 各为相应样本的零基索引矩阵，列数等于该样本人数。提供两张矩阵时，行数必须相同。提供一张矩阵时，按其行数为另一组生成独立的抽样索引。分层抽样时两组各自维持原病例数和对照数。
+
+5 个场景各用 43 次抽样，覆盖三种平滑方法、样本量和类别人数不同、相反的自动方向、分层和普通抽样、两种部分 AUC 轴、百分制、McClish 校正与三种备择。相同观测输入的场景验证两组抽样仍独立。普通抽样场景包含仅一条曲线拟合失败的重抽样。用两张索引矩阵逐次计算 R 参考值，并以相同的随机数流交叉核对公开 `roc.test()`。两端均丢弃 22 次抽样。按 0–1 尺度比较时，AUC、AUC 差与标准误的最大绝对偏差为 `4.5e-16`，统计量与 p 值的最大绝对偏差为 `1.5e-15`。[对照用例](../../validation/roc_smooth_unpaired/cases.json) · [R 参考脚本](../../validation/roc_smooth_unpaired/oracle.R) · [R 4.5.3 / pROC 1.19.1 / MASS 7.3-65 快照](../../validation/roc_smooth_unpaired/expected.json)
+
+```sh
+R_LIBS_USER="$PWD/.r-lib" BIOMED_R_PARITY=1 python -m pytest -q -W error tests/test_roc_smooth_unpaired.py
 ```
