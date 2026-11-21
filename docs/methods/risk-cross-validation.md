@@ -17,7 +17,7 @@ print(result.scores.brier.estimate)
 
 回调的两个行索引与输入顺序一致，且训练和验证行互斥。回调返回「验证行 × 预测时点」的累计发生概率矩阵。所有模型共享折分。可明确提供每行的整数折编号；省略时，由 NumPy 种子随机生成规模最多相差一人的折。R 的 `Score` 先按随访时间和结局排序，再分配折编号。迁入 R 的分折时，应将这些编号贴回原始受试者行。
 
-输出的 `predictions` 形状为「模型 × 受试者 × 预测时点」，可核查每位受试者的折外估计。推断沿用已实现的评分影响函数和删失权重规则。其区间基于给定的折外预测，没有把模型重拟合的不确定性另行纳入。目前支持一次 K 折，重复分折与 Bootstrap 验证仍待迁移。 [评分区间与历史 AUC 兼容](competing-risk-scores.md)
+输出的 `predictions` 形状为「模型 × 受试者 × 预测时点」，可核查每位受试者的折外估计。推断沿用已实现的评分影响函数和删失权重规则。其区间以给定折外预测为条件。此入口支持一次 K 折，袋外 Bootstrap 由专用入口提供，重复分折仍待迁移。 [评分区间与历史 AUC 兼容](competing-risk-scores.md) · [袋外 Bootstrap](risk-bootstrap.md)
 
 本地使用 R 4.5.3、riskRegression 2026.03.11 和 prodlim 核对两组折外评分。各组用两种分层 Aalen–Johansen 模型，覆盖三折边际删失、四折 Cox 删失、两种目标原因和三个预测时点。折外概率最大容差为 `2e-15`，评分、区间和积分 Brier 采用既有 IPCW 容差。选择 `auc_inference="riskregression"` 对照该 R 版本的影响函数。
 

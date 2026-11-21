@@ -1,0 +1,5 @@
+[
+  {"id":"replacement-km", "resamples":7, "seed":172, "cause":1, "horizons":[12,21,29]},
+  {"id":"replacement-cox", "resamples":8, "seed":91, "cause":2, "horizons":[14,23,31], "cox":true},
+  {"id":"subsampling", "resamples":6, "seed":714, "cause":1, "horizons":[16,25,31], "training_size":26}
+]
