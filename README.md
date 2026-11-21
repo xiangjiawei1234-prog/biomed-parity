@@ -45,6 +45,7 @@
 | 临床预测 | `rms_penalty.trace_logistic_penalties` | rms 8.2-1 | 4 组 25 个候选惩罚点，核对有效自由度、AIC/BIC/AICc 与 Gray 协方差 |
 | 竞争风险 | `risk_scores.score_competing_risks` | riskRegression 2026.03.11 | 4 组边际 KM + 5 组反向 Cox；AUC、Brier、影响函数、积分 Brier 与配对比较 |
 | 竞争风险 | `risk_cross_validation.cross_validate_competing_risks` | riskRegression 2026.03.11 | 3 折与 4 折校验，核对折外风险及汇总评分 |
+| 竞争风险 | `risk_bootstrap.bootstrap_validate_competing_risks` | riskRegression 2026.03.11 | 3 组、21 次袋外验证，含子抽样、评分和模型差 |
 | 竞争风险 | `competing_calibration.calibrate_competing_risks`、`jackknife_cumulative_incidence` | riskRegression、prodlim 2026.03.11 | 7 组；分位数、近邻、局部风险与 Jackknife 伪值 |
 | 竞争风险 | `competing_risks.cmprsk_timepoints`、`cmprsk_residuals_by_time` | cmprsk、pycmprsk | 82/82 项字段适配对照 |
 | 多状态 | `mstate_prep.msprep` | mstate 0.3.3 | 6 组宽表转换；左进入、并列、协变量复写 |

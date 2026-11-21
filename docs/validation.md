@@ -1,6 +1,6 @@
 # 本地验证记录
 
-2026-11-21 在 macOS arm64 本机运行。主要环境为 Python 3.12.7、NumPy 2.1.3、SciPy 1.14.1、pytest 9.2.0 和 R 4.5.3。在 `e559585` 的快照上开启实时 R 对照并将 Python 警告视为错误，**1,303 项测试全部通过**。最低依赖环境 Python 3.11.15、NumPy 1.26.4、SciPy 1.12.0 的默认套件有 1,241 项通过，62 个实时 R 测试按配置跳过。该快照的 wheel 和源码包构建成功。下面列有后续方法的专项验证，参考输入使用人工构造数据。
+2026-11-21 在 macOS arm64 本机运行。主要环境为 Python 3.12.7、NumPy 2.1.3、SciPy 1.14.1、pytest 9.2.0 和 R 4.5.3。在 `816131b` 的快照上开启实时 R 对照并将 Python 警告视为错误，**1,333 项测试全部通过**。默认套件在主要环境和最低依赖环境 Python 3.11.15、NumPy 1.26.4、SciPy 1.12.0 均有 1,269 项通过，64 个实时 R 测试按配置跳过。该快照的 wheel 和源码包构建成功。下面列有后续方法的专项验证，参考输入使用人工构造数据。
 
 | 统计入口 | R 参考 | 覆盖 |
 | --- | --- | --- |
@@ -50,6 +50,7 @@
 | [区间删失半参数回归](methods/interval-regression.md) | icenReg 2.0.16 | 6 组比例风险和比例优势，核对权重、系数、似然及生存 |
 | [竞争风险评分](methods/competing-risk-scores.md) | riskRegression 2026.03.11 | 4 个边际 KM 和 5 个反向 Cox 方案。九组对照兼容模式的 AUC 区间与影响函数，包括两个非默认目标原因案例 |
 | [竞争风险交叉验证](methods/risk-cross-validation.md) | riskRegression 2026.03.11 | 3 折与 4 折真实重拟合，核对折外预测、评分和区间 |
+| [竞争风险袋外验证](methods/risk-bootstrap.md) | riskRegression 2026.03.11 | 3 组、21 次重拟合，核对袋外预测、评分、差值和 Bootstrap 区间 |
 | [竞争风险校准](methods/competing-risk-calibration.md) | riskRegression 和 prodlim 2026.03.11 | 7 组分位数、近邻、局部风险和逐行伪值对照 |
 | [多状态准备](methods/mstate-prep.md) 与 [转移风险](methods/mstate-fit.md) | mstate 0.3.3 | 6 组常规宽表转换和 7 组风险拟合，其中 3 组串联验证最终状态概率与标准误 |
 | [转移特异协变量](methods/mstate-covariates.md) | mstate 0.3.3 | 5 组数值、分类或逻辑变量展开，含缺失值与短名 |

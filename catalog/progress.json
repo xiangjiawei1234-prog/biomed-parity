@@ -78,15 +78,17 @@
         "score_competing_risks 的边际 IPCW AUC/Brier、影响函数、配对比较",
         "反向 Cox 删失权重与分层、积分 Brier、旧版 AUC 影响函数复现",
         "固定时点分组与近邻校准，局部累积发生率和 Jackknife 伪值",
-        "一次 K 折重拟合及折外风险汇总，边际 KM 与反向 Cox"
+        "一次 K 折重拟合及折外风险汇总，边际 KM 与反向 Cox",
+        "bootcv 有放回和子抽样、逐次袋外分数、平均和分位数区间及配对差"
       ],
       "evidence": [
         "docs/methods/competing-risk-scores.md",
         "docs/methods/competing-risk-calibration.md",
-        "docs/methods/risk-cross-validation.md"
+        "docs/methods/risk-cross-validation.md",
+        "docs/methods/risk-bootstrap.md"
       ],
       "remaining": [
-        "重复 K 折与 Bootstrap 重拟合",
+        "重复 K 折与按受试者或受试者对的 loob",
         "自动带宽、校准信赖带和成组重抽样推断"
       ]
     },
